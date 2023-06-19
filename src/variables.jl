@@ -1,11 +1,17 @@
-function construct_differential_variable(_initial_var, _bounds, _var_names)
-     
-    diff_var_data = Differential_Var_data( _var_names[1],_initial_var,[_bounds[1],_bounds[2]],_var_names[2],[_bounds[3],_bounds[4]],_var_names[3],[_bounds[5],_bounds[6]],)
+function construct_differential_variable(_sym,_info::Vector)
+
+    diff_var_data = Differential_Var_data(_sym,_info[1],_info[2],_info[3],_info[4],_info[5],_info[6])
 
     return diff_var_data
 end
 
+function construct_independent_variable(_name, _bounds)
+     
+    indep_var_data = Independent_Var_data(_name, _bounds)
 
+    return indep_var_data
+    
+end
 
 """
 DynamicModel = DOI.DynamicModel

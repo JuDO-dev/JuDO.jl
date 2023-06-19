@@ -5,7 +5,7 @@ import MathOptInterface as MOI
 #import DynOptInterface as DOI
 
 import Base.Meta: isexpr
-#C:/Users/THC/.julia/dev/JuDO
+#activate C:/Users/THC/.julia/dev/JuDO.jl
 
 using Ipopt
 
@@ -17,16 +17,16 @@ abstract type variable_data end
     A DataType for storing a collection of differential variables
 """
 mutable struct Differential_Var_data <: variable_data
-    Init_sym::Union{Symbol,Nothing}
+    Run_sym::Symbol
     Init_val::Union{Real,Nothing}
-    Init_bound::Vector    
+    Final_val::Union{Real,Nothing}
 
-    Final_sym::Union{Symbol,Nothing}
+    Init_bound::Vector    
     Final_bound::Vector
+    trajectory_bound::Vector
+
+    Interpolant_name::Union{Symbol,Nothing}
     
-    Run_sym::Union{Symbol,Nothing}
-    Run_bound::Vector
-    # trajectory/
 end
 """
     Independent_Var_data
@@ -35,8 +35,8 @@ end
         # free/fixed start/end problem
 """
 mutable struct Independent_Var_data <: variable_data
-    sym::Symbol
-    var::Union{Real,Nothing}
+    sym::Union{Symbol,Nothing}
+    bound::Vector
 end
 
 

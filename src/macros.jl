@@ -1,58 +1,16 @@
+symbol_error() = throw(error("A symbol is expected for the second argument"))
+_bound_error() = throw(error("Initial/Final bound not in the total bound"))
+input_style_error() = throw(error("Keyword argument input style incorrect, make sure all arguments are in the form of keyword = value"))
 
-function parse_args(args)
-    # parse arguments with =, initial value or final time 
-    arg_list = collect(args)
-    args_with_eq = filter(x -> isexpr(x, :(=)), arg_list)
-
-    if length(args_with_eq) != 0
-        initial_var = args_with_eq[1].args[2]
-        initial_var_name = args_with_eq[1].args[1]
-    else
-        initial_var = nothing
-        initial_var_name = nothing
-    end
-      
-    # parse arguments with in
-    args_with_in = filter(x -> x.args[1] == :in, arg_list)
-    length(args_with_in) == 3  ? nothing : throw(error("If any variable is specified, all variables (or only their names) should be specified"))
-
-
-    bounds=[]
-    for i in 1:3
-        arg_1 = args_with_in[i].args[end].args[1]
-        arg_2 = args_with_in[i].args[end].args[2]
-        if arg_1 isa Real && arg_2 isa Real
-            arg_1 <= arg_2 ? nothing : throw(error("$arg_1 greater than $arg_2!"))
-        end
-        push!(bounds,arg_1,arg_2)
-    end   
-    
-    _bound_error() = error("Initial/Final bound not in the total bound")
-
-    for i in 1:2
-       (bounds[i] == :Inf || bounds[i+2] == :Inf) && (bounds[i+4] isa Real) ? _bound_error() : nothing
-       if (bounds[i] isa Real && bounds[i+2] isa Real && bounds[i+4] isa Real) 
-            ((bounds[i] >= bounds[i+4] && bounds[i+2] >= bounds[i+4]) || (bounds[i] <= bounds[i+4] && bounds[i+2] <= bounds[i+4])) ? nothing : _bound_error() 
-       end
-    end
-    var_names=[args_with_in[1].args[2], args_with_in[2].args[2], args_with_in[3].args[2]]
-    
-    return initial_var, initial_var_name, bounds, var_names
+function var_not_inside_error(_val,_bound)  
+    _val >= _bound[1] && _val <= _bound[2] ? nothing : throw(error("The initial/final value is not inside the initial/final bound"))
 end
 
-function parse_args(args,_index)
-
-    arg_list = collect(args)    
-    new_list = []
-    # turn each unspecified element into standard form by adding :in and [-Inf,Inf] at the end
-    for i in eachindex(arg_list)
-        i in _index ? push!(new_list,Expr(:call,:in,:($(arg_list[i])),:([-Inf,Inf]))) : push!(new_list,arg_list[i])
-    end 
-    
-    # call standard parse function
-    return parse_args(new_list)
+function bound_not_inside_error(_initial_bound,_final_bound,_total_bound)
+    _initial_bound[1] >= _total_bound[1] && _initial_bound[2] <= _total_bound[2] ? nothing : throw(error("Initial bound is not inside the trajectory bound"))
+    _final_bound[1] >= _total_bound[1] && _final_bound[2] <= _total_bound[2] ? nothing : throw(error("Final bound is not inside the trajectory bound"))
 end
-
+    
 
 function output_macro(m,diff_var_data)
      
@@ -62,6 +20,39 @@ function output_macro(m,diff_var_data)
     return m
 
 end 
+
+function identify_kw(raw_expr)
+    # raw_expr is the raw expression of the macro, with type vector.
+
+    kw_collection = [:initial_val,:final_val,:initial_bound,:final_bound,:trajectory_bound,:interpolant]
+    default_info = [nothing, nothing, [-Inf,Inf], [-Inf,Inf],[-Inf,Inf],nothing]
+
+    kws = filter(x -> x isa Expr && x.head == :(=) && x.args[1] in kw_collection, raw_expr)
+
+    length(kws) == length(raw_expr) ? nothing : throw(input_style_error())
+
+    #return the indices of keywords in kw_collection
+    key_matches=[]
+    for i in eachindex(kws)
+        push!(key_matches,findfirst(isequal(kws[i].args[1]),kw_collection))
+    end
+
+    full_info=[]
+    for i in 1:6
+        i in key_matches ? push!(full_info,kws[findfirst(isequal(i),key_matches)].args[2]) : push!(full_info,default_info[i])
+
+        #evaluate the expression apart from the interpolant
+        i == 6 ? nothing : full_info[i] = eval(full_info[i]) 
+    end
+   
+    # check for the potential errors in the input bounds
+    full_info[1] == nothing ? nothing : var_not_inside_error(full_info[1],full_info[3])
+    full_info[2] == nothing ? nothing : var_not_inside_error(full_info[2],full_info[4])
+    #bound_not_inside_error(full_info[3],full_info[4],full_info[5])
+    
+    return full_info
+
+end
 
 
 
@@ -79,25 +70,23 @@ arguments can contain:
     The bound of the final value x₁, [lb₁,ub₁]
     The range of x during run-time, [lb,ub]
 
-
- @differential_variable( model, x₀=0, x₀ in [0,10], x₁ in [90,100], x in [0,100])
-
- julia> a=JuDO.@differential_variable( model, x₀=0, x₀ in [0,10], x₁, x)
- Main.JuDO.Differential_Var_data(:x₀, 0, [0, 10], :x₁, Any[:(-Inf), :Inf], :x, Any[:(-Inf), :Inf])
-# constraint / guess and interpolant (for solver) of the initial value 
-
- @differential_variable( model, x₀ in [0,10], x₁, x)
-
- @differential_variable( model)
-
  # to do: add the input type @differential_variable( model, x₀=0, x₁==10,...)
 # keyword/arguments/ to allow a freedom of input order
 # create a test file 
 
- Model must be provided, the rest is optional, 
- but once specified a variable then all three variables (or only their names) should be specified.
- If there is no bounds provided, the user only need to type in the variable symbol, then the default bounds are [-Inf,Inf]
+ A model and a symbol must be provided in a specified sequence, the rest are optional keywords, can be in any sequence.
 
+ julia> JuDO.@differential_variable(_model,x₀)
+
+ julia> JuDO.@differential_variable(_model,x₀,initial_val=8)
+
+ julia> JuDO.@differential_variable(_model,x₀,initial_val=8,final_val=90)
+
+ julia> JuDO.@differential_variable(_model,x₀,final_val=90,initial_val=8)
+
+ julia> JuDO.@differential_variable(_model,x₀,final_val=90,initial_val=8,final_bound=[0,100])
+
+ julia> JuDO.@differential_variable(_model,x₀,final_val=90,initial_val=8,final_bound=[0,100],interpolant=L)
 """
 
 macro differential_variable(_model,args...)
@@ -105,38 +94,59 @@ macro differential_variable(_model,args...)
     expr_of_model = quote $(esc(_model)) end
     _model = expr_of_model.args[2].args[1]
 
-    if length(args) == 0
-        return construct_differential_variable(nothing, [nothing for i in 1:6], [nothing for i in 1:3])
+    args[1] isa Symbol ? nothing : symbol_error()
+
+    if length(args) == 1 
+        empty_info = [nothing,nothing,[-Inf,Inf],[-Inf,Inf],[-Inf,Inf],nothing]
+        return construct_differential_variable(args[1],empty_info) 
     end
+    expr_of_args = collect(args)[2:end]
 
-   
-    if length(filter(x -> x isa Symbol, collect(args))) != 0
+    var_info = identify_kw(expr_of_args)
 
-        # if there is any infinite bound
-        unspecified_index = [i for i in 1:length(args) if args[i] isa Symbol]
-        initial_var, initial_var_name, bounds, var_names = parse_args(args,unspecified_index)
-    else
-
-        initial_var, initial_var_name, bounds, var_names = parse_args(args)
-    end
-     
-    _var_data = construct_differential_variable(initial_var, bounds, var_names)
-
-    return  _var_data
+    return construct_differential_variable(args[1],var_info)    
 end
  
 
-#to do
+
 """
     @independent_variable(model, args)
 
     The final value or range of the independent variable (time is used in the following documentation)
     
-    If it is not called, then a free-time problem is assumed.
+    If the bound is not provided, then a free-time problem is assumed.
     
-    Argument can be: t=5 
+    @independent_variable( model, t) 
 
+    @independent_variable( model, t in [0,10])
+
+    @independent_variable( model, t in [0,Inf])
+
+    @independent_variable( model, t in [-Inf,10])
 """
-macro independent_variable(model::Dy_Model, args...)
-     
+ 
+
+macro independent_variable(_model, args...)
+    
+    expr_of_args = collect(args)[1]
+    
+    if length(args) == 0
+        return construct_independent_variable(nothing,[-Inf,Inf])
+    elseif length(args) > 1
+        throw(error("Only one independent variable is allowed"))
+    else
+        expr_of_args isa Symbol ? (return construct_independent_variable(expr_of_args,[-Inf,Inf])) : nothing
+        
+        t_bound = eval(expr_of_args.args[3])
+        t_bound[1] < t_bound[2] ? nothing : throw(error("Initial value $(t_bound[1]) greater than final value $(t_bound[2])!"))
+
+        return construct_independent_variable(expr_of_args.args[2],t_bound)
+    end
+
 end
+
+
+
+
+
+
