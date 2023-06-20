@@ -18,14 +18,14 @@ abstract type variable_data end
 """
 mutable struct Differential_Var_data <: variable_data
     Run_sym::Symbol
-    Init_val::Union{Real,Nothing}
+    Initial_val::Union{Real,Nothing}
     Final_val::Union{Real,Nothing}
 
-    Init_bound::Vector    
+    Initial_bound::Vector    
     Final_bound::Vector
-    trajectory_bound::Vector
+    Trajectory_bound::Vector
 
-    Interpolant_name::Union{Symbol,Nothing}
+    Interpolant::Union{Symbol,Nothing}
     
 end
 """
@@ -35,8 +35,8 @@ end
         # free/fixed start/end problem
 """
 mutable struct Independent_Var_data <: variable_data
-    sym::Union{Symbol,Nothing}
-    bound::Vector
+    Sym::Union{Symbol,Nothing}
+    Bound::Vector
 end
 
 
@@ -64,11 +64,12 @@ mutable struct Dy_Model <: Abstract_Dynamic_Model
 end 
 
 # currently using Ipopt as the default optimizer for testing, should be an optimizer with type DOI.AbstractDynamicOptimizer
-Dy_Model() = Dy_Model(Ipopt.Optimizer(),Dict{Symbol,Differential_Var_data}(),Dict{Symbol,Independent_Var_data}())
+Dy_Model() = Dy_Model(Ipopt.Optimizer(),Dict(),Dict())
 
 
 include("macros.jl")
 include("variables.jl")
+include("errors.jl")
 
 export @independent_variable, @differential_variable,output_macro
 
