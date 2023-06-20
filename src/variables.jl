@@ -1,5 +1,6 @@
 kw_collection = [:Initial_val,:Final_val,:Initial_bound,:Final_bound,:Trajectory_bound,:Interpolant]
 
+# identify the keyword in the user input and its value
 function identify_kw(raw_expr,_model,_sym)
 
     kws = filter(x -> x isa Expr && x.head == :(=) && x.args[1] in kw_collection, raw_expr)
@@ -44,7 +45,7 @@ function identify_kw(raw_expr)
 
 end
 
-# add new or add exist independent variable
+# add new or modify exist differential variable
 function add_exist(_model,_sym,_args)
 
     field_info,new_val = identify_kw(_args,_model,_sym)
