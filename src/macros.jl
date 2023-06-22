@@ -16,6 +16,8 @@ end
 
 Add a dynamic variable into the dynamic model.
 The user is required to put the dynamic model and the variable symbol in the first two positions, the rest are optional keyword arguments.
+Expressions of bounds should be put in the form of "keyword in [lb,ub]".
+Initial guess and interpolant should be put in the form of "keyword = value".
 
 ## args
 
@@ -26,17 +28,17 @@ keyword arguments can contain:
     The bound of the variable during run-time, [lb,ub]
     The interpolant, L
 
- julia> JuDO.@differential_variable(_model,x₀)
+ @differential_variable(_model,x)
 
- julia> JuDO.@differential_variable(_model,x₀,Initial_guess=8)
+ @differential_variable(_model,x,Initial_guess=8)
 
- julia> JuDO.@differential_variable(_model,x₀,Initial_guess=8,Initial_bound=[0,10])
+ @differential_variable(_model,x,Initial_guess=8,Initial_bound in [0,10])
 
- julia> JuDO.@differential_variable(_model,x₀,Initial_bound=[0,10],Initial_guess=8)
+ @differential_variable(_model,x,Initial_bound in [0,10],Initial_guess=8)
 
- julia> JuDO.@differential_variable(_model,x₀,initial_guess=8,final_bound=[0,100])
+ @differential_variable(_model,x,Initial_guess=8,Final_bound in [0,100])
 
- julia> JuDO.@differential_variable(_model,x₀,interpolant=L,initial_guess=8,final_bound=[0,100],)
+ @differential_variable(_model,x,Interpolant=L,Initial_guess=8,Final_bound in [0,100])
 """
 
 macro differential_variable(model,args...)
@@ -44,8 +46,7 @@ macro differential_variable(model,args...)
     args[1] isa Symbol ? nothing : symbol_error()
 
     if length(args) == 1 
-        empty_info = [nothing,[-Inf,Inf],[-Inf,Inf],[-Inf,Inf],nothing,args[1]]
-        #println("Creating a differential variable with default values:")
+        empty_info = [args[1],nothing,[-Inf,Inf],[-Inf,Inf],[-Inf,Inf],nothing]
         return :(add_new($(esc(model)),$empty_info)) 
     end
     

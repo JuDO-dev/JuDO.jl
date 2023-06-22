@@ -4,6 +4,8 @@ _bound_error() = throw(error("Initial/Final bound not in the total bound"))
 
 input_style_error() = throw(error("Keyword argument input style incorrect, make sure all arguments are in the form of keyword = value"))
 
+diff_var_input_style_error() = throw(error("Incorrect use of 'keyword = value' and 'keyword in value'"))
+
 multiple_independent_var_error() = throw(error("Only one independent variable is allowed"))
 
 function bound_lower_upper(_bound)

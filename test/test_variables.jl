@@ -20,13 +20,13 @@
     test_diff_vars(@differential_variable(_model,y,Initial_guess=10)[:y])
     
     @test [:y, 10, [0,15], [-Inf,Inf], [-Inf,Inf], nothing] ==
-    test_diff_vars(@differential_variable(_model,y,Initial_bound=[0,15])[:y])
+    test_diff_vars(@differential_variable(_model,y,Initial_bound in [0,15])[:y])
 
     @test [:y, 10, [0,20], [-Inf,Inf], [-100,100], :c] ==
-    test_diff_vars(@differential_variable(_model,y,Interpolant=c,Initial_bound=[0,20],Trajectory_bound=[-100,100])[:y])
+    test_diff_vars(@differential_variable(_model,y,Interpolant=c,Initial_bound in [0,20],Trajectory_bound in [-100,100])[:y])
 
     @test [:y, 15, [0,20], [8,12], [-100,100], :c] ==
-    test_diff_vars(@differential_variable(_model,y,Initial_guess=15,Final_bound=[8,12])[:y])
+    test_diff_vars(@differential_variable(_model,y,Initial_guess=15,Final_bound in [8,12])[:y])
 
     @test [:y, nothing, [-Inf, Inf], [-Inf, Inf], [-Inf, Inf], nothing] == 
     test_diff_vars(@differential_variable(_model,y)[:y])
