@@ -1,4 +1,4 @@
-kw_collection = [:Initial_val,:Final_val,:Initial_bound,:Final_bound,:Trajectory_bound,:Interpolant]
+kw_collection = [:Initial_guess,:Initial_bound,:Final_bound,:Trajectory_bound,:Interpolant]
 
 # identify the keyword in the user input and its value
 function identify_kw(raw_expr,_model,_sym)
@@ -20,7 +20,7 @@ end
 
 function identify_kw(raw_expr)
 
-    default_info = [nothing, nothing, [-Inf,Inf], [-Inf,Inf],[-Inf,Inf],nothing]
+    default_info = [nothing, [-Inf,Inf], [-Inf,Inf],[-Inf,Inf],nothing]
 
     kws = filter(x -> x isa Expr && x.head == :(=) && x.args[1] in kw_collection, raw_expr)
     length(kws) == length(raw_expr) ? nothing : throw(input_style_error())
@@ -32,14 +32,14 @@ function identify_kw(raw_expr)
     end
 
     full_info=[]
-    for i in 1:6
+    for i in eachindex(kw_collection)
         i in key_matches ? push!(full_info,kws[findfirst(isequal(i),key_matches)].args[2]) : push!(full_info,default_info[i])
 
         #evaluate the expression apart from the interpolant
-        i == 6 ? nothing : full_info[i] = eval(full_info[i]) 
+        i == length(kw_collection) ? nothing : full_info[i] = eval(full_info[i]) 
     end
    
-    check_final_diff_var(full_info)
+    check_initial_guess(full_info)
     
     return full_info
 
@@ -54,10 +54,10 @@ function add_exist(_model,_sym,_args)
 
     #check for the potential errors after the modification
     full_info = []
-    for i in 1:6
+    for i in eachindex(kw_collection)
         push!(full_info,getfield(_model.Differential_var_index[_sym],kw_collection[i]))
     end
-    check_final_diff_var(full_info)
+    check_initial_guess(full_info)
 
     return _model.Differential_var_index
 end
@@ -67,14 +67,14 @@ function add_new(_model,_sym,_args)
     var_info = identify_kw(_args)
     push!(var_info,_sym)
 
-    diff_var_data = Differential_Var_data(var_info[7],var_info[1],var_info[2],var_info[3],var_info[4],var_info[5],var_info[6])
+    diff_var_data = Differential_Var_data(var_info[6],var_info[1],var_info[2],var_info[3],var_info[4],var_info[5])
     _model.Differential_var_index[diff_var_data.Run_sym] = diff_var_data
 
     return _model.Differential_var_index
 end
 
 function add_new(_model,_args)
-    diff_var_data = Differential_Var_data(_args[7],_args[1],_args[2],_args[3],_args[4],_args[5],_args[6])
+    diff_var_data = Differential_Var_data(_args[6],_args[1],_args[2],_args[3],_args[4],_args[5])
     _model.Differential_var_index[diff_var_data.Run_sym] = diff_var_data
 
     return _model.Differential_var_index
@@ -94,14 +94,64 @@ function add_exist_independent(_model,_args)
     return _model.Independent_var_index
 end
 
-#= function construct_independent_variable(_model,_info::Vector)
+# add new or modify exist algebraic variable
+function add_exist_algebraic(_model,_sym,_args,is_discrete=false)
 
-    length(_model.Independent_var_index) == 1 ? throw(error("Only one independent variable is allowed")) : nothing
-     
-    indep_var_data = Independent_Var_data(_info[1], _info[2])
+    setfield!(_model.Algebraic_var_index[_sym],:Is_discrete,is_discrete)
 
-    _model.Independent_var_index[indep_var_data.sym] = indep_var_data
-
-    return indep_var_data
+    full_info = eval(_args)
     
-end =#
+    if is_discrete
+        setfield!(_model.Algebraic_var_index[_sym],:Integer_val,full_info)
+        setfield!(_model.Algebraic_var_index[_sym],:Bound,nothing)
+    else
+        setfield!(_model.Algebraic_var_index[_sym],:Bound,full_info)
+        setfield!(_model.Algebraic_var_index[_sym],:Integer_val,nothing)
+    end
+    
+    return _model.Algebraic_var_index
+end
+
+function add_new_algebraic(_model,_sym,_args,is_discrete=false)
+
+    full_info = eval(_args)
+
+    is_discrete ? (alge_var_data = Algebraic_Var_data(is_discrete,_sym,nothing,full_info)) : (alge_var_data = Algebraic_Var_data(is_discrete,_sym,full_info,nothing))
+
+    _model.Algebraic_var_index[alge_var_data.Sym] = alge_var_data
+
+    return _model.Algebraic_var_index
+end
+
+function cont_or_dis(_args)
+    length(_args) == 0 || length(_args) > 2 ? multiple_independent_var_error() : nothing
+
+    _args[1] isa Symbol ? (return _args[1], [-Inf,Inf], false) : nothing
+
+    length(_args) == 2 && !(:discrete in _args[2].args) && !(:(=) in _args[2].args) ? input_style_error() : nothing 
+    
+    if :in in _args[1].args   
+
+        is_discrete = false
+        name = _args[1].args[2]
+        val = _args[1].args[3]
+
+        length(_args) == 2 && _args[2] == :(discrete=true) ? contradicted_input(:bound,true) : nothing
+
+        return name,val,is_discrete
+
+    elseif :(=) == _args[1].head
+
+        is_discrete = true
+        name = _args[1].args[1]
+        val = _args[1].args[2]
+
+        length(_args) == 1 ? contradicted_input(:(vector_of_integer),false) : nothing
+
+        return name,val,is_discrete
+
+    else
+        algebraic_input_style_error()
+    end
+
+end

@@ -18,8 +18,7 @@ abstract type variable_data end
 """
 mutable struct Differential_Var_data <: variable_data
     Run_sym::Symbol
-    Initial_val::Union{Real,Nothing}
-    Final_val::Union{Real,Nothing}
+    Initial_guess::Union{Real,Nothing}
 
     Initial_bound::Vector    
     Final_bound::Vector
@@ -39,6 +38,23 @@ mutable struct Independent_Var_data <: variable_data
     Bound::Vector
 end
 
+"""
+    Algebraic_Var_data
+
+    A DataType for storing a collection of algebraic variables
+
+    # continuous/discrete algebraic variables
+
+"""
+mutable struct Algebraic_Var_data <: variable_data
+    Is_discrete::Bool
+
+    Sym::Union{Symbol,Nothing}
+    Bound::Union{Vector,Nothing}
+
+    Integer_val::Union{Vector{Int},Nothing}
+end
+
 
 """
     Dy_Model <: Abstract_Dynamic_Model
@@ -56,7 +72,7 @@ mutable struct Dy_Model <: Abstract_Dynamic_Model
     Differential_var_index::Dict{Symbol,Differential_Var_data}
    # Independent_vars::Independent_Var_data
     Independent_var_index::Dict{Symbol,Independent_Var_data}
-
+    Algebraic_var_index::Dict{Symbol,Algebraic_Var_data}
     #constraint data
 
     #dynamic data
@@ -64,13 +80,13 @@ mutable struct Dy_Model <: Abstract_Dynamic_Model
 end 
 
 # currently using Ipopt as the default optimizer for testing, should be an optimizer with type DOI.AbstractDynamicOptimizer
-Dy_Model() = Dy_Model(Ipopt.Optimizer(),Dict(),Dict())
+Dy_Model() = Dy_Model(Ipopt.Optimizer(),Dict(),Dict(),Dict())
 
 
 include("macros.jl")
 include("variables.jl")
 include("errors.jl")
 
-export @independent_variable, @differential_variable,output_macro
+export @independent_variable, @differential_variable,@algebraic_variable
 
 end

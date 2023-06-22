@@ -1,4 +1,4 @@
 using JuDO
 using Test
 
-include("test_macros.jl")
+include("test_variables.jl")
