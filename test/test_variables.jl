@@ -65,6 +65,14 @@ end
 
     @test [:t,[-Inf,Inf]] == test_inde_vars(@independent_variable( _model,t)[:t])
 
+    # Test for error when the first element of the bound is greater than the second element
+    @test_throws ErrorException @independent_variable( _model, t in [10,0])[:t]
+
+    # Test for error when the user input style is wrong
+    @test_throws UndefVarError @independent_variable( _model, t in [a,10])[:t]
+
+    @test_throws ErrorException @independent_variable( _model, t in (0,10))[:t]
+
 end
 
 @testset "test_algebraic_vars" begin
@@ -74,27 +82,31 @@ end
     function test_alge_vars(test_cond)
         vector_of_info = []
 
-        push!(vector_of_info,test_cond.Is_discrete)
         push!(vector_of_info,test_cond.Sym)
         push!(vector_of_info,test_cond.Bound)
-        push!(vector_of_info,test_cond.Integer_val)
 
         return vector_of_info
     end
-    # creating a variable "u" with no bounds first, then modifying it and change it to discrete, finally clearing it
-    @test [false,:u,[-Inf,Inf],nothing] == test_alge_vars(@algebraic_variable( _model, u)[:u])
+    # creating a variable "u" with no bounds first, then modifying it, finally clearing it
+    @test [:u,[-Inf,Inf]] == test_alge_vars(@algebraic_variable( _model, u)[:u])
 
-    @test [false,:u,[0,10],nothing] == test_alge_vars(@algebraic_variable( _model, u in [0,10])[:u])
+    @test [:u,[0,10]] == test_alge_vars(@algebraic_variable( _model, u in [0,10])[:u])
 
-    @test [false,:u,[0,10],nothing] == test_alge_vars(@algebraic_variable( _model, u in [0,10],discrete=false)[:u])
+    @test [:u,[0,Inf]] == test_alge_vars(@algebraic_variable( _model, u in [0,Inf])[:u])
 
-    @test [true,:u,nothing,[-1,1]] == test_alge_vars(@algebraic_variable( _model, u = [-1,1],discrete=true)[:u])
-
-    @test [false,:u,[-Inf,Inf],nothing] == test_alge_vars(@algebraic_variable( _model, u)[:u])
+    @test [:u,[-Inf,Inf]] == test_alge_vars(@algebraic_variable( _model, u)[:u])
 
     # adding multiple variables
-    @test [false,:v,[-Inf,Inf],nothing] == test_alge_vars(@algebraic_variable( _model, v)[:v])
+    @test [:v,[-Inf,Inf]] == test_alge_vars(@algebraic_variable( _model, v)[:v])
 
-    @test [true,:w,nothing,[0,1,2,3,4,5]] == test_alge_vars(@algebraic_variable( _model, w = [0,1,2,3,4,5],discrete=true)[:w])
+    @test [:w,[-Inf,Inf]] == test_alge_vars(@algebraic_variable( _model, w)[:w])
+
+    # test for error when the first element of the bound is greater than the second element
+    @test_throws ErrorException @algebraic_variable( _model, x in [10,0])[:x]
+
+    # test for error when the user input style is wrong
+    @test_throws UndefVarError @algebraic_variable( _model, x in [a,10])[:x]
+
+    @test_throws ErrorException @algebraic_variable( _model, x in (0,10))[:x] 
 
 end

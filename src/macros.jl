@@ -7,8 +7,8 @@ function new_or_exist_independent(_model,_args)
     haskey(_model.Independent_var_index,_args[2]) ? (return add_exist_independent(_model,_args)) : (return add_new_independent(_model,_args))
 end
 
-function new_or_exist_algebraic(_model,_sym,_args,_is_discrete=false)
-    haskey(_model.Algebraic_var_index,_sym[1]) ? (return add_exist_algebraic(_model,_sym[1],_args,_is_discrete)) : (return add_new_algebraic(_model,_sym[1],_args,_is_discrete))
+function new_or_exist_algebraic(_model,_sym,_args)
+    haskey(_model.Algebraic_var_index,_sym[1]) ? (return add_exist_algebraic(_model,_sym[1],_args)) : (return add_new_algebraic(_model,_sym[1],_args))
 end
 
 """
@@ -43,7 +43,7 @@ keyword arguments can contain:
 
 macro differential_variable(model,args...)
     
-    args[1] isa Symbol ? nothing : symbol_error()
+    collect(args)[1] isa Symbol ? nothing : symbol_error()
 
     if length(args) == 1 
         empty_info = [args[1],nothing,[-Inf,Inf],[-Inf,Inf],[-Inf,Inf],nothing]
@@ -52,7 +52,7 @@ macro differential_variable(model,args...)
     
     expr_of_args = collect(args)[2:end]
 
-    return :(new_or_exist($(esc(model)),$([args[1]]),$expr_of_args)) 
+    return :(new_or_exist($(esc(model)),$([args[1]]),$expr_of_args))
 
 end
  
@@ -75,16 +75,13 @@ end
 
 macro independent_variable(model, args...)
     
-    input_argument_error(collect(args))
-    
     # the user is not providing the bound, so a free-time problem is assumed
     if collect(args)[1] isa Symbol
-        parsed_args = [Expr(:call,:in,:($(collect(args)[1])),:([-Inf,Inf]))]
-        return :(add_exist_independent($(esc(model)),$(parsed_args[1].args)))
+        empty_info = [Expr(:call,:in,:($(collect(args)[1])),:([-Inf,Inf]))]
+        return :(add_exist_independent($(esc(model)),$(empty_info[1].args)))
     end
 
     parsed_args = collect(args)[1].args
-    bound_lower_upper(eval(parsed_args[3]))
 
     return :(new_or_exist_independent($(esc(model)),$parsed_args))        
 
@@ -98,8 +95,7 @@ end
     The algebraic variable can be either continuous or discrete, the default is continuous.
 
     The user is required to put a model in the first argument, an expression (or symbol) in the second argument,
-    and the "discrete = false/true" is optional, for user to remind his/herself the type of algebraic variable, since
-    "in" is used for continuous algebraic variable, and "=" is used for discrete algebraic variable.
+    "in" is used for uncountable algebraic variable, algebraic variable with finite set is not supported.
 
     @algebraic_variable( model, u)
 
@@ -107,20 +103,19 @@ end
 
     @algebraic_variable( model, v in [-10,10])
 
-    @algebraic_variable( model, v in [-10,10], discrete = false)
-    @algebraic_variable( model, v in [-10,10], discrete = true) is not allowed
-
-    @algebraic_variable( model, u = [-1,1], discrete = true)
-    @algebraic_variable( model, u = [-1,1]) is not allowed, since the default is continuous
-
+    granular
 """
 
 macro algebraic_variable(model,args...)
 
     c_args = collect(args)
 
-    kw,val,is_discrete = cont_or_dis(c_args)
+    #if the user is not providing any info, then add default info
+    if c_args[1] isa Symbol
+        empty_info = [c_args[1],:([-Inf,Inf])]
+        return :(add_new_algebraic($(esc(model)),$(empty_info)))
+    end 
 
-    is_discrete ? (return :(new_or_exist_algebraic($(esc(model)),$([kw]),$val,$is_discrete))) : (return :(new_or_exist_algebraic($(esc(model)),$([kw]),$val)))
+    return :(new_or_exist_algebraic($(esc(model)),$([c_args[1].args[2]]),$(c_args[1].args[3])))
 
 end

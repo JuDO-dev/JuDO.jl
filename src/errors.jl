@@ -9,6 +9,7 @@ diff_var_input_style_error() = throw(error("Incorrect use of 'keyword = value' a
 multiple_independent_var_error() = throw(error("Only one independent variable is allowed"))
 
 function bound_lower_upper(_bound)
+    _bound[1] isa Real && _bound[2] isa Real ? nothing : throw(error("Elements in the bound must be real numbers"))
     _bound[1] < _bound[2] ? nothing : throw(error("Initial value greater than final value in the bound"))
 end
 
@@ -35,6 +36,4 @@ function check_initial_guess(_info)
 end    
 
 ### Error messages for the algebraic variables
-algebraic_input_style_error() = throw(error("Argument input style incorrect, make sure either 'in' or '=' is used expressions"))
-
-contradicted_input(arg,flag) = throw(error("A $arg is provided, but 'discrete' is specified as $flag, please check the input arguments"))
+algebraic_input_style_error() = throw(error("Argument input style incorrect, make sure 'symbol in bound' is used expressions"))

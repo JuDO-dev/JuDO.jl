@@ -20,9 +20,9 @@ mutable struct Differential_Var_data <: variable_data
     Run_sym::Symbol
     Initial_guess::Union{Real,Nothing}
 
-    Initial_bound::Vector    
-    Final_bound::Vector
-    Trajectory_bound::Vector
+    Initial_bound::Vector{T} where T<:Real    
+    Final_bound::Vector{T} where T<:Real
+    Trajectory_bound::Vector{T} where T<:Real
 
     Interpolant::Union{Symbol,Nothing}
     
@@ -35,7 +35,7 @@ end
 """
 mutable struct Independent_Var_data <: variable_data
     Sym::Union{Symbol,Nothing}
-    Bound::Vector
+    Bound::Vector{T} where T<:Real
 end
 
 """
@@ -47,12 +47,9 @@ end
 
 """
 mutable struct Algebraic_Var_data <: variable_data
-    Is_discrete::Bool
+    Sym::Symbol
+    Bound::Vector{T} where T<:Real
 
-    Sym::Union{Symbol,Nothing}
-    Bound::Union{Vector,Nothing}
-
-    Integer_val::Union{Vector{Int},Nothing}
 end
 
 

@@ -90,6 +90,13 @@ function add_new(_model,_args)
 end
 
 # add new or add exist independent variable
+function check_inde_var_input(__sym,__args)
+    __sym isa Symbol ? nothing : throw(algebraic_input_style_error())
+    __args isa Vector ? nothing : throw(algebraic_input_style_error())
+
+    bound_lower_upper(__args)
+end
+
 function add_new_independent(_model,_args)
     #detect if the user is adding another independent variable
     length(_model.Independent_var_index) == 1 ? multiple_independent_var_error() : add_exist_independent(_model,_args)
@@ -97,6 +104,7 @@ function add_new_independent(_model,_args)
 end
 
 function add_exist_independent(_model,_args)
+    check_inde_var_input(_args[2],eval(_args[3]))
     indep_var_data = Independent_Var_data(_args[2],eval(_args[3]))
     _model.Independent_var_index[indep_var_data.Sym] = indep_var_data
 
@@ -104,64 +112,42 @@ function add_exist_independent(_model,_args)
 end
 
 # add new or modify exist algebraic variable
-function add_exist_algebraic(_model,_sym,_args,is_discrete=false)
+function check_alge_var_input(__sym,__args)
+    __sym isa Symbol ? nothing : throw(algebraic_input_style_error())
+    __args isa Vector ? nothing : throw(algebraic_input_style_error())
 
-    setfield!(_model.Algebraic_var_index[_sym],:Is_discrete,is_discrete)
+    bound_lower_upper(__args)
+end
+
+function add_exist_algebraic(_model,_sym,_args)
 
     full_info = eval(_args)
-    
-    if is_discrete
-        setfield!(_model.Algebraic_var_index[_sym],:Integer_val,full_info)
-        setfield!(_model.Algebraic_var_index[_sym],:Bound,nothing)
-    else
-        setfield!(_model.Algebraic_var_index[_sym],:Bound,full_info)
-        setfield!(_model.Algebraic_var_index[_sym],:Integer_val,nothing)
-    end
-    
+    check_alge_var_input(_sym,_args)
+
+    setfield!(_model.Algebraic_var_index[_sym],:Bound,full_info)
+
     return _model.Algebraic_var_index
 end
 
-function add_new_algebraic(_model,_sym,_args,is_discrete=false)
+function add_new_algebraic(_model,_sym,_args)
 
     full_info = eval(_args)
+    check_alge_var_input(_sym,_args)
 
-    is_discrete ? (alge_var_data = Algebraic_Var_data(is_discrete,_sym,nothing,full_info)) : (alge_var_data = Algebraic_Var_data(is_discrete,_sym,full_info,nothing))
+    alge_var_data = Algebraic_Var_data(_sym,full_info)
 
     _model.Algebraic_var_index[alge_var_data.Sym] = alge_var_data
 
     return _model.Algebraic_var_index
 end
 
-# detect if the algegraic variable is discrete or continuous, return its symbol and value info
-function cont_or_dis(_args)
-    length(_args) == 0 || length(_args) > 2 ? multiple_independent_var_error() : nothing
+function add_new_algebraic(_model,_args)
+    check_alge_var_input(_args[1],eval(_args[2]))
 
-    _args[1] isa Symbol ? (return _args[1], [-Inf,Inf], false) : nothing
+    alge_var_data = Algebraic_Var_data(_args[1],eval(_args[2]))
 
-    length(_args) == 2 && !(:discrete in _args[2].args) && !(:(=) in _args[2].args) ? input_style_error() : nothing 
+    _model.Algebraic_var_index[alge_var_data.Sym] = alge_var_data
+
+    return _model.Algebraic_var_index
     
-    if :in in _args[1].args   
-
-        is_discrete = false
-        name = _args[1].args[2]
-        val = _args[1].args[3]
-
-        length(_args) == 2 && _args[2] == :(discrete=true) ? contradicted_input(:bound,true) : nothing
-
-        return name,val,is_discrete
-
-    elseif :(=) == _args[1].head
-
-        is_discrete = true
-        name = _args[1].args[1]
-        val = _args[1].args[2]
-
-        length(_args) == 1 ? contradicted_input(:(vector_of_integer),false) : nothing
-
-        return name,val,is_discrete
-
-    else
-        algebraic_input_style_error()
-    end
-
 end
