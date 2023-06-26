@@ -20,13 +20,13 @@
     test_diff_vars(@differential_variable(_model,y,Initial_guess=10)[:y])
     
     @test [:y, 10, [0,15], [-Inf,Inf], [-Inf,Inf], nothing] ==
-    test_diff_vars(@differential_variable(_model,y,Initial_bound in [0,15])[:y])
+    test_diff_vars(@differential_variable(_model,y,0<=Initial_bound<=15)[:y])
 
     @test [:y, 10, [0,20], [-Inf,Inf], [-100,100], :c] ==
-    test_diff_vars(@differential_variable(_model,y,Interpolant=c,Initial_bound in [0,20],Trajectory_bound in [-100,100])[:y])
+    test_diff_vars(@differential_variable(_model,y,Interpolant=c,0<=Initial_bound<=20,-100<=Trajectory_bound<=100)[:y])
 
     @test [:y, 15, [0,20], [8,12], [-100,100], :c] ==
-    test_diff_vars(@differential_variable(_model,y,Initial_guess=15,Final_bound in [8,12])[:y])
+    test_diff_vars(@differential_variable(_model,y,Initial_guess=15,8<=Final_bound<=12)[:y])
 
     @test [:y, nothing, [-Inf, Inf], [-Inf, Inf], [-Inf, Inf], nothing] == 
     test_diff_vars(@differential_variable(_model,y)[:y])
@@ -34,6 +34,9 @@
     #test adding multiple variables
     @test [:z, nothing, [-Inf, Inf], [-Inf, Inf], [-Inf, Inf], nothing] ==
     test_diff_vars(@differential_variable(_model,z)[:z])
+
+    @test [:z, 0, [0,5], [100,Inf], [-Inf, Inf], nothing] ==
+    test_diff_vars(@differential_variable(_model,z,Initial_guess=0,100<=Final_bound,0<=Initial_bound<=5)[:z])
 
     @test [:x, nothing, [-Inf, Inf], [-Inf, Inf], [-Inf, Inf], nothing] == 
     test_diff_vars(@differential_variable(_model,x)[:x])
@@ -57,21 +60,22 @@ end
     # creating a variable "t" with no bounds first, then modifying it, finally clearing it
     @test [:t,[-Inf,Inf]] == test_inde_vars(@independent_variable( _model,t)[:t])
 
-    @test [:t,[0,Inf]] == test_inde_vars(@independent_variable( _model,t in [0,Inf])[:t])
+    @test [:t,[0,Inf]] == test_inde_vars(@independent_variable( _model,t >= 0)[:t])
 
-    @test [:t,[-Inf,10]] == test_inde_vars(@independent_variable( _model,t in [-Inf,10])[:t])
+    @test [:t,[2,Inf]] == test_inde_vars(@independent_variable( _model,2 <= t)[:t])
 
-    @test [:t,[0,10]] == test_inde_vars(@independent_variable( _model,t in [0,10])[:t])
+    @test [:t,[-Inf,10]] == test_inde_vars(@independent_variable( _model,t <= 10)[:t])
+
+    @test [:t,[0,10]] == test_inde_vars(@independent_variable( _model,0 <= t <= 10)[:t])
 
     @test [:t,[-Inf,Inf]] == test_inde_vars(@independent_variable( _model,t)[:t])
 
     # Test for error when the first element of the bound is greater than the second element
-    @test_throws ErrorException @independent_variable( _model, t in [10,0])[:t]
+    @test_throws ErrorException @independent_variable( _model, 10 <= t <= 0)[:t]
 
-    # Test for error when the user input style is wrong
-    @test_throws UndefVarError @independent_variable( _model, t in [a,10])[:t]
+    @test_throws ErrorException @independent_variable( _model, t1)[:t1]
 
-    @test_throws ErrorException @independent_variable( _model, t in (0,10))[:t]
+    @test_throws ErrorException @independent_variable( _model, t1 >= 0)[:t1]
 
 end
 
@@ -90,9 +94,11 @@ end
     # creating a variable "u" with no bounds first, then modifying it, finally clearing it
     @test [:u,[-Inf,Inf]] == test_alge_vars(@algebraic_variable( _model, u)[:u])
 
-    @test [:u,[0,10]] == test_alge_vars(@algebraic_variable( _model, u in [0,10])[:u])
+    @test [:u,[0,10]] == test_alge_vars(@algebraic_variable( _model, 0 <= u <= 10)[:u])
 
-    @test [:u,[0,Inf]] == test_alge_vars(@algebraic_variable( _model, u in [0,Inf])[:u])
+    @test [:u,[0,Inf]] == test_alge_vars(@algebraic_variable( _model, u >= 0)[:u])
+
+    @test [:u,[0,Inf]] == test_alge_vars(@algebraic_variable( _model, 0 <= u)[:u])
 
     @test [:u,[-Inf,Inf]] == test_alge_vars(@algebraic_variable( _model, u)[:u])
 
@@ -102,11 +108,7 @@ end
     @test [:w,[-Inf,Inf]] == test_alge_vars(@algebraic_variable( _model, w)[:w])
 
     # test for error when the first element of the bound is greater than the second element
-    @test_throws ErrorException @algebraic_variable( _model, x in [10,0])[:x]
+    @test_throws ErrorException @algebraic_variable( _model, 10 <= u <= 0)[:u]
 
-    # test for error when the user input style is wrong
-    @test_throws UndefVarError @algebraic_variable( _model, x in [a,10])[:x]
-
-    @test_throws ErrorException @algebraic_variable( _model, x in (0,10))[:x] 
 
 end

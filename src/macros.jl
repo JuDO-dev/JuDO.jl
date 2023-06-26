@@ -4,11 +4,14 @@ function new_or_exist(_model,_sym,_args)
 end
 
 function new_or_exist_independent(_model,_args)
-    haskey(_model.Independent_var_index,_args[2]) ? (return add_exist_independent(_model,_args)) : (return add_new_independent(_model,_args))
+    sym,val = check_inde_var_input(_args[1])
+    haskey(_model.Independent_var_index,sym) ? (return add_exist_independent(_model,sym,val)) : (return add_new_independent(_model,sym,val))
 end
 
-function new_or_exist_algebraic(_model,_sym,_args)
-    haskey(_model.Algebraic_var_index,_sym[1]) ? (return add_exist_algebraic(_model,_sym[1],_args)) : (return add_new_algebraic(_model,_sym[1],_args))
+function new_or_exist_algebraic(_model,_args)
+    sym,val = check_inde_var_input(_args[1])
+
+    haskey(_model.Algebraic_var_index,sym) ? (return add_exist_algebraic(_model,sym,val)) : (return add_new_algebraic(_model,sym,val))
 end
 
 """
@@ -16,29 +19,29 @@ end
 
 Add a dynamic variable into the dynamic model.
 The user is required to put the dynamic model and the variable symbol in the first two positions, the rest are optional keyword arguments.
-Expressions of bounds should be put in the form of "keyword in [lb,ub]".
+Expressions of bounds should be put in the form of "keyword <= / >= value", "value <= / >= keyword", or "value <= keyword <= value".
 Initial guess and interpolant should be put in the form of "keyword = value".
 
 ## args
 
 keyword arguments can contain:
-    The initial guess of the variable, x₀
-    The bound of initial value, [lb₀,ub₀]
-    The bound of the final value, [lb₁,ub₁]
-    The bound of the variable during run-time, [lb,ub]
-    The interpolant, L
+    The Initial_guess, x₀
+    The Initial_bound, [lb₀,ub₀]
+    The Final_bound, [lb₁,ub₁]
+    The Trajectory_bound, [lb,ub]
+    The Interpolant, L
 
  @differential_variable(_model,x)
 
- @differential_variable(_model,x,Initial_guess=8)
+ @differential_variable(_model,x,Initial_guess = 8)
 
- @differential_variable(_model,x,Initial_guess=8,Initial_bound in [0,10])
+ @differential_variable(_model,x,Initial_guess = 8,0 <= Initial_bound <= 10)
 
- @differential_variable(_model,x,Initial_bound in [0,10],Initial_guess=8)
+ @differential_variable(_model,x,0 <= Initial_bound <= 10,Initial_guess = 8)
 
- @differential_variable(_model,x,Initial_guess=8,Final_bound in [0,100])
+ @differential_variable(_model,x,Initial_guess = 8,Final_bound >= 100)
 
- @differential_variable(_model,x,Interpolant=L,Initial_guess=8,Final_bound in [0,100])
+ @differential_variable(_model,x,Interpolant = L,Initial_guess = 8,Final_bound >= 100)
 """
 
 macro differential_variable(model,args...)
@@ -63,27 +66,30 @@ end
     The continuous independent variable in the problem (time is used in the following documentation)
     
     If the bound is not provided, then a free-time problem is assumed.
+
+    Only one independent variable is allowed in a problem.
     
     @independent_variable( model, t) 
 
-    @independent_variable( model, t in [0,10])
+    @independent_variable( model, 0 <= t <= 10)
 
-    @independent_variable( model, t in [0,Inf])
+    @independent_variable( model, t >= 0)
 
-    @independent_variable( model, t in [-Inf,10])
+    @independent_variable( model, 0 <= t)
+
+    @independent_variable( model, t <= 10)
 """
 
 macro independent_variable(model, args...)
     
     # the user is not providing the bound, so a free-time problem is assumed
     if collect(args)[1] isa Symbol
-        empty_info = [Expr(:call,:in,:($(collect(args)[1])),:([-Inf,Inf]))]
-        return :(add_exist_independent($(esc(model)),$(empty_info[1].args)))
+        return :(add_new_independent($(esc(model)),$[args[1],[-Inf,Inf]]))
     end
 
-    parsed_args = collect(args)[1].args
+    expr_of_args = collect(args)
 
-    return :(new_or_exist_independent($(esc(model)),$parsed_args))        
+    return :(new_or_exist_independent($(esc(model)),$expr_of_args))        
 
 end
 
@@ -92,18 +98,18 @@ end
 
     The algebraic variable is an abstract quantity that can vary, often represents the control input.
 
-    The algebraic variable can be either continuous or discrete, the default is continuous.
+    The algebraic variable can only be continuous.
 
-    The user is required to put a model in the first argument, an expression (or symbol) in the second argument,
-    "in" is used for uncountable algebraic variable, algebraic variable with finite set is not supported.
+    The user is required to put a model in the first argument, an expression (or symbol) in the second argument.
 
     @algebraic_variable( model, u)
 
-    @algebraic_variable( model, u in [0,10])
+    @algebraic_variable( model, 0 <= u <= 10)
 
-    @algebraic_variable( model, v in [-10,10])
+    @algebraic_variable( model, -10 <= v <= 10)
 
-    granular
+    @algebraic_variable( model, 10 <= w)
+
 """
 
 macro algebraic_variable(model,args...)
@@ -112,10 +118,9 @@ macro algebraic_variable(model,args...)
 
     #if the user is not providing any info, then add default info
     if c_args[1] isa Symbol
-        empty_info = [c_args[1],:([-Inf,Inf])]
-        return :(add_new_algebraic($(esc(model)),$(empty_info)))
+        return :(add_new_algebraic($(esc(model)),$[c_args[1],[-Inf,Inf]]))
     end 
 
-    return :(new_or_exist_algebraic($(esc(model)),$([c_args[1].args[2]]),$(c_args[1].args[3])))
+    return :(new_or_exist_algebraic($(esc(model)),$c_args))
 
 end

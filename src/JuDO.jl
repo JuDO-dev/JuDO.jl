@@ -17,16 +17,23 @@ abstract type variable_data end
     A DataType for storing a collection of differential variables
 """
 mutable struct Differential_Var_data <: variable_data
-    Run_sym::Symbol
+    Run_sym::Union{Symbol,Nothing}
     Initial_guess::Union{Real,Nothing}
 
-    Initial_bound::Vector{T} where T<:Real    
-    Final_bound::Vector{T} where T<:Real
-    Trajectory_bound::Vector{T} where T<:Real
+    Initial_bound::Vector 
+    Final_bound::Vector
+    Trajectory_bound::Vector
 
     Interpolant::Union{Symbol,Nothing}
     
 end
+
+function Differential_Var_data(;Run_sym = nothing,Initial_guess = nothing,Initial_bound = [-Inf,Inf],Final_bound = [-Inf,Inf],
+    Trajectory_bound = [-Inf,Inf],Interpolant = nothing)
+    
+    return Differential_Var_data(Run_sym,Initial_guess,Initial_bound,Final_bound,Trajectory_bound,Interpolant)
+end
+
 """
     Independent_Var_data
 
@@ -35,7 +42,7 @@ end
 """
 mutable struct Independent_Var_data <: variable_data
     Sym::Union{Symbol,Nothing}
-    Bound::Vector{T} where T<:Real
+    Bound::Vector
 end
 
 """
@@ -48,7 +55,7 @@ end
 """
 mutable struct Algebraic_Var_data <: variable_data
     Sym::Symbol
-    Bound::Vector{T} where T<:Real
+    Bound::Vector
 
 end
 
@@ -87,3 +94,6 @@ include("errors.jl")
 export @independent_variable, @differential_variable,@algebraic_variable
 
 end
+
+
+
