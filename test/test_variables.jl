@@ -16,29 +16,32 @@
     end
 
     # test adding and then modifiying an existing variable "y", finally clearing the variable
-    @test [:y, 10, [-Inf, Inf], [-Inf, Inf], [-Inf, Inf], nothing] == 
+    @test [:y, 10, [[-Inf, Inf]], [[-Inf, Inf]], [[-Inf, Inf]], nothing] == 
     test_diff_vars(@differential_variable(_model,y,Initial_guess=10)[:y])
     
-    @test [:y, 10, [0,15], [-Inf,Inf], [-Inf,Inf], nothing] ==
+    @test [:y, 10, [[0,15]], [[-Inf,Inf]], [[-Inf,Inf]], nothing] ==
     test_diff_vars(@differential_variable(_model,y,0<=Initial_bound<=15)[:y])
 
-    @test [:y, 10, [0,20], [-Inf,Inf], [-100,100], :c] ==
+    @test [:y, 10, [[0,15],[0,20]], [[-Inf,Inf]], [[-100,100]], :c] ==
     test_diff_vars(@differential_variable(_model,y,Interpolant=c,0<=Initial_bound<=20,-100<=Trajectory_bound<=100)[:y])
 
-    @test [:y, 15, [0,20], [8,12], [-100,100], :c] ==
+    @test [:y, 15, [[0,15],[0,20]], [[8,12]], [[-100,100]], :c] ==
     test_diff_vars(@differential_variable(_model,y,Initial_guess=15,8<=Final_bound<=12)[:y])
 
-    @test [:y, nothing, [-Inf, Inf], [-Inf, Inf], [-Inf, Inf], nothing] == 
-    test_diff_vars(@differential_variable(_model,y)[:y])
+    @test_throws ErrorException @differential_variable(_model,y)[:y]
+
+    @test_throws ErrorException @differential_variable(_model,y,Final_bound<=5)[:y]
+
+    @test_throws ErrorException @differential_variable(_model,y,60<=Trajectory_bound<=50)[:y]
 
     #test adding multiple variables
-    @test [:z, nothing, [-Inf, Inf], [-Inf, Inf], [-Inf, Inf], nothing] ==
+    @test [:z, nothing, [[-Inf, Inf]], [[-Inf, Inf]], [[-Inf, Inf]], nothing] ==
     test_diff_vars(@differential_variable(_model,z)[:z])
 
-    @test [:z, 0, [0,5], [100,Inf], [-Inf, Inf], nothing] ==
+    @test [:z, 0, [[0,5]], [[100,Inf]], [[-Inf, Inf]], nothing] ==
     test_diff_vars(@differential_variable(_model,z,Initial_guess=0,100<=Final_bound,0<=Initial_bound<=5)[:z])
 
-    @test [:x, nothing, [-Inf, Inf], [-Inf, Inf], [-Inf, Inf], nothing] == 
+    @test [:x, nothing, [[-Inf, Inf]], [[-Inf, Inf]], [[-Inf, Inf]], nothing] == 
     test_diff_vars(@differential_variable(_model,x)[:x])
 
 end

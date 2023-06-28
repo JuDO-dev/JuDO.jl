@@ -1,3 +1,20 @@
+function new_or_exist(_model,_sym,_args)
+    haskey(_model.Differential_var_index,_sym[1]) ? (return add_exist(_model,_sym[1],_args)) : (return add_new(_model,_sym[1],_args))
+end
+
+function new_or_exist_independent(_model,_args)
+    sym,val = check_inde_var_input(_args[1])
+    haskey(_model.Independent_var_index,sym) ? (return add_exist_independent(_model,sym,val)) : (return add_new_independent(_model,sym,val))
+end
+
+function new_or_exist_algebraic(_model,_args)
+    sym,val = check_inde_var_input(_args[1])
+
+    haskey(_model.Algebraic_var_index,sym) ? (return add_exist_algebraic(_model,sym,val)) : (return add_new_algebraic(_model,sym,val))
+end
+
+##############################################################################################################
+
 function kw_at_rhs(left,right,sym,_kw_collection)
 
     if sym == :>=
@@ -60,6 +77,36 @@ function equality(_expr)
     
     return name,val
 end
+
+function decide_bound(__model,__sym,_i,__val,_add_new)
+    println("now deciding the bound...")
+    __val[1] > __val[2] ? error("The lower bound is larger than the upper bound") : nothing
+    if _add_new 
+         println("adding new var, with new bound...")
+        return __val
+    end
+
+    exist_field = getfield(__model.Differential_var_index[__sym],_i+1)
+    #add exist, but the field is empty, so add as normal
+    exist_field == [[-Inf,Inf]] ? (return [__val]) : nothing
+
+    #add exist, but the field is not empty, so check the relation of the new value and the existing value
+    #throw error if the new bound is not compatible with the existing bound
+    for i in eachindex(exist_field)
+        __val[1] > exist_field[i][2] || __val[2] < exist_field[i][1] ? error("The new bound is not compatible with the existing bound") : nothing
+
+        #give user a choice to decide whether to add the new bound or not, based on whether the new bound is inside the existing bound
+        if __val[1] >= exist_field[i][1] && __val[2] <= exist_field[i][2]
+            @warn ("The new bound $__val is inside one of the existing bounds $(exist_field[i]), do you want to add it? (y/n)")
+            ans = readline()
+            ans == "y" ? @info("Adding the subset as requested...") : error("The new bound is not added as requested") 
+
+        end
+    end
+
+    return push!(exist_field,__val)
+end
+
 # check the input style of the differential variables, return the keyword and value for both '=' and 'in' style
 function check_diff_var_input(_raw_expr)
 
@@ -100,14 +147,16 @@ function identify_kw(__model,__sym,_kws,_vals,add_new=true)
     for i in eachindex(kw_collection)
         
         if i in index_matches
-            push!(full_info,_vals[index_matches .== i][1]) 
+            (i == 1) || (i == 5) ? push!(full_info,_vals[index_matches .== i][1]) : push!(full_info,decide_bound(__model,__sym,i,_vals[index_matches .== i][1],add_new))
+            #push!(full_info,_vals[index_matches .== i][1]) 
         else
             add_new ? push!(full_info,default_info[i]) : push!(full_info,getfield(__model.Differential_var_index[__sym],i+1))
         end
          
     end
    
-    check_initial_guess(full_info)
+    ########################################## change, since there is one more layer of brackets
+    #check_initial_guess(full_info)
     
     return full_info
 
@@ -140,16 +189,21 @@ function add_new(_model,_sym,_args)
     vals = kw_val_vect[2:2:end]
 
     var_info = identify_kw(_model,_sym,kws,vals)
-    pushfirst!(var_info,_sym)
+     pushfirst!(var_info,_sym)
 
-    diff_var_data = Differential_Var_data(var_info[1],var_info[2],var_info[3],var_info[4],var_info[5],var_info[6])
-    _model.Differential_var_index[diff_var_data.Run_sym] = diff_var_data  
+    ##changed the bounds by adding square brackets
+    diff_var_data = Differential_Var_data(var_info[1],var_info[2],[var_info[3]],[var_info[4]],[var_info[5]],var_info[6])
+    _model.Differential_var_index[diff_var_data.Run_sym] = diff_var_data    
 
     return _model.Differential_var_index
 end
 
 #called when the user is not specifying any information about the differential variable
 function add_new(_model,_args)
+
+    ## to do
+    haskey(_model.Differential_var_index,_args[1]) ? error("The differential variable already exists, to reset the information, please delete and create again") : nothing
+
     diff_var_data = Differential_Var_data(_args[1],_args[2],_args[3],_args[4],_args[5],_args[6])
     _model.Differential_var_index[diff_var_data.Run_sym] = diff_var_data
 

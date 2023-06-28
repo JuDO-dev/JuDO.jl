@@ -28,12 +28,6 @@ mutable struct Differential_Var_data <: variable_data
     
 end
 
-function Differential_Var_data(;Run_sym = nothing,Initial_guess = nothing,Initial_bound = [-Inf,Inf],Final_bound = [-Inf,Inf],
-    Trajectory_bound = [-Inf,Inf],Interpolant = nothing)
-    
-    return Differential_Var_data(Run_sym,Initial_guess,Initial_bound,Final_bound,Trajectory_bound,Interpolant)
-end
-
 """
     Independent_Var_data
 
@@ -50,13 +44,21 @@ end
 
     A DataType for storing a collection of algebraic variables
 
-    # continuous/discrete algebraic variables
-
 """
 mutable struct Algebraic_Var_data <: variable_data
     Sym::Symbol
     Bound::Vector
 
+end
+
+"""
+    Constant_data
+
+    A DataType for storing a collection of constants
+"""
+mutable struct Constant_data <: variable_data
+    Sym::Symbol
+    Value::Real
 end
 
 
@@ -71,6 +73,9 @@ mutable struct Dy_Model <: Abstract_Dynamic_Model
     #optimizer data
     optimizer::MOI.AbstractOptimizer     #currently using MOI for testing, should be optimizer::DOI.AbstractDynamicOptimizer
 
+    #constant data
+    Constant_index::Dict{Symbol,Constant_data}
+
     #variable data
     #Differential_vars::Vector{Differential_Var_data}
     Differential_var_index::Dict{Symbol,Differential_Var_data}
@@ -84,16 +89,44 @@ mutable struct Dy_Model <: Abstract_Dynamic_Model
 end 
 
 # currently using Ipopt as the default optimizer for testing, should be an optimizer with type DOI.AbstractDynamicOptimizer
-Dy_Model() = Dy_Model(Ipopt.Optimizer(),Dict(),Dict(),Dict())
+Dy_Model() = Dy_Model(Ipopt.Optimizer(),Dict(),Dict(),Dict(),Dict())
 
 
 include("macros.jl")
 include("variables.jl")
 include("errors.jl")
+include("constants.jl")
 
-export @independent_variable, @differential_variable,@algebraic_variable
+export @independent_variable, @differential_variable,@algebraic_variable,@constant
+
+
+
+
+
+Base.show(io::IO, model::Abstract_Dynamic_Model) = print_JuDO(io, model)
+
+# show the information of the model
+function print_JuDO(io::IO, model::Abstract_Dynamic_Model)
+    println(io, "A $(model.optimizer)")
+    println(io, "Constants:")
+    for (key, value) in model.Constant_index
+        println(io, "  Constant $(value.Sym) with value = $(value.Value)")
+    end
+    println(io, "Variables:")
+    for (key, value) in model.Differential_var_index
+        println(io, "  Differential variable $(value.Run_sym) with")
+        println(io, "  Initial guess = $(value.Initial_guess), Initial bound = $(value.Initial_bound), Final bound = $(value.Final_bound), Trajectory bound = $(value.Trajectory_bound), Interpolant = $(value.Interpolant)")
+    end
+    for (key, value) in model.Independent_var_index
+        println(io, "  Independent variable $(value.Sym) with bound = $(value.Bound)")
+
+    end
+    for (key, value) in model.Algebraic_var_index
+        println(io, "  Algebraic variable $(value.Sym) with bound = $(value.Bound)")
+    end
 
 end
 
+end
 
 

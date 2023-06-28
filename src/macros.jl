@@ -1,19 +1,4 @@
 
-function new_or_exist(_model,_sym,_args)
-    haskey(_model.Differential_var_index,_sym[1]) ? (return add_exist(_model,_sym[1],_args)) : (return add_new(_model,_sym[1],_args))
-end
-
-function new_or_exist_independent(_model,_args)
-    sym,val = check_inde_var_input(_args[1])
-    haskey(_model.Independent_var_index,sym) ? (return add_exist_independent(_model,sym,val)) : (return add_new_independent(_model,sym,val))
-end
-
-function new_or_exist_algebraic(_model,_args)
-    sym,val = check_inde_var_input(_args[1])
-
-    haskey(_model.Algebraic_var_index,sym) ? (return add_exist_algebraic(_model,sym,val)) : (return add_new_algebraic(_model,sym,val))
-end
-
 """
 @differential_variable(model, args...)
 
@@ -49,7 +34,7 @@ macro differential_variable(model,args...)
     collect(args)[1] isa Symbol ? nothing : symbol_error()
 
     if length(args) == 1 
-        empty_info = [args[1],nothing,[-Inf,Inf],[-Inf,Inf],[-Inf,Inf],nothing]
+        empty_info = [args[1],nothing,[[-Inf,Inf]],[[-Inf,Inf]],[[-Inf,Inf]],nothing]
         return :(add_new($(esc(model)),$empty_info)) 
     end
     
@@ -124,3 +109,46 @@ macro algebraic_variable(model,args...)
     return :(new_or_exist_algebraic($(esc(model)),$c_args))
 
 end
+
+"""
+    @constant(model, args...)
+
+    This macro is used to add a constant into the model to simplify future macro calls by using the constant symbol.
+
+    The user is required to put a model in the first argument, an equality equation in the second argument.
+
+    @constant( model, g = 9.81)
+
+    @constant( model, k = 0.0069)
+
+    @constant( model, P = 1.01e5)
+"""
+
+macro constant(model,args...)
+
+    c_args = collect(args)
+
+    return :(new_or_exist_constant($(esc(model)),$c_args))
+
+end
+
+"""
+    @differential_equation(model, args...)
+
+    This macro is used to add a differential equation into the model.
+
+    The user is required to put a model in the first argument, an equality equation in the second argument.
+
+    @differential_equation( model, ẋ = v)
+
+    @differential_equation( model, v̇ = -g - k*v^2/m + u/m)
+
+    @differential_equation( model, v̇ = -g - k*v^2/m + u/m, 0 <= v <= 10)
+
+    @differential_equation( model, v̇ = -g - k*v^2/m + u/m, -10 <= v <= 10)
+
+    @differential_equation( model, v̇ = -g - k*v^2/m + u/m, -10 <= v)
+
+    @differential_equation( model, v̇ = -g - k*v^2/m + u/m, v <= 10)
+"""
+    
