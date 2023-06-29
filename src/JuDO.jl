@@ -97,7 +97,7 @@ include("variables.jl")
 include("errors.jl")
 include("constants.jl")
 
-export @independent_variable, @differential_variable,@algebraic_variable,@constant
+export @independent_variable, @differential_variable,@algebraic_variable,@constant,@algebraic_expression
 
 
 
@@ -115,7 +115,7 @@ function print_JuDO(io::IO, model::Abstract_Dynamic_Model)
     println(io, "Variables:")
     for (key, value) in model.Differential_var_index
         println(io, "  Differential variable $(value.Run_sym) with")
-        println(io, "  Initial guess = $(value.Initial_guess), Initial bound = $(value.Initial_bound), Final bound = $(value.Final_bound), Trajectory bound = $(value.Trajectory_bound), Interpolant = $(value.Interpolant)")
+        println(io, "  Initial guess = $(value.Initial_guess), Initial bounds = $(value.Initial_bound), Final bounds = $(value.Final_bound), Trajectory bounds = $(value.Trajectory_bound), Interpolant = $(value.Interpolant)")
     end
     for (key, value) in model.Independent_var_index
         println(io, "  Independent variable $(value.Sym) with bound = $(value.Bound)")

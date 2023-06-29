@@ -132,23 +132,5 @@ macro constant(model,args...)
 
 end
 
-"""
-    @differential_equation(model, args...)
 
-    This macro is used to add a differential equation into the model.
-
-    The user is required to put a model in the first argument, an equality equation in the second argument.
-
-    @differential_equation( model, ẋ = v)
-
-    @differential_equation( model, v̇ = -g - k*v^2/m + u/m)
-
-    @differential_equation( model, v̇ = -g - k*v^2/m + u/m, 0 <= v <= 10)
-
-    @differential_equation( model, v̇ = -g - k*v^2/m + u/m, -10 <= v <= 10)
-
-    @differential_equation( model, v̇ = -g - k*v^2/m + u/m, -10 <= v)
-
-    @differential_equation( model, v̇ = -g - k*v^2/m + u/m, v <= 10)
-"""
     
