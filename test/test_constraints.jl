@@ -79,6 +79,6 @@
     @test [:(ẏ(time)),:(x(time)),:d] == @constraint(_model,c3,ẏ(time)x(time)>=d,trajectory)
 
 end
-
+ 
 
     

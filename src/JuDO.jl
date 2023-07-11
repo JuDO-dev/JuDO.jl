@@ -109,7 +109,7 @@ Dy_Model() = Dy_Model(Ipopt.Optimizer(),Dict(),Dict(),Dict(),nothing,nothing,Dic
 include("macros.jl")
 include("variables.jl")
 include("errors.jl")
-include("constants.jl")
+include("constants.jl") 
 include("constraints.jl")
 
 export @independent_variable, @differential_variable,@algebraic_variable,@constant,@algebraic_expression,@constraint

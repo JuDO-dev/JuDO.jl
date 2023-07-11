@@ -1,4 +1,4 @@
-function new_or_exist(_model,_sym,_args)
+function new_or_exist(_model,_sym,_args) 
     haskey(_model.Differential_var_index,_sym[1]) ? (return add_exist(_model,_sym[1],_args)) : (return add_new(_model,_sym[1],_args))
 end
 

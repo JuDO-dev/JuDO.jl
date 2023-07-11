@@ -234,7 +234,7 @@ function parse_equation(_model,_expr)
         [push!(all_terms,element) for element in _lhs_terms]
         [push!(all_terms,element) for element in _rhs_terms]
 
-        println("all_terms",all_terms)
+        println("all_terms",all_terms) 
 
         type == :initial || type == :final ? call_instantaneous(_model,unique(all_terms),code_of_independent_var,type) : call_trajectory(_model,unique(all_terms),code_of_independent_var,type)
 

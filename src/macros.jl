@@ -180,4 +180,4 @@ macro constraint(model,args...)
 
     return :(parse_equation($(esc(model)),$c_args))
 
-end
+end 
