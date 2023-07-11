@@ -8,4 +8,4 @@
 JuDO is a user interface written in Julia, it allows users to enter specifications of an optimal control problem. 
 [DynOptInterface.jl](https://github.com/JuDO-dev/DynOptInterface.jl) is the underlying mathematical interface of JuDO.
 
-JuDO is supposed to solve dynamic optimization, it is an extension of [JuMP,jl](https://github.com/jump-dev), a package that could solve mathematical optimization. 
+JuDO can deal with dynamic optimization problem, it is an extension of [JuMP.jl](https://github.com/jump-dev), a package that could solve mathematical optimization problem. 
