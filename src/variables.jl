@@ -98,8 +98,6 @@ function decide_bound(__model,__sym,_i,__val,_add_new)
         #give user a choice to decide whether to add the new bound or not, based on whether the new bound is inside the existing bound
         if __val[1] >= exist_field[i][1] && __val[2] <= exist_field[i][2]
             @warn ("The new bound $__val is inside one of the existing bounds $(exist_field[i]), do you want to add it? (y/n)")
-            ans = readline()
-            ans == "y" ? @info("Adding the subset as requested...") : error("The new bound is not added as requested") 
 
         end
     end

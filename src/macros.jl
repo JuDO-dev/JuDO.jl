@@ -132,5 +132,52 @@ macro constant(model,args...)
 
 end
 
+"""
+    @constraint(model, name, args...)
 
+    This macro is used to add one constraint (scalar or vector) into the model.
+
+    The user is required to put a dynamic model "model" as the first argument.
+        
+    "args..." contains a name (symbol) for the constraint in its first element, the second element is the constraint function, 
+    the third element it can be "trajectory", "initial", "final" or "all". 
+
+    The equation must use "==", "<=", or ">=" and each terms in the equation must contain either 
+    a registered variable or constant, or a number.
+
+    In the constraint function, the user is required to add ("name of the independent variable") like ẋ(t), u(t), A(t)
+    to indicate the dependency with respected to the independent variable.
     
+    When performing multiplication or division, the user is required to use "*" or "/" to separate the terms when two adjacent
+    brackets or two adjacent symbols are present. For example, A(t)*(a*x(t)-1) is valid, but A(t)(a*x(t)-1) is not valid,
+    A(t)x(t) is valid, but Ax(t) is not valid.
+
+    Still, the user is encouraged to use "*" or "/" to describe the function whenever possible for minimizing the chance of error.
+
+    Depending on the input function and set detected, the macro will call the corresponding DOI function to add the constraint,
+    the detail is shown in DynOptInterface Readme.
+
+            Function (subtypes):              Sets:                             Example:
+            LinearDifferentialFunction        NonpositiveForAll:                @constraint( model, c1, a*x(t) <= 0, trajectory)
+ 
+            LinearDifferentialFunction        NonnegativeForAll:                @constraint( model, c2, ẋ(t) - y(t) + p >= 0, trajectory)
+
+            LinearDifferentialFunction        ZeroForAll:                       @constraint( model, c3, ẋ(t) - sin(t) == 0, trajectory)
+            
+            VectorLinearDifferentialFunction, NonpositiveForAll:                @constraint( model, c4, B(t)*ẋ(t) - A(t)*x(t) <= 0, trajectory)
+
+            LinearAlgebraicFunction,          NonnegativeForAll:                @constraint( model, c5, u(t) - d/2 >= 0, trajectory)
+
+            LinearDifferentialAlgebraicFunction, ZeroForAll:                    @constraint( model, c6, u(t) - x(t)*d == 0, trajectory)
+
+            LinearDifferentialAlgebraicFunction, EqualToInitial:                @constraint( model, c7, u(t0) - x(t0)*d - 1 == 0, initial)
+            ...
+
+"""
+macro constraint(model,args...)
+    
+    c_args = collect(args)
+
+    return :(parse_equation($(esc(model)),$c_args))
+
+end

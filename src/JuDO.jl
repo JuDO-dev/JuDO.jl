@@ -8,6 +8,7 @@ import Base.Meta: isexpr
 #activate C:/Users/THC/.julia/dev/JuDO.jl
 
 using Ipopt
+using Unicode
 
 abstract type variable_data end
 
@@ -58,9 +59,18 @@ end
 """
 mutable struct Constant_data <: variable_data
     Sym::Symbol
-    Value::Real
+    Value::Union{Number,Array}
 end
 
+"""
+    constraint_data
+
+    A DataType for storing a collection of constraints
+"""
+mutable struct constraint_data <: variable_data
+    Sym::Symbol
+    Equation::Expr
+end
 
 """
     Dy_Model <: Abstract_Dynamic_Model
@@ -81,23 +91,28 @@ mutable struct Dy_Model <: Abstract_Dynamic_Model
     Differential_var_index::Dict{Symbol,Differential_Var_data}
    # Independent_vars::Independent_Var_data
     Independent_var_index::Dict{Symbol,Independent_Var_data}
+    Initial_sym::Union{Symbol,Nothing}
+    Final_sym::Union{Symbol,Nothing}
+
     Algebraic_var_index::Dict{Symbol,Algebraic_Var_data}
     #constraint data
+    constraints_index::Dict{Symbol,Expr}
 
     #dynamic data
     
 end 
 
 # currently using Ipopt as the default optimizer for testing, should be an optimizer with type DOI.AbstractDynamicOptimizer
-Dy_Model() = Dy_Model(Ipopt.Optimizer(),Dict(),Dict(),Dict(),Dict())
+Dy_Model() = Dy_Model(Ipopt.Optimizer(),Dict(),Dict(),Dict(),nothing,nothing,Dict(),Dict())
 
 
 include("macros.jl")
 include("variables.jl")
 include("errors.jl")
 include("constants.jl")
+include("constraints.jl")
 
-export @independent_variable, @differential_variable,@algebraic_variable,@constant,@algebraic_expression
+export @independent_variable, @differential_variable,@algebraic_variable,@constant,@algebraic_expression,@constraint
 
 
 
