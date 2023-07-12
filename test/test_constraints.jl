@@ -35,9 +35,9 @@
 
     @test [:(ẏ(tₚ)),:(x(tₚ)),:d] == @constraint(_model,c3,ẏ(tₚ)x(tₚ)>=d,final)
 
-    @test [:(y(tₚ))] == @constraint(_model,c4,y(tₚ)<=10,final)
+    @test [:(y(tₚ)),:ℯ] == @constraint(_model,c4,y(tₚ)<=2*ℯ,final)
 
-    @test [:(ẏ(tₚ))] == @constraint(_model,c1,10>=ẏ(tₚ),final)
+    @test [:(exp(tₚ)),:(ẏ(tₚ))] == @constraint(_model,c1,10*exp(tₚ)>=ẏ(tₚ),final)
 
     @test [:(ẏ(tₚ)),:(a(tₚ)),:(x(tₚ)),:d] == @constraint(_model,c5,ẏ(tₚ)+5(a(tₚ)*x(tₚ)-1)>=d,final)
 
@@ -50,11 +50,13 @@
 
     @test [:(a(t)),:p] == @constraint(_model,c2,1==a(t)*p,trajectory)
 
+    @test [:(x(t)),:(sin(t))] == @constraint(_model,c3,x(t)==2*sin(t),trajectory)
+
     @test [:(y(t)),:(a(t)),:p] == @constraint(_model,c2,y(t)==a(t)*p,trajectory)
 
     @test [:(ẏ(t)),:(x(t)),:d] == @constraint(_model,c3,ẏ(t)x(t)>=d,trajectory)
 
-    @test [:(y(t))] == @constraint(_model,c4,y(t)<=10,trajectory)
+    @test [:(y(t)),:π] == @constraint(_model,c4,y(t)<=10*π,trajectory)
 
     @test [:(ẏ(t)),:(A(t)),:(a(t)),:(x(t)),:d] == @constraint(_model,c5,ẏ(t)+5A(t)*(a(t)*x(t)-1)>=d,trajectory)
 
@@ -81,4 +83,10 @@
 end
  
 
-    
+#= m = JuDO.Dy_Model()
+JuDO.@independent_variable( m, t >= 0)
+JuDO.@differential_variable(m,y,Initial_guess=10)
+JuDO.@differential_variable(m,x,0<=Trajectory_bound<=100)
+JuDO.@algebraic_variable(m,0<=a<=1)
+JuDO.@constant(m,A=0.5)
+JuDO.@constraint(m,c1,ẏ(tf)==a(tf),final) =#

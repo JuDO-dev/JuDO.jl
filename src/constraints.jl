@@ -83,6 +83,8 @@ end
 
 #input a vector of unicode of the symbol, return the symbol without the dot operator
 function detect_diff_alge(_model,_sym,_type_of_equation)
+
+    isdefined(Base.Math,_sym) ? (return true) : nothing
     
     #get all the names of the registered differential variables
     diff_var_names = collect(keys(_model.Differential_var_index))
@@ -115,13 +117,15 @@ function detect_diff_alge(_model,_sym,_type_of_equation)
     end
 
 
-    throw(error("The symbol before the paranthesis is not a valid, make sure it is a variable.\n If it is a derivative, make sure the dot is on top of a registered differential variable"))
+    throw(error("The symbol before the paranthesis of $_sym is not a valid, make sure it is a variable.\n If it is a derivative, make sure the dot is on top of a registered differential variable"))
 end
 
 function detect_const(_model,_sym)
     const_var_names = collect(keys(_model.Constant_index))
 
-    _sym in const_var_names ? nothing : throw(error("The symbol without paranthesis is not a valid, make sure it is a registered constant.\nIf it is a variable, make sure it is followed by a paranthesis with independent variable inside"))
+    (isconst(MathConstants,_sym)==true) ? (return false) : nothing
+
+    (_sym in const_var_names) ? (return true) : throw(error("The symbol $_sym without paranthesis is not a valid, make sure it is a registered constant.\nIf it is a variable, make sure it is followed by a paranthesis with independent variable inside"))
 end
 
 function collect_keys(_model)
@@ -158,8 +162,8 @@ function call_trajectory(_model,_terms,_code_of_independent_var,_type_of_equatio
             end
             
         elseif _terms[i] isa Symbol
-            detect_const(_model,_terms[i])
-            push!(verify,_terms[i])
+            detect_const(_model,_terms[i]) == true ? push!(verify,_terms[i]) : nothing
+            
         end
     end
 
@@ -196,8 +200,7 @@ function call_instantaneous(_model,_terms,_code_of_independent_var,_type_of_equa
                 detect_diff_alge(_model,sym_with_paranthesis,_type_of_equation) == true ? nothing : push!(verify,sym_with_paranthesis)
             end
         elseif _terms[i] isa Symbol
-            detect_const(_model,_terms[i])
-            push!(verify,_terms[i])
+            detect_const(_model,_terms[i]) == true ? push!(verify,_terms[i]) : nothing
         end
     end
     
@@ -248,6 +251,9 @@ function parse_equation(_model,_expr)
 
     #filter out the Number type elements from the lhs_terms
     all_terms = filter(x -> !(x isa Number),all_terms)
+
+    constraint_func = Constraint_data(_expr[2])
+    _model.Constraints_index[_expr[1]] = constraint_func
 
     return all_terms
 end

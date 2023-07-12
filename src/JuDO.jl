@@ -67,8 +67,7 @@ end
 
     A DataType for storing a collection of constraints
 """
-mutable struct constraint_data <: variable_data
-    Sym::Symbol
+mutable struct Constraint_data <: variable_data
     Equation::Expr
 end
 
@@ -96,7 +95,7 @@ mutable struct Dy_Model <: Abstract_Dynamic_Model
 
     Algebraic_var_index::Dict{Symbol,Algebraic_Var_data}
     #constraint data
-    constraints_index::Dict{Symbol,Expr}
+    Constraints_index::Dict{Symbol,Constraint_data}
 
     #dynamic data
     
@@ -139,6 +138,10 @@ function print_JuDO(io::IO, model::Abstract_Dynamic_Model)
     for (key, value) in model.Algebraic_var_index
         println(io, "  Algebraic variable $(value.Sym) with bound = $(value.Bound)")
     end
+
+    for (key, value) in model.Constraints_index
+        println(io, "  Constraint $key :$(value.Equation)")
+    end    
 
 end
 
