@@ -7,49 +7,18 @@ function get_normalized_unicode(string)
     return [codepoint(i) for i in decomposed]
 end
 
-function check_var_in_paranthesis(_code_of_independent_var,_check_term)
-    len_of_independent_var = length(_code_of_independent_var) - 1
-
-    if (_check_term[end] == 0x29) && (0x28 in _check_term) && (_check_term[end-1-len_of_independent_var:end-1] == _code_of_independent_var) 
-        
-        return true
-    else
-        throw(error("Invalid independent variable in the paranthesis"))
-    end
-
-    throw(error("Ambiguous or Incorrect use of parentheses,\nI cannot tell if it is a () for multiplication or a () for indicating a variable with respect to the independent variable"))
-    
-end
-
-#deal with the situation when the lhs or rhs is a number, or a single symbol, or a A(t) like term
-function initial_parse(_side,container,_code_of_independent_var,_type_of_equation)
-
-    (_side isa Number) ? (return _side) : nothing
-    
-    if _side isa Symbol 
-        return push!(container,_side)
-
-    elseif (_side isa Expr) && (length(_side.args) == 2) 
-
-        check_term = get_unicode(string(_side))
-        
-        if _type_of_equation == :initial || _type_of_equation == :final
-            (check_term[end] == 0x29) && (0x28 in check_term) && (findfirst(isequal(0x28), check_term) != 1) ? (return push!(container,_side)) : nothing
-
-        else
-            check_var_in_paranthesis(_code_of_independent_var,check_term) ? (return push!(container,_side)) : nothing
-        end
-    end
-end
-
 function parse_and_separate(_model,true_terms,_side,_code_of_independent_var,_type_of_equation)
     container = copy(true_terms)
 
     separating_ops = [:*,:/,:+,:-,:^] 
     
-    (_side isa Number) ? (return _side) : nothing
+    (_side isa Number) ? (return push!(container,_side)) : nothing
+    (_side isa Symbol) && !(_side in separating_ops) ? (return push!(container,_side)) : nothing
+    if (_side isa Expr) && (length(_side.args) == 2) 
+        !(isconst(MathConstants,_side.args[1])) ? (return push!(container,_side)) : nothing
+        (isconst(MathConstants,_side.args[1])) && (_side.args[2] isa Symbol) ? (return push!(container,_side)) : nothing
+    end
     
-    #parse -- check if separating_ops exist and exclude -- check if each term is an expression or a symbol -- if symbol then store, if expression then parse again
     terms = _side.args 
  
     for term in terms
@@ -57,15 +26,8 @@ function parse_and_separate(_model,true_terms,_side,_code_of_independent_var,_ty
 
             #check if this Expr is actually a A(t) like term
             check_term = get_unicode(string(term))
-            
-            ##check if the terms is a x(t)^T*Q*x(t) like term
-
-            if _type_of_equation == :initial || _type_of_equation == :final
-                (length(term.args) == 2) && (check_term[end] == 0x29) && (0x28 in check_term) && (findfirst(isequal(0x28), check_term) != 1) ? push!(container,term) : [push!(container,element) for element in parse_and_separate(_model,[],term,_code_of_independent_var,_type_of_equation)]
-            else
-                (length(term.args) == 2) && check_var_in_paranthesis(_code_of_independent_var,check_term) ? push!(container,term) : [push!(container,element) for element in parse_and_separate(_model,[],term,_code_of_independent_var,_type_of_equation)]
-            end
-         
+ 
+            (length(term.args) == 2) && !(isconst(MathConstants,term.args[1])) ? push!(container,term) : [push!(container,element) for element in parse_and_separate(_model,[],term,_code_of_independent_var,_type_of_equation)]
 
         elseif term isa Symbol
             #store 
@@ -123,24 +85,9 @@ end
 function detect_const(_model,_sym)
     const_var_names = collect(keys(_model.Constant_index))
 
-    (isconst(MathConstants,_sym)==true) ? (return false) : nothing
+    (isconst(MathConstants,_sym)==true) ? (return true) : nothing
 
     (_sym in const_var_names) ? (return true) : throw(error("The symbol $_sym without paranthesis is not a valid, make sure it is a registered constant.\nIf it is a variable, make sure it is followed by a paranthesis with independent variable inside"))
-end
-
-function collect_keys(_model)
-    # collect all the keys of Differential_var_index, Independent_var_index, Constant_index, Algebraic_var_index if they exist
-    all_keys = [collect(keys(_model.Differential_var_index)), collect(keys(_model.Independent_var_index)), 
-    collect(keys(_model.Algebraic_var_index)), collect(keys(_model.Constant_index))]
-
-    variable_keys = [collect(keys(_model.Differential_var_index)), collect(keys(_model.Algebraic_var_index))]
-
-    vect_keys=[]
-    for i in eachindex(all_keys)
-        [push!(vect_keys,element) for element in all_keys[i] if length(all_keys[i]) != 0]
-    end
-
-    return vect_keys,variable_keys
 end
 
 function call_trajectory(_model,_terms,_code_of_independent_var,_type_of_equation)
@@ -158,7 +105,8 @@ function call_trajectory(_model,_terms,_code_of_independent_var,_type_of_equatio
                 detect_diff_alge(_model,sym_with_paranthesis,_type_of_equation) == true ? nothing : push!(verify,sym_with_paranthesis) 
                 
             else
-                @warn("Potential error in the parsing function")
+
+                throw(error("Invalid independent variable in the paranthesis"))
             end
             
         elseif _terms[i] isa Symbol
@@ -166,10 +114,7 @@ function call_trajectory(_model,_terms,_code_of_independent_var,_type_of_equatio
             
         end
     end
-
-    vect_keys,variable_keys = collect_keys(_model)
-    [(verify[i] in vect_keys) || (verify[i] isa Number) ? nothing : @warn("The input symbol $(verify[i]) is not yet registered") for i in eachindex(verify)]
-
+    
 end
 
 function check_consistency(registered, input)
@@ -186,7 +131,6 @@ function call_instantaneous(_model,_terms,_code_of_independent_var,_type_of_equa
             check_term = get_unicode(string(_terms[i]))
 
             if (check_term[end] == 0x29) && (0x28 in check_term) && (findfirst(isequal(0x28), check_term) != 1)
-                ([check_term[end-1]] == _code_of_independent_var) ? nothing : @info("Symbol $(_terms[i].args[2]) used in $_type_of_equation condition differs with $(collect(keys(_model.Independent_var_index))[1]), make sure the consistency of the independent variable in $_type_of_equation condition")
                 
                 if _type_of_equation == :initial
                     _model.Initial_sym === nothing ? (_model.Initial_sym = _terms[i].args[2]) : check_consistency(_model.Initial_sym,_terms[i].args[2])
@@ -203,10 +147,6 @@ function call_instantaneous(_model,_terms,_code_of_independent_var,_type_of_equa
             detect_const(_model,_terms[i]) == true ? push!(verify,_terms[i]) : nothing
         end
     end
-    
-    vect_keys,variable_keys = collect_keys(_model)
-
-    [(verify[i] in vect_keys) || (verify[i] isa Number) ? nothing : @warn("The input symbol $(verify[i]) is not yet registered") for i in eachindex(verify)]
     
 
     #a constraint ref  
@@ -226,16 +166,14 @@ function parse_equation(_model,_expr)
         #for expressions with one operator
         (operator == :(==) || operator == :(<=) || operator == :(>=)) && length(expr.args) == 3 ? nothing : throw(error("The expression is not a valid equation"))
 
-        _lhs_terms = initial_parse(expr.args[2],[],code_of_independent_var,type)
-        _lhs_terms === nothing ? (_lhs_terms = parse_and_separate(_model,[],expr.args[2],code_of_independent_var,type)) : nothing
-
-        _rhs_terms = initial_parse(expr.args[3],[],code_of_independent_var,type)
-        _rhs_terms === nothing ? (_rhs_terms = parse_and_separate(_model,[],expr.args[3],code_of_independent_var,type)) : nothing
+        _lhs_terms = parse_and_separate(_model,[],expr.args[2],code_of_independent_var,type)
+        _rhs_terms = parse_and_separate(_model,[],expr.args[3],code_of_independent_var,type)
 
         # merge the lhs and rhs terms 
         all_terms = Any[]
         [push!(all_terms,element) for element in _lhs_terms]
         [push!(all_terms,element) for element in _rhs_terms]
+        
 
         println("all_terms",all_terms) 
 
@@ -250,7 +188,7 @@ function parse_equation(_model,_expr)
     end
 
     #filter out the Number type elements from the lhs_terms
-    all_terms = filter(x -> !(x isa Number),all_terms)
+    all_terms = filter(x -> !(x isa Number),unique(all_terms))
 
     constraint_func = Constraint_data(_expr[2])
     _model.Constraints_index[_expr[1]] = constraint_func

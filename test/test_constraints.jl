@@ -52,6 +52,8 @@
 
     @test [:(x(t)),:(sin(t))] == @constraint(_model,c3,x(t)==2*sin(t),trajectory)
 
+    @test [:(y(t)),:sin,:((x(t)))] == @constraint(_model,c4,y(t)<=2*sin(x(t)),trajectory)
+
     @test [:(y(t)),:(a(t)),:p] == @constraint(_model,c2,y(t)==a(t)*p,trajectory)
 
     @test [:(ẏ(t)),:(x(t)),:d] == @constraint(_model,c3,ẏ(t)x(t)>=d,trajectory)
@@ -60,7 +62,7 @@
 
     @test [:(ẏ(t)),:(A(t)),:(a(t)),:(x(t)),:d] == @constraint(_model,c5,ẏ(t)+5A(t)*(a(t)*x(t)-1)>=d,trajectory)
 
-    @test [:(ẏ(t)),:(A(t)),:(a(t)),:(x(t)),:(y(t)),:d,:p] == @constraint(_model,c6,ẏ(t)+5A(t)*(a(t)*x(t)-1+y(t))==d+p,trajectory)
+    @test [:(ẏ(t)),:(A(t)),:log,:(y(t)),:(x(t)),:(a(t)),:d,:p] == @constraint(_model,c6,ẏ(t)+5A(t)*log(y(t)-3*x(t))*(a(t)*x(t)-1)==d+p,trajectory)
 
     @test_throws ErrorException @constraint(_model,c7,ẏ(t0)x(t)>=d,trajectory)
 
@@ -83,10 +85,3 @@
 end
  
 
-#= m = JuDO.Dy_Model()
-JuDO.@independent_variable( m, t >= 0)
-JuDO.@differential_variable(m,y,Initial_guess=10)
-JuDO.@differential_variable(m,x,0<=Trajectory_bound<=100)
-JuDO.@algebraic_variable(m,0<=a<=1)
-JuDO.@constant(m,A=0.5)
-JuDO.@constraint(m,c1,ẏ(tf)==a(tf),final) =#

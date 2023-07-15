@@ -102,6 +102,14 @@ deps = ["ArgTools", "FileWatching", "LibCURL", "NetworkOptions"]
 uuid = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
 version = "1.6.0"
 
+[[DynOptInterface]]
+deps = ["MathOptInterface"]
+git-tree-sha1 = "20b0bf9d4681dd5c6bb29f641339f68a16b6a8f4"
+repo-rev = "dev"
+repo-url = "https://github.com/JuDO-dev/DynOptInterface.jl"
+uuid = "80a7045d-d411-400a-b3f5-1501539f8fe7"
+version = "0.1.0"
+
 [[FileWatching]]
 uuid = "7b1f6079-737a-58dc-b8bc-7a2ca5c1b5ee"
 
