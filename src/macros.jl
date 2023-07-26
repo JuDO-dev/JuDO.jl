@@ -1,6 +1,6 @@
 
 """
-@differential_variable(model, args...)
+@differential(model, args...)
 
 Add a dynamic variable into the dynamic model.
 The user is required to put the dynamic model and the variable symbol in the first two positions, the rest are optional keyword arguments.
@@ -16,22 +16,20 @@ keyword arguments can contain:
     The Trajectory_bound, [lb,ub]
     The Interpolant, L
 
- @differential_variable(_model,x)
+ @differential(_model,x(t))
 
- @differential_variable(_model,x,Initial_guess = 8)
+ @differential(_model,x(t),Initial_guess = 8)
 
- @differential_variable(_model,x,Initial_guess = 8,0 <= Initial_bound <= 10)
+ @differential(_model,x(t),Initial_guess = 8,0 <= Initial_bound <= 10)
 
- @differential_variable(_model,x,0 <= Initial_bound <= 10,Initial_guess = 8)
+ @differential(_model,x(t),0 <= Initial_bound <= 10,Initial_guess = 8)
 
- @differential_variable(_model,x,Initial_guess = 8,Final_bound >= 100)
+ @differential(_model,x(t),Initial_guess = 8,Final_bound >= 100)
 
- @differential_variable(_model,x,Interpolant = L,Initial_guess = 8,Final_bound >= 100)
+ @differential(_model,x(t),Interpolant = L,Initial_guess = 8,Final_bound >= 100)
 """
 
-macro differential_variable(model,args...)
-    
-    collect(args)[1] isa Symbol ? nothing : symbol_error()
+macro differential(model,args...)
 
     if length(args) == 1 
         empty_info = [args[1],nothing,[[-Inf,Inf]],[[-Inf,Inf]],[[-Inf,Inf]],nothing]
@@ -40,13 +38,14 @@ macro differential_variable(model,args...)
     
     expr_of_args = collect(args)[2:end]
 
-    return :(new_or_exist($(esc(model)),$([args[1]]),$expr_of_args))
+    var_ref = :(new_or_exist($(esc(model)),$([args[1]]),$expr_of_args))
+
+    return var_ref#_finalize_dy_macro(var_ref,__source__)
 
 end
- 
 
 """
-    @independent_variable(model, args)
+    @independent(model, args)
 
     The continuous independent variable in the problem (time is used in the following documentation)
     
@@ -54,22 +53,32 @@ end
 
     Only one independent variable is allowed in a problem.
     
-    @independent_variable( model, t) 
+    @independent( model, t) 
 
-    @independent_variable( model, 0 <= t <= 10)
+    @independent( model, 0 <= t <= 10)
 
-    @independent_variable( model, t >= 0)
+    @independent( model, t >= 0)
 
-    @independent_variable( model, 0 <= t)
+    @independent( model, 0 <= t)
 
-    @independent_variable( model, t <= 10)
+    @independent( model, t <= 10)
+
+    If keyword "initial" or "final" is provided, then the independent variable is fixed at the initial or final time
+
+    @independent( model, t0, initial)
+
+    @independent( model, tₚ, final)
+
+    @independent( model, t0 = 0, initial)
+
+    @independent( model, tₚ = 10, final)
 """
 
-macro independent_variable(model, args...)
+macro independent(model, args...)
     
     # the user is not providing the bound, so a free-time problem is assumed
     if collect(args)[1] isa Symbol
-        return :(add_new_independent($(esc(model)),$[args[1],[-Inf,Inf]]))
+        (length(args) == 1) ? (return :(add_new_independent($(esc(model)),$[args[1],[-Inf,Inf],[]]))) : (return :(add_new_independent($(esc(model)),$[args[1],[-Inf,Inf],args[2]])))
     end
 
     expr_of_args = collect(args)
@@ -79,7 +88,7 @@ macro independent_variable(model, args...)
 end
 
 """
-    algebraic_variable(model, args...)
+    algebraic(model, args...)
 
     The algebraic variable is an abstract quantity that can vary, often represents the control input.
 
@@ -87,22 +96,22 @@ end
 
     The user is required to put a model in the first argument, an expression (or symbol) in the second argument.
 
-    @algebraic_variable( model, u)
+    @algebraic( model, u(t))
 
-    @algebraic_variable( model, 0 <= u <= 10)
+    @algebraic( model, 0 <= u(t) <= 10)
 
-    @algebraic_variable( model, -10 <= v <= 10)
+    @algebraic( model, -10 <= v(t) <= 10)
 
-    @algebraic_variable( model, 10 <= w)
+    @algebraic( model, 10 <= w(t))
 
 """
 
-macro algebraic_variable(model,args...)
+macro algebraic(model,args...)
 
-    c_args = collect(args)
+    c_args = collect(args)      
 
     #if the user is not providing any info, then add default info
-    if c_args[1] isa Symbol
+    if (c_args[1] isa Expr) && (length(c_args[1].args) == 2)
         return :(add_new_algebraic($(esc(model)),$[c_args[1],[-Inf,Inf]]))
     end 
 
@@ -181,3 +190,30 @@ macro constraint(model,args...)
     return :(parse_equation($(esc(model)),$c_args))
 
 end 
+
+"""
+    @dynamic_func(model, args...)
+
+    This macro is used to add a dynamic function into the model.
+
+    The user is required to put an expression as the argument.
+
+    The dynamic function is considered as a minimization problem, so for maximization problem, 
+    the user is required to add a negative sign in front of the expression.
+
+    The dynamic function can only be added once in the model, it can only contain the registered variables and constants.
+
+    @dynamic_func( model, x(t) + u(t) + v(t) + g)
+"""
+
+macro dynamic_func(model,args...)
+    c_args = collect(args)
+
+    return :(parse_objective_function($(esc(model)),$c_args))
+end
+
+function macro_return(ref,name)
+    #println(ref)
+    return esc(quote $name = $ref end)
+end
+

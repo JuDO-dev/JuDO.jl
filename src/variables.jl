@@ -2,13 +2,23 @@ function new_or_exist(_model,_sym,_args)
     haskey(_model.Differential_var_index,_sym[1]) ? (return add_exist(_model,_sym[1],_args)) : (return add_new(_model,_sym[1],_args))
 end
 
+##need to change to not allow multiple use of @independent
 function new_or_exist_independent(_model,_args)
     sym,val = check_inde_var_input(_args[1])
-    haskey(_model.Independent_var_index,sym) ? (return add_exist_independent(_model,sym,val)) : (return add_new_independent(_model,sym,val))
+    if length(_args) == 2
+        if _args[2] == :initial
+            haskey(_model.Initial_Independent_var_index,sym) ? throw(error("$(_args[2]) independent variable with name $sym already exist")) : (return add_new_independent(_model,sym,val,_args))
+        elseif _args[2] == :final
+            haskey(_model.Final_Independent_var_index,sym) ? throw(error("$(_args[2]) independent variable with name $sym already exist")) : (return add_new_independent(_model,sym,val,_args))
+        end
+    else
+        haskey(_model.Independent_var_index,sym) ? (return add_exist_independent(_model,sym,val)) : (return add_new_independent(_model,sym,val,_args))
+    end
 end
 
 function new_or_exist_algebraic(_model,_args)
-    sym,val = check_inde_var_input(_args[1])
+    _args[1] isa Symbol ? throw(error("Make sure to include the independent variable in paranthesis")) : nothing
+    sym,val = check_alge_var_input(_args[1])
 
     haskey(_model.Algebraic_var_index,sym) ? (return add_exist_algebraic(_model,sym,val)) : (return add_new_algebraic(_model,sym,val))
 end
@@ -162,6 +172,9 @@ end
 
 #modify an exist differential variable
 function add_exist(_model,_sym,_args)
+    _sym isa Symbol ? throw(error("The differential variable is not a symbol")) : nothing
+    (_sym.args[2] == collect(keys(_model.Independent_var_index))[1]) ? nothing : throw(error("The independent variable is not defined yet"))
+
      kw_val_vect = check_diff_var_input(_args)
 
     #collect all elements in kw_val_vect that has a odd index
@@ -182,6 +195,9 @@ end
 #called when the user is specifying information about the differential variable
 function add_new(_model,_sym,_args)
 
+    _sym isa Symbol ? throw(error("The differential variable is not a symbol")) : nothing
+    (_sym.args[2] == collect(keys(_model.Independent_var_index))[1]) ? nothing : throw(error("The independent variable is not defined yet"))
+
     kw_val_vect = check_diff_var_input(_args)
     kws = kw_val_vect[1:2:end]
     vals = kw_val_vect[2:2:end]
@@ -193,11 +209,16 @@ function add_new(_model,_sym,_args)
     diff_var_data = Differential_Var_data(var_info[1],var_info[2],[var_info[3]],[var_info[4]],[var_info[5]],var_info[6])
     _model.Differential_var_index[diff_var_data.Run_sym] = diff_var_data    
 
-    return _model.Differential_var_index
+    return add_diff_variable(_model,diff_var_data.Run_sym,diff_var_data)
+
+    #return _model.Differential_var_index
 end
 
 #called when the user is not specifying any information about the differential variable
 function add_new(_model,_args)
+    _args[1] isa Symbol ? throw(error("The differential variable is not a symbol")) : nothing
+
+    (_args[1].args[2] == collect(keys(_model.Independent_var_index))[1]) ? nothing : throw(error("The independent variable is not defined yet"))
 
     ## to do
     haskey(_model.Differential_var_index,_args[1]) ? error("The differential variable already exists, to reset the information, please delete and create again") : nothing
@@ -205,7 +226,9 @@ function add_new(_model,_args)
     diff_var_data = Differential_Var_data(_args[1],_args[2],_args[3],_args[4],_args[5],_args[6])
     _model.Differential_var_index[diff_var_data.Run_sym] = diff_var_data
 
-    return _model.Differential_var_index
+    return add_diff_variable(_model,diff_var_data.Run_sym,diff_var_data)
+
+    #return _model.Differential_var_index
 end
 
 ##############################################################################################################
@@ -215,16 +238,19 @@ function one_side_inde(_expr)
     right_val = _expr.args[3]
 
     #check the operator is >= or <=, otherwise throw error
-    (operator == :>= || operator == :<=) ? nothing : error("The operator is not >= or <=")
+    (operator == :>= || operator == :<= || operator == :(==)) ? nothing : throw(error("The operator is not recognized"))
 
-    if left_val isa Symbol
+    if operator == :(==)
+        return left_val,eval(right_val)
+
+    elseif left_val isa Symbol
         operator == :>= ? (return left_val,[eval(right_val),Inf]) : (return left_val,[-Inf,eval(right_val)])
 
     elseif right_val isa Symbol
         operator == :>= ? (return right_val,[-Inf,eval(left_val)]) : (return right_val,[eval(left_val),Inf])
 
     else
-        error("No independent variable as a symbol is found")
+        throw(error("No independent variable as a symbol is found"))
     end
 end
 
@@ -234,9 +260,9 @@ function two_sides_inde(_expr)
     right_val = _expr.args[5]
     name = _expr.args[3]
 
-    name isa Symbol ? nothing : error("No independent variable as a symbol is found")
+    name isa Symbol ? nothing : throw(error("The independent variable is not a symbol"))
 
-    operator[1] == :<= && (operator[1] == operator[2]) ? nothing : error("Incorrect use of the operator")
+    operator[1] == :<= && (operator[1] == operator[2]) ? nothing : throw(error("Incorrect use of the operator"))
 
     return name,[eval(left_val),eval(right_val)]
 end
@@ -259,20 +285,40 @@ end
 
 #called when the user is not specifying any information about a new differential variable
 function add_new_independent(_model,_expr)
+    if _expr[3] != []
+        if _expr[3] == :initial 
+            (_model.Initial_Independent_var_index[_expr[1]] = Independent_Var_data(_expr[1],_expr[2])) 
+            return _model.Initial_Independent_var_index
 
-    haskey(_model.Independent_var_index,_expr[1]) || length(_model.Independent_var_index) == 0 ? nothing : multiple_independent_var_error()
-    bound_lower_upper(_expr[2])
-    indep_var_data = Independent_Var_data(_expr[1],_expr[2])
-    _model.Independent_var_index[indep_var_data.Sym] = indep_var_data
+        else
+            (_model.Final_Independent_var_index[_expr[1]] = Independent_Var_data(_expr[1],_expr[2]))
+            return _model.Final_Independent_var_index
+        end
+    else
 
-    return _model.Independent_var_index 
-       
+        haskey(_model.Independent_var_index,_expr[1]) || length(_model.Independent_var_index) == 0 ? nothing : multiple_independent_var_error()
+        bound_lower_upper(_expr[2])
+        indep_var_data = Independent_Var_data(_expr[1],_expr[2])
+        _model.Independent_var_index[indep_var_data.Sym] = indep_var_data
+
+        return _model.Independent_var_index 
+    end
 end
 
 #called when the user put a new differential variable in with information
-function add_new_independent(_model,_sym,_val)
-    length(_model.Independent_var_index) == 1 ? multiple_independent_var_error() : add_exist_independent(_model,_sym,_val)
-       
+function add_new_independent(_model,_sym,_val,_args)
+    if length(_args) == 2
+        if _args[2] == :initial
+            length(_model.Initial_Independent_var_index) == 1 ?  multiple_independent_var_error() : (_model.Initial_Independent_var_index[_sym] = Independent_Var_data(_sym,_val)) 
+            return _model.Initial_Independent_var_index
+
+        elseif _args[2] == :final
+            length(_model.Final_Independent_var_index) == 1 ?  multiple_independent_var_error() : (_model.Final_Independent_var_index[_sym] = Independent_Var_data(_sym,_val))
+            return _model.Final_Independent_var_index
+        end
+    else
+        length(_model.Independent_var_index) == 1 ? multiple_independent_var_error() : add_exist_independent(_model,_sym,_val)
+    end
 end
 
 function add_exist_independent(_model,_sym,_val)
@@ -285,18 +331,61 @@ function add_exist_independent(_model,_sym,_val)
 end
 
 ##############################################################################################################
-# add new or modify exist algebraic variable
-function check_alge_var_input(__sym,__args)
-    
-  
-    __args isa Vector ? nothing : throw(algebraic_input_style_error())
+function one_side_alge(_expr)
+    operator = _expr.args[1]
+    left_val = _expr.args[2]
+    right_val = _expr.args[3]
 
-    bound_lower_upper(__args)
+    #check the operator is >= or <=, otherwise throw error
+    (operator == :>= || operator == :<= || operator == :(==)) ? nothing : throw(error("The operator is not recognized"))
+
+    if operator == :(==)
+        return left_val,eval(right_val)
+
+    elseif left_val isa Expr
+        operator == :>= ? (return left_val,[eval(right_val),Inf]) : (return left_val,[-Inf,eval(right_val)])
+
+    elseif right_val isa Expr
+        operator == :>= ? (return right_val,[-Inf,eval(left_val)]) : (return right_val,[eval(left_val),Inf])
+
+    else
+        throw(error("Incorrect input style of the algebraic variable"))
+    end
+end
+
+function two_sides_alge(_expr)
+    operator = [_expr.args[2],_expr.args[4]]
+    left_val = _expr.args[1]
+    right_val = _expr.args[5]
+    name = _expr.args[3]
+
+    name isa Expr ? nothing : throw(error("Incorrect input style of the algebraic variable"))
+
+    operator[1] == :<= && (operator[1] == operator[2]) ? nothing : throw(error("Incorrect use of the operator"))
+
+    return name,[eval(left_val),eval(right_val)]
+end
+
+function check_alge_var_input(_raw_expr)
+
+    if _raw_expr.head == :call && length(_raw_expr.args) == 3
+       name,val = one_side_alge(_raw_expr)
+
+    elseif _raw_expr.head == :comparison && length(_raw_expr.args) == 5
+       name,val = two_sides_alge(_raw_expr)
+
+    else
+        throw(error("Incorrect input style of the algebraic variable"))
+    end
+
+    return name,val
 end
 
 function add_exist_algebraic(_model,_sym,_args)
+    (_sym.args[2] == collect(keys(_model.Independent_var_index))[1]) ? nothing : throw(error("The independent variable is not defined yet"))
 
-    check_alge_var_input(_sym,_args)
+    _args isa Vector ? nothing : throw(algebraic_input_style_error())
+    bound_lower_upper(_args)
 
     setfield!(_model.Algebraic_var_index[_sym],:Bound,_args)
 
@@ -304,8 +393,10 @@ function add_exist_algebraic(_model,_sym,_args)
 end
 
 function add_new_algebraic(_model,_sym,_args)
+    (_sym.args[2] == collect(keys(_model.Independent_var_index))[1]) ? nothing : throw(error("The independent variable is not defined yet"))
 
-    check_alge_var_input(_sym,_args)
+    _args isa Vector ? nothing : throw(algebraic_input_style_error())
+    bound_lower_upper(_args)
 
     alge_var_data = Algebraic_Var_data(_sym,_args)
 
@@ -316,6 +407,7 @@ end
 
 #called when the user is not specifying any information about a new algebraic variable
 function add_new_algebraic(_model,_args)
+    (_args[1].args[2] == collect(keys(_model.Independent_var_index))[1]) ? nothing : throw(error("The independent variable is not defined yet"))
 
     bound_lower_upper(eval(_args[2]))
 
@@ -325,4 +417,28 @@ function add_new_algebraic(_model,_args)
 
     return _model.Algebraic_var_index
     
+end
+
+
+##############################################################################################################
+
+# an abstract type for the return value of the macros
+abstract type AbstractDynamicRef end
+
+# the type of the return value of @differential
+mutable struct DynamicVariableRef <: AbstractDynamicRef
+    optimizer::DOI.AbstractDynamicOptimizer
+    index::DOI.DifferentialVariableIndex
+
+end
+
+function add_diff_variable(_model,_sym,_diff_var_data)
+    index = DOI.add_variable(_model.optimizer.diff_variables,_diff_var_data)
+    
+    variable_ref = DynamicVariableRef(_model.optimizer,index)
+
+    macro_code = macro_return(index,_sym.args[1])
+    
+    return macro_code.args[1].args[2].args[2]
+
 end
