@@ -427,7 +427,7 @@ abstract type AbstractDynamicRef end
 
 # the type of the return value of @differential
 mutable struct DynamicVariableRef <: AbstractDynamicRef
-    optimizer::DOI.AbstractDynamicOptimizer
+    optimizer::Abstract_Dynamic_Model
     index::DOI.DifferentialVariableIndex
 
 end
@@ -435,10 +435,8 @@ end
 function add_diff_variable(_model,_sym,_diff_var_data)
     index = DOI.add_variable(_model.optimizer.diff_variables,_diff_var_data)
     
-    variable_ref = DynamicVariableRef(_model.optimizer,index)
-
-    macro_code = macro_return(index,_sym.args[1])
+    variable_ref = DynamicVariableRef(_model,index)
     
-    return macro_code.args[1].args[2].args[2]
+    return variable_ref
 
 end

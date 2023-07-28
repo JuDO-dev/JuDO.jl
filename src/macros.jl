@@ -33,15 +33,21 @@ macro differential(model,args...)
 
     if length(args) == 1 
         empty_info = [args[1],nothing,[[-Inf,Inf]],[[-Inf,Inf]],[[-Inf,Inf]],nothing]
-        return :(add_new($(esc(model)),$empty_info)) 
+
+        var_ref = :(add_new($(esc(model)),$empty_info))
+        return macro_return(args,var_ref)
     end
     
     expr_of_args = collect(args)[2:end]
 
     var_ref = :(new_or_exist($(esc(model)),$([args[1]]),$expr_of_args))
 
-    return var_ref#_finalize_dy_macro(var_ref,__source__)
+    return macro_return(args,var_ref)#quote $( esc(args[1].args[1]) ) = $var_ref end
 
+end
+
+function macro_return(sym,ref)
+    return quote $(esc(sym[1].args[1])) = $ref end
 end
 
 """
@@ -210,10 +216,5 @@ macro dynamic_func(model,args...)
     c_args = collect(args)
 
     return :(parse_objective_function($(esc(model)),$c_args))
-end
-
-function macro_return(ref,name)
-    #println(ref)
-    return esc(quote $name = $ref end)
 end
 

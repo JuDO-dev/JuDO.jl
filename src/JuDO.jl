@@ -88,6 +88,7 @@ end
 abstract type Abstract_Dynamic_Model end
 
 mutable struct Dy_Model <: Abstract_Dynamic_Model 
+
     #optimizer data
     optimizer::DOI.AbstractDynamicOptimizer     #currently using MOI for testing, should be optimizer::DOI.AbstractDynamicOptimizer
 
@@ -131,38 +132,46 @@ export @independent, @differential,@algebraic,@constant,@constraint
 
 Base.show(io::IO, model::Abstract_Dynamic_Model) = print_JuDO(io, model)
 
-# show the information of the model
 function print_JuDO(io::IO, model::Abstract_Dynamic_Model)
-    println(io, "A $(model.optimizer)")
-    println(io, "Dynamic objective function: $(model.Dynamic_objective)")
-    println(io, "Constants:")
+    println(io, "Dynamic Optimization Model $(model.optimizer)")
+end
+    
+function full_info_print(model::Abstract_Dynamic_Model)
+    println("A general display function")
+end
+
+# show the information of the model
+function JuDO.full_info_print(model::Abstract_Dynamic_Model)
+    println("A $(model.optimizer)")
+    println("Dynamic objective function: $(model.Dynamic_objective)")
+    println("Constants:")
     for (key, value) in model.Constant_index
-        println(io, "  Constant $(value.Sym) with value = $(value.Value)")
+        println("Constant $(value.Sym) with value = $(value.Value)")
     end
-    println(io, "Variables:")
+    println("Variables:")
     for (key, value) in model.Differential_var_index
-        println(io, "  Differential variable $(value.Run_sym) with")
-        println(io, "  Initial guess = $(value.Initial_guess), Initial bounds = $(value.Initial_bound), Final bounds = $(value.Final_bound), Trajectory bounds = $(value.Trajectory_bound), Interpolant = $(value.Interpolant)")
+        println("Differential variable $(value.Run_sym) with")
+        println("Initial guess = $(value.Initial_guess), Initial bounds = $(value.Initial_bound), Final bounds = $(value.Final_bound), Trajectory bounds = $(value.Trajectory_bound), Interpolant = $(value.Interpolant)")
     end
     for (key, value) in model.Independent_var_index
-        println(io, "  Independent variable $(value.Sym) with bound = $(value.Bound)")
+        println("Independent variable $(value.Sym) with bound = $(value.Bound)")
 
     end
     for (key, value) in model.Initial_Independent_var_index
-        println(io, "  Initial independent variable $(value.Sym) with bound/value = $(value.Bound)")
+        println("Initial independent variable $(value.Sym) with bound/value = $(value.Bound)")
 
     end
     for (key, value) in model.Final_Independent_var_index
-        println(io, "  Final independent variable $(value.Sym) with bound/value = $(value.Bound)")
+        println("Final independent variable $(value.Sym) with bound/value = $(value.Bound)")
 
     end
 
     for (key, value) in model.Algebraic_var_index
-        println(io, "  Algebraic variable $(value.Sym) with bound = $(value.Bound)")
+        println("Algebraic variable $(value.Sym) with bound = $(value.Bound)")
     end
 
     for (key, value) in model.Constraints_index
-        println(io, "  Constraint $key :$(value.Equation)")
+        println("Constraint $key :$(value.Equation)")
     end    
 
 end

@@ -104,7 +104,7 @@ version = "1.6.0"
 
 [[DynOptInterface]]
 deps = ["MathOptInterface"]
-git-tree-sha1 = "a56075c44acdfbe11edab034d2673dc3008fdc46"
+git-tree-sha1 = "32c16a701baa77d103c824753bd89bad12cb3498"
 repo-rev = "dev"
 repo-url = "https://github.com/JuDO-dev/DynOptInterface.jl"
 uuid = "80a7045d-d411-400a-b3f5-1501539f8fe7"
@@ -160,9 +160,9 @@ version = "0.21.4"
 
 [[JuMP]]
 deps = ["LinearAlgebra", "MathOptInterface", "MutableArithmetics", "OrderedCollections", "Printf", "SnoopPrecompile", "SparseArrays"]
-git-tree-sha1 = "b0ded4f36829f7cfd4400b11289faf9b4f0b795a"
+git-tree-sha1 = "3cacc9aa90f3313e0375b1c4ac4641c8d57349ef"
 uuid = "4076af6c-e467-56ae-b986-b466b2749572"
-version = "1.12.0"
+version = "1.13.0"
 
 [[LibCURL]]
 deps = ["LibCURL_jll", "MozillaCACerts_jll"]
