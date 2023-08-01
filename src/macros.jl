@@ -42,12 +42,12 @@ macro differential(model,args...)
 
     var_ref = :(new_or_exist($(esc(model)),$([args[1]]),$expr_of_args))
 
-    return macro_return(args,var_ref)#quote $( esc(args[1].args[1]) ) = $var_ref end
+    return macro_return(args[1].args[1],var_ref)
 
 end
 
 function macro_return(sym,ref)
-    return quote $(esc(sym[1].args[1])) = $ref end
+    return quote $(esc(sym)) = $ref end
 end
 
 """
@@ -71,25 +71,31 @@ end
 
     If keyword "initial" or "final" is provided, then the independent variable is fixed at the initial or final time
 
-    @independent( model, t0, initial)
+    @independent( model, t0, type = initial)
 
-    @independent( model, tₚ, final)
+    @independent( model, tₚ, type = final)
 
-    @independent( model, t0 = 0, initial)
+    @independent( model, t0 = 0, type = initial)
 
-    @independent( model, tₚ = 10, final)
+    @independent( model, tₚ = 10, type = final)
 """
 
 macro independent(model, args...)
-    
-    # the user is not providing the bound, so a free-time problem is assumed
-    if collect(args)[1] isa Symbol
-        (length(args) == 1) ? (return :(add_new_independent($(esc(model)),$[args[1],[-Inf,Inf],[]]))) : (return :(add_new_independent($(esc(model)),$[args[1],[-Inf,Inf],args[2]])))
-    end
-
     expr_of_args = collect(args)
+    # separate the situation of initial/final value and trajectory bound
+    if length(expr_of_args) == 1
+        var_ref = :(add_independent($(esc(model)),$(expr_of_args)))
+        sym,val = check_inde_var_input(args[1])   
+        return macro_return(sym,var_ref)
 
-    return :(new_or_exist_independent($(esc(model)),$expr_of_args))        
+    elseif length(expr_of_args) == 2
+        var_ref = :(add_independent($(esc(model)),$([expr_of_args[1]]),$([expr_of_args[2]])))
+        (args[1]) isa Expr ? (sym = args[1].args[1]) : (sym = args[1])  
+        return macro_return(sym,var_ref)
+
+    else
+        throw(error("Incorrect input style"))
+    end
 
 end
 

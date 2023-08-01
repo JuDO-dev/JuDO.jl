@@ -1,18 +1,17 @@
 function new_or_exist(_model,_sym,_args) 
-    haskey(_model.Differential_var_index,_sym[1]) ? (return add_exist(_model,_sym[1],_args)) : (return add_new(_model,_sym[1],_args))
+    haskey(_model.Differential_var_index,_sym[1]) ? same_var_error(_model,_sym[1]) : (return add_new(_model,_sym[1],_args))
 end
 
 ##need to change to not allow multiple use of @independent
-function new_or_exist_independent(_model,_args)
-    sym,val = check_inde_var_input(_args[1])
-    if length(_args) == 2
-        if _args[2] == :initial
-            haskey(_model.Initial_Independent_var_index,sym) ? throw(error("$(_args[2]) independent variable with name $sym already exist")) : (return add_new_independent(_model,sym,val,_args))
-        elseif _args[2] == :final
-            haskey(_model.Final_Independent_var_index,sym) ? throw(error("$(_args[2]) independent variable with name $sym already exist")) : (return add_new_independent(_model,sym,val,_args))
-        end
+function new_info_independent(_model,_args)
+    (length(_args) <= 2) ? nothing : throw(error("Incorrect use of the keyword argument"))
+
+    sym,val = check_inde_var_input(_args)
+
+    if length(_args) == 1
+        return add_new_independent(_model,[sym,val,[]])
     else
-        haskey(_model.Independent_var_index,sym) ? (return add_exist_independent(_model,sym,val)) : (return add_new_independent(_model,sym,val,_args))
+        return add_new_independent(_model,[sym,val,_args[2]])
     end
 end
 
@@ -162,35 +161,12 @@ function identify_kw(__model,__sym,_kws,_vals,add_new=true)
         end
          
     end
-   
-    ########################################## change, since there is one more layer of brackets
-    #check_initial_guess(full_info)
     
     return full_info
 
 end
 
 #modify an exist differential variable
-function add_exist(_model,_sym,_args)
-    _sym isa Symbol ? throw(error("The differential variable is not a symbol")) : nothing
-    (_sym.args[2] == collect(keys(_model.Independent_var_index))[1]) ? nothing : throw(error("The independent variable is not defined yet"))
-
-     kw_val_vect = check_diff_var_input(_args)
-
-    #collect all elements in kw_val_vect that has a odd index
-    kws = kw_val_vect[1:2:end]
-    vals = kw_val_vect[2:2:end]
-
-    var_info = identify_kw(_model,_sym,kws,vals,false)
-    pushfirst!(var_info,_sym)
-    
-    field_names = collect(fieldnames(Differential_Var_data))
-
-    [setfield!(_model.Differential_var_index[_sym],field_names[i],var_info[i]) for i in eachindex(field_names)]  
-
-    return _model.Differential_var_index
-
-end
 
 #called when the user is specifying information about the differential variable
 function add_new(_model,_sym,_args)
@@ -209,9 +185,8 @@ function add_new(_model,_sym,_args)
     diff_var_data = Differential_Var_data(var_info[1],var_info[2],[var_info[3]],[var_info[4]],[var_info[5]],var_info[6])
     _model.Differential_var_index[diff_var_data.Run_sym] = diff_var_data    
 
-    return add_diff_variable(_model,diff_var_data.Run_sym,diff_var_data)
+    return add_diff_variable(_model,diff_var_data)
 
-    #return _model.Differential_var_index
 end
 
 #called when the user is not specifying any information about the differential variable
@@ -226,7 +201,7 @@ function add_new(_model,_args)
     diff_var_data = Differential_Var_data(_args[1],_args[2],_args[3],_args[4],_args[5],_args[6])
     _model.Differential_var_index[diff_var_data.Run_sym] = diff_var_data
 
-    return add_diff_variable(_model,diff_var_data.Run_sym,diff_var_data)
+    return add_diff_variable(_model,diff_var_data)
 
     #return _model.Differential_var_index
 end
@@ -270,64 +245,103 @@ end
 # add new or add exist independent variable
 function check_inde_var_input(_raw_expr)
 
-     if _raw_expr.head == :call && length(_raw_expr.args) == 3
+    _raw_expr isa Symbol ? (return _raw_expr,[-Inf,Inf]) : nothing
+
+    if _raw_expr.head == :call && length(_raw_expr.args) == 3
         name,val = one_side_inde(_raw_expr)
 
-     elseif _raw_expr.head == :comparison && length(_raw_expr.args) == 5
+    elseif _raw_expr.head == :comparison && length(_raw_expr.args) == 5
         name,val = two_sides_inde(_raw_expr)
 
-     else
+    else
         error("The input of the independent variable is not in the correct format")
-     end
+    end
 
-     return name,val
+    return name,val
+end
+#t, 0<=t<=10
+function add_independent(_model,_expr)
+    length(_model.Independent_var_index) == 0 ? nothing : multiple_independent_var_error()
+
+    sym,bound = check_inde_var_input(_expr[1])
+
+    i = _model.Initial_Independent_var_index
+    f = _model.Final_Independent_var_index
+    if length(i) != 0
+        if bound[1] != collect(values(i))[1]
+            throw(error("The initial value is not consistent with the initial value in the initial condition"))
+        end
+    end
+    if length(f) != 0
+        if bound[2] != collect(values(f))[1]
+            throw(error("The final value is not consistent with the final value in the final condition"))
+        end
+    end
+
+    same_var_error(_model,sym)
+    bound_lower_upper(bound)
+    indep_var_data = Independent_Var_data(sym,bound)
+    _model.Independent_var_index[indep_var_data.Sym] = indep_var_data
+    full_info(_model)
+
+    return add_inde_variable(_model,bound,:Trajectory)
+
 end
 
 #called when the user is not specifying any information about a new differential variable
-function add_new_independent(_model,_expr)
-    if _expr[3] != []
-        if _expr[3] == :initial 
-            (_model.Initial_Independent_var_index[_expr[1]] = Independent_Var_data(_expr[1],_expr[2])) 
-            return _model.Initial_Independent_var_index
+function add_independent(_model,_expr,kw)
 
+    if (kw[1] isa Expr) && (kw[1].head == :(=)) && (length(kw[1].args) == 2)
+        if kw[1].args[1] == :type
+            kw[1].args[2] == :initial ? (type = :Initial) : (type = :Final)
         else
-            (_model.Final_Independent_var_index[_expr[1]] = Independent_Var_data(_expr[1],_expr[2]))
-            return _model.Final_Independent_var_index
+            throw(error("Incorrect input style of the independent variable"))
         end
     else
-
-        haskey(_model.Independent_var_index,_expr[1]) || length(_model.Independent_var_index) == 0 ? nothing : multiple_independent_var_error()
-        bound_lower_upper(_expr[2])
-        indep_var_data = Independent_Var_data(_expr[1],_expr[2])
-        _model.Independent_var_index[indep_var_data.Sym] = indep_var_data
-
-        return _model.Independent_var_index 
+        throw(error("Incorrect input style of the independent variable"))
     end
-end
 
-#called when the user put a new differential variable in with information
-function add_new_independent(_model,_sym,_val,_args)
-    if length(_args) == 2
-        if _args[2] == :initial
-            length(_model.Initial_Independent_var_index) == 1 ?  multiple_independent_var_error() : (_model.Initial_Independent_var_index[_sym] = Independent_Var_data(_sym,_val)) 
-            return _model.Initial_Independent_var_index
+    if type == :Initial 
+        length(_model.Initial_Independent_var_index) == 0 ? nothing : multiple_independent_var_error()
+    elseif type == :Final
+        length(_model.Final_Independent_var_index) == 0 ? nothing : multiple_independent_var_error()
+    end
 
-        elseif _args[2] == :final
-            length(_model.Final_Independent_var_index) == 1 ?  multiple_independent_var_error() : (_model.Final_Independent_var_index[_sym] = Independent_Var_data(_sym,_val))
-            return _model.Final_Independent_var_index
+    t = _model.Independent_var_index
+    if (_expr[1] isa Expr) && (_expr[1].head == :(=)) && (length(_expr[1].args) == 2) && (_expr[1].args[2] isa Number)
+        sym = _expr[1].args[1]
+        val = _expr[1].args[2]
+        same_var_error(_model,sym)
+
+        if (length(t) != 0) && (type == :Initial) 
+            if (val != collect(values(t))[1].Bound[1]) && (collect(values(t))[1].Bound[1] != -Inf)
+                throw(error("The value is not consistent with the value in the trajectory"))
+            end
+            _model.Initial_Independent_var_index[sym] = val
+            return IndependendRef(_model,:Initial)
+
+        elseif (length(t) != 0) && (type == :Final)
+            if (val != collect(values(t))[1].Bound[2]) && (collect(values(t))[1].Bound[2] != Inf)
+                throw(error("The value is not consistent with the value in the trajectory"))
+            end
+            _model.Final_Independent_var_index[sym] = val
+            return IndependendRef(_model,:Final)
+        end
+        
+    elseif _expr[1] isa Symbol
+        sym = _expr[1]
+        same_var_error(_model,sym)
+        if type == :Initial 
+            _model.Initial_Independent_var_index[sym] = nothing
+            return IndependendRef(_model,:Initial)
+        elseif type == :Final
+            _model.Final_Independent_var_index[sym] = nothing
+            return IndependendRef(_model,:Final)
         end
     else
-        length(_model.Independent_var_index) == 1 ? multiple_independent_var_error() : add_exist_independent(_model,_sym,_val)
+        throw(error("Incorrect input style of the independent variable"))
     end
-end
 
-function add_exist_independent(_model,_sym,_val)
-
-    bound_lower_upper(_val)
-    indep_var_data = Independent_Var_data(_sym,_val)
-    _model.Independent_var_index[indep_var_data.Sym] = indep_var_data
-
-    return _model.Independent_var_index
 end
 
 ##############################################################################################################
@@ -426,17 +440,470 @@ end
 abstract type AbstractDynamicRef end
 
 # the type of the return value of @differential
-mutable struct DynamicVariableRef <: AbstractDynamicRef
-    optimizer::Abstract_Dynamic_Model
+mutable struct DifferentialRef <: AbstractDynamicRef
+    model::Abstract_Dynamic_Model
     index::DOI.DifferentialVariableIndex
 
 end
 
-function add_diff_variable(_model,_sym,_diff_var_data)
+mutable struct AlgebraicRef <: AbstractDynamicRef
+    model::Abstract_Dynamic_Model
+    index::DOI.AlgebraicVariableIndex
+
+end
+
+mutable struct IndependendRef <: AbstractDynamicRef
+    model::Abstract_Dynamic_Model
+    type::Symbol
+end
+
+function add_inde_variable(_model,_val,type)
+    DOI.add_variable(_model.optimizer.inde_variables,_val)
+ 
+    variable_ref = IndependendRef(_model,type)
+    return variable_ref
+end
+
+function add_diff_variable(_model,_diff_var_data)
     index = DOI.add_variable(_model.optimizer.diff_variables,_diff_var_data)
     
-    variable_ref = DynamicVariableRef(_model,index)
+    variable_ref = DifferentialRef(_model,index)
     
     return variable_ref
 
+end
+
+##############################################################################################################
+
+function add_initial_guess(ref::DifferentialRef,guess::Real)
+    val = collect(values(ref.model.Differential_var_index))[ref.index.value]
+    val.Initial_guess == nothing ? (val.Initial_guess = guess) : throw(error("An initial guess already exists, please use set_initial_guess to change it"))
+    ref.model.optimizer.diff_variables.init_guess[ref.index.value] = guess
+    return 0
+    
+end
+
+## alge var need to be modified in model and optimizer
+function add_initial_guess(ref::AlgebraicRef,guess::Real)
+    val = collect(values(ref.model.Algebraic_var_index))[ref.index.value]
+    val.Initial_guess == nothing ? (val.Initial_guess = guess) : throw(error("An initial guess already exists, please use set_initial_guess to change it"))
+    ref.model.optimizer.alge_variables.init_guess[ref.index.value] = guess
+    return 0 
+    
+end
+
+function add_initial_bound(ref::DifferentialRef,bound::Vector)
+    
+    val = collect(values(ref.model.Differential_var_index))[ref.index.value]
+    check_contradict(val.Initial_bound,bound)
+    if val.Initial_guess != nothing
+        if val.Initial_guess < bound[1] || val.Initial_guess > bound[2]
+            throw(error("The initial guess is not within the initial bound"))
+        end
+    end
+
+    delete_default(val.Initial_bound)
+
+    push!(val.Initial_bound,bound)
+    
+    ref.model.optimizer.diff_variables.init_bound[ref.index.value] = val.Initial_bound
+
+    
+    return 0#var_name
+end
+
+function add_initial_bound(ref::AlgebraicRef,bound::Vector)
+
+    val = collect(values(ref.model.Algebraic_var_index))[ref.index.value]
+    check_contradict(val.Initial_bound,bound)
+    if val.Initial_guess != nothing
+        if val.Initial_guess < bound[1] || val.Initial_guess > bound[2]
+            throw(error("The initial guess is not within the initial bound"))
+        end
+    end
+
+    delete_default(val.Initial_bound)
+
+    push!(val.Initial_bound,bound)
+
+    ref.model.optimizer.alge_variables.init_bound[ref.index.value] = val.Initial_bound
+end
+
+function add_trajectory_bound(ref::DifferentialRef,bound::Vector)
+
+    val = collect(values(ref.model.Differential_var_index))[ref.index.value]
+    check_contradict(val.Trajectory_bound,bound)
+    delete_default(val.Trajectory_bound)
+
+    push!(val.Trajectory_bound,bound)
+    
+    ref.model.optimizer.diff_variables.trajectory_bound[ref.index.value] = val.Trajectory_bound
+    return 0#var_name
+end
+
+    
+function add_trajectory_bound(ref::AlgebraicRef,bound::Vector)
+    
+end
+    
+function add_final_bound(ref::DifferentialRef,bound::Vector)
+        
+    val = collect(values(ref.model.Differential_var_index))[ref.index.value]
+    check_contradict(val.Final_bound,bound)
+    delete_default(val.Final_bound)
+
+    push!(val.Final_bound,bound)
+    
+    ref.model.optimizer.diff_variables.final_bound[ref.index.value] = val.Final_bound
+    return 0
+
+end
+
+function add_final_bound(ref::AlgebraicRef,bound::Vector)
+    
+end
+
+function add_interpolant(ref::DifferentialRef,interpolant::Symbol)
+    val = collect(values(ref.model.Differential_var_index))[ref.index.value]
+    val.Interpolant == nothing ? (val.Interpolant = interpolant) : throw(error("An interpolant already exists, please use set_interpolant to change it"))
+    ref.model.optimizer.diff_variables.interpolant[ref.index.value] = interpolant
+    return 0
+    
+end
+
+function add_interpolant(ref::AlgebraicRef,interpolant::Symbol)
+    val = collect(values(ref.model.Algebraic_var_index))[ref.index.value]
+    val.Interpolant == nothing ? (val.Interpolant = interpolant) : throw(error("An interpolant already exists, please use set_interpolant to change it"))
+    ref.model.optimizer.alge_variables.interpolant[ref.index.value] = interpolant
+    return 0
+    
+end
+
+##############################################################################################################
+function delete_default(bounds)
+    #if there is [-Inf,Inf] in the final bound, then pop [-Inf,Inf] out of the bound
+    if [-Inf,Inf] in bounds
+        index = findfirst(isequal([-Inf,Inf]),bounds)
+        popat!(bounds,index)
+    end
+
+end
+
+function delete_independent(ref::IndependendRef)
+    if ref.type == :Initial
+        empty!(ref.model.Initial_Independent_var_index)
+
+    elseif ref.type == :Final
+        empty!(ref.model.Final_Independent_var_index)
+    else
+        empty!(ref.model.Independent_var_index)
+    end
+end
+
+function delete_initial_guess(ref::DifferentialRef)
+    val = collect(values(ref.model.Differential_var_index))[ref.index.value]
+    val.Initial_guess == nothing ? throw(error("An initial guess does not exist, please use add_initial_guess to add it")) : (val.Initial_guess = nothing)
+    ref.model.optimizer.diff_variables.init_guess[ref.index.value] = nothing
+    return 0
+    
+end
+
+function delete_initial_guess(ref::AlgebraicRef)
+    val = collect(values(ref.model.Algebraic_var_index))[ref.index.value]
+    val.Initial_guess == nothing ? throw(error("An initial guess does not exist, please use add_initial_guess to add it")) : (val.Initial_guess = nothing)
+    ref.model.optimizer.alge_variables.init_guess[ref.index.value] = nothing
+    return 0
+    
+end
+
+function delete_initial_bound(ref::DifferentialRef,place::Int64)
+    val = collect(values(ref.model.Differential_var_index))[ref.index.value]
+    if length(val.Initial_bound) == 1 
+        val.Initial_bound = [[-Inf,Inf]] 
+        ref.model.optimizer.diff_variables.init_bound[ref.index.value] = val.Initial_bound
+    else
+        deleteat!(val.Initial_bound,place)
+        ref.model.optimizer.diff_variables.init_bound[ref.index.value] = val.Initial_bound
+    end
+    return 0
+end
+
+function delete_initial_bound(ref::AlgebraicRef,place::Int64)
+    val = collect(values(ref.model.Algebraic_var_index))[ref.index.value]
+    if length(val.Initial_bound) == 1 
+        val.Initial_bound = [[-Inf,Inf]]
+        ref.model.optimizer.alge_variables.init_bound[ref.index.value] = val.Initial_bound
+    else
+        deleteat!(val.Initial_bound,place)
+        ref.model.optimizer.alge_variables.init_bound[ref.index.value] = val.Initial_bound
+    end
+    return 0
+    
+end
+
+function delete_trajectory_bound(ref::DifferentialRef,place::Int64)
+    val = collect(values(ref.model.Differential_var_index))[ref.index.value]
+    if length(val.Trajectory_bound) == 1 
+        val.Trajectory_bound = [[-Inf,Inf]]
+        ref.model.optimizer.diff_variables.trajectory_bound[ref.index.value] = val.Trajectory_bound
+    else
+        deleteat!(val.Trajectory_bound,place)
+        ref.model.optimizer.diff_variables.trajectory_bound[ref.index.value] = val.Trajectory_bound
+    end
+    return 0
+end
+
+function delete_trajectory_bound(ref::AlgebraicRef,place::Int64)
+    val = collect(values(ref.model.Algebraic_var_index))[ref.index.value]
+    if length(val.Trajectory_bound) == 1 
+        val.Trajectory_bound = [[-Inf,Inf]]
+        ref.model.optimizer.alge_variables.trajectory_bound[ref.index.value] = val.Trajectory_bound
+    else
+        deleteat!(val.Trajectory_bound,place)
+        ref.model.optimizer.alge_variables.trajectory_bound[ref.index.value] = val.Trajectory_bound
+    end
+    return 0
+end
+
+function delete_final_bound(ref::DifferentialRef,place::Int64)
+    val = collect(values(ref.model.Differential_var_index))[ref.index.value]
+    if length(val.Final_bound) == 1 
+        val.Final_bound = [[-Inf,Inf]] 
+        ref.model.optimizer.diff_variables.final_bound[ref.index.value] = val.Final_bound
+    else
+        deleteat!(val.Final_bound,place)
+        ref.model.optimizer.diff_variables.final_bound[ref.index.value] = val.Final_bound
+    end
+    return 0
+end
+
+function delete_final_bound(ref::AlgebraicRef,place::Int64)
+    val = collect(values(ref.model.Algebraic_var_index))[ref.index.value]
+    if length(val.Final_bound) == 1 
+        val.Final_bound = [[-Inf,Inf]] 
+        ref.model.optimizer.alge_variables.final_bound[ref.index.value] = val.Final_bound
+    else
+        deleteat!(val.Final_bound,place)
+        ref.model.optimizer.alge_variables.final_bound[ref.index.value] = val.Final_bound
+    end
+    return 0
+end
+
+function delete_interpolant(ref::DifferentialRef)
+    val = collect(values(ref.model.Differential_var_index))[ref.index.value]
+    val.Interpolant == nothing ? throw(error("An interpolant does not exist, please use add_interpolant to add it")) : (val.Interpolant = nothing)
+    ref.model.optimizer.diff_variables.interpolant[ref.index.value] = nothing
+    return 0
+    
+end
+
+function delete_interpolant(ref::AlgebraicRef)
+    val = collect(values(ref.model.Algebraic_var_index))[ref.index.value]
+    val.Interpolant == nothing ? throw(error("An interpolant does not exist, please use add_interpolant to add it")) : (val.Interpolant = nothing)
+    ref.model.optimizer.alge_variables.interpolant[ref.index.value] = nothing
+    return 0
+    
+end
+
+##############################################################################################################
+function set_independent(ref::IndependendRef,info)
+    
+    if ref.type == :Initial 
+        collection_i = ref.model.Initial_Independent_var_index
+        i = collect(values(collection_i))
+        length(i) == 0 ? throw(error("The initial independent variable is empty, please use the macro to add the variable")) : nothing
+        collection_i[collection_i.keys[1]] = info
+
+    elseif ref.type == :Final
+        collection_f = ref.model.Final_Independent_var_index
+        f = collect(values(collection_f))
+        length(f) == 0 ? throw(error("The final independent variable is empty, please use the macro to add the variable")) : nothing
+        collection_f[collection_f.keys[1]] = info
+
+    else
+        bound_lower_upper(info)
+
+        t = collect(values(ref.model.Independent_var_index))
+        length(t) == 0 ? throw(error("The independent variable is empty, please use the macro to add the variable")) : nothing
+        t[1].Bound = info
+
+        ref.model.optimizer.inde_variables.traj_bound = info
+    end
+    return 0
+end
+
+function set_initial_guess(ref::DifferentialRef,guess::Real)
+    val = collect(values(ref.model.Differential_var_index))[ref.index.value]
+    for i in eachindex(val.Initial_bound)
+        guess < val.Initial_bound[i][1] || guess > val.Initial_bound[i][2] ? throw(error("The initial guess is not within the initial bound")) : nothing
+    end
+    
+    val.Initial_guess == nothing ? throw(error("An initial guess does not exist, please use add_initial_guess to add it")) : (val.Initial_guess = guess)
+    ref.model.optimizer.diff_variables.init_guess[ref.index.value] = guess
+    return 0
+    
+end
+
+function set_initial_guess(ref::AlgebraicRef,guess::Real)
+    val = collect(values(ref.model.Algebraic_var_index))[ref.index.value]
+    for i in eachindex(val.Initial_bound)
+        guess < val.Initial_bound[i][1] || guess > val.Initial_bound[i][2] ? throw(error("The initial guess is not within the initial bound")) : nothing
+    end
+
+    val.Initial_guess == nothing ? throw(error("An initial guess does not exist, please use add_initial_guess to add it")) : (val.Initial_guess = guess)
+    ref.model.optimizer.alge_variables.init_guess[ref.index.value] = guess
+    return 0
+    
+end
+
+function set_initial_bound(ref::DifferentialRef,bound::Vector,place::Int64)
+        
+    val = collect(values(ref.model.Differential_var_index))[ref.index.value]
+    check_contradict(val.Initial_bound,bound)
+    length(val.Initial_bound) == 0 ? throw(error("The initial bound is empty")) : nothing
+
+    val.Initial_bound[place] = bound
+    
+    ref.model.optimizer.diff_variables.init_bound[ref.index.value] = val.Initial_bound
+    return 0
+end
+
+function set_initial_bound(ref::AlgebraicRef,bound::Vector,place::Int64)
+   
+    val = collect(values(ref.model.Algebraic_var_index))[ref.index.value]
+    check_contradict(val.Initial_bound,bound)
+    length(val.Initial_bound) == 0 ? throw(error("The initial bound is empty")) : nothing
+
+    val.Initial_bound[place] = bound
+
+    ref.model.optimizer.alge_variables.init_bound[ref.index.value] = val.Initial_bound
+    return 0
+end
+
+function set_trajectory_bound(ref::DifferentialRef,bound::Vector,place::Int64)
+        
+    val = collect(values(ref.model.Differential_var_index))[ref.index.value]
+    check_contradict(val.Trajectory_bound,bound)
+    length(val.Trajectory_bound) == 0 ? throw(error("The trajectory bound is empty")) : nothing
+
+    val.Trajectory_bound[place] = bound
+    
+    ref.model.optimizer.diff_variables.trajectory_bound[ref.index.value] = val.Trajectory_bound
+    return 0
+end
+
+function set_trajectory_bound(ref::AlgebraicRef,bound::Vector,place::Int64)
+   
+    val = collect(values(ref.model.Algebraic_var_index))[ref.index.value]
+    check_contradict(val.Trajectory_bound,bound)
+    length(val.Trajectory_bound) == 0 ? throw(error("The trajectory bound is empty")) : nothing
+
+    val.Trajectory_bound[place] = bound
+
+    ref.model.optimizer.alge_variables.trajectory_bound[ref.index.value] = val.Trajectory_bound
+    return 0
+end
+
+function set_final_bound(ref::DifferentialRef,bound::Vector,place::Int64)
+        
+    val = collect(values(ref.model.Differential_var_index))[ref.index.value]
+    check_contradict(val.Final_bound,bound)
+    length(val.Final_bound) == 0 ? throw(error("The final bound is empty")) : nothing
+
+    val.Final_bound[place] = bound
+    
+    ref.model.optimizer.diff_variables.final_bound[ref.index.value] = val.Final_bound
+    return 0
+end
+
+function set_final_bound(ref::AlgebraicRef,bound::Vector,place::Int64)
+   
+    val = collect(values(ref.model.Algebraic_var_index))[ref.index.value]
+    check_contradict(val.Final_bound,bound)
+    length(val.Final_bound) == 0 ? throw(error("The final bound is empty")) : nothing
+
+    val.Final_bound[place] = bound
+
+    ref.model.optimizer.alge_variables.final_bound[ref.index.value] = val.Final_bound
+    return 0
+end
+
+function set_interpolant(ref::DifferentialRef,interpolant::Symbol)
+    val = collect(values(ref.model.Differential_var_index))[ref.index.value]
+    val.Interpolant == nothing ? throw(error("An interpolant does not exist, please use add_interpolant to add it")) : (val.Interpolant = interpolant)
+    ref.model.optimizer.diff_variables.interpolant[ref.index.value] = interpolant
+    return 0
+    
+end
+
+function set_interpolant(ref::AlgebraicRef,interpolant::Symbol)
+    val = collect(values(ref.model.Algebraic_var_index))[ref.index.value]
+    val.Interpolant == nothing ? throw(error("An interpolant does not exist, please use add_interpolant to add it")) : (val.Interpolant = interpolant)
+    ref.model.optimizer.alge_variables.interpolant[ref.index.value] = interpolant
+    return 0
+    
+end
+
+##############################################################################################################
+function merge_intersect(b)
+    lower_bounds = [bound[1] for bound in b]
+    upper_bounds = [bound[2] for bound in b]
+
+    intersected_bound = [maximum(lower_bounds), minimum(upper_bounds)]
+
+    return [intersected_bound]
+end
+
+function merge_initial(ref::DifferentialRef)
+    
+    val = collect(values(ref.model.Differential_var_index))[ref.index.value]
+    length(val.Initial_bound) == 1 ? (return) : nothing
+    
+    val.Initial_bound = merge_intersect(val.Initial_bound)
+    ref.model.optimizer.diff_variables.init_bound[ref.index.value] = val.Initial_bound
+end
+
+function merge_initial(ref::AlgebraicRef)
+    
+    val = collect(values(ref.model.Algebraic_var_index))[ref.index.value]
+    length(val.Initial_bound) == 1 ? (return) : nothing
+    
+    val.Initial_bound = merge_intersect(val.Initial_bound)
+    ref.model.optimizer.alge_variables.init_bound[ref.index.value] = val.Initial_bound
+end
+
+function merge_trajectory(ref::DifferentialRef)
+    
+    val = collect(values(ref.model.Differential_var_index))[ref.index.value]
+    length(val.Trajectory_bound) == 1 ? (return) : nothing
+    
+    val.Trajectory_bound = merge_intersect(val.Trajectory_bound)
+    ref.model.optimizer.diff_variables.trajectory_bound[ref.index.value] = val.Trajectory_bound
+end
+
+function merge_trajectory(ref::AlgebraicRef)
+    
+    val = collect(values(ref.model.Algebraic_var_index))[ref.index.value]
+    length(val.Trajectory_bound) == 1 ? (return) : nothing
+    
+    val.Trajectory_bound = merge_intersect(val.Trajectory_bound)
+    ref.model.optimizer.alge_variables.trajectory_bound[ref.index.value] = val.Trajectory_bound
+end
+
+function merge_final(ref::DifferentialRef)
+    
+    val = collect(values(ref.model.Differential_var_index))[ref.index.value]
+    length(val.Final_bound) == 1 ? (return) : nothing
+    
+    val.Final_bound = merge_intersect(val.Final_bound)
+    ref.model.optimizer.diff_variables.final_bound[ref.index.value] = val.Final_bound
+end
+
+function merge_final(ref::AlgebraicRef)
+    
+    val = collect(values(ref.model.Algebraic_var_index))[ref.index.value]
+    length(val.Final_bound) == 1 ? (return) : nothing
+    
+    val.Final_bound = merge_intersect(val.Final_bound)
+    ref.model.optimizer.alge_variables.final_bound[ref.index.value] = val.Final_bound
 end

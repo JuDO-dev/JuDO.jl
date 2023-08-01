@@ -9,6 +9,7 @@ import Base.Meta: isexpr
 
 using Ipopt
 using Unicode
+using OrderedCollections: OrderedDict
 
 abstract type variable_data end
 
@@ -97,23 +98,23 @@ mutable struct Dy_Model <: Abstract_Dynamic_Model
 
     #variable data
     #Differential_vars::Vector{Differential_Var_data}
-    Differential_var_index::Dict{Expr,Differential_Var_data}
+    Differential_var_index::OrderedDict{Expr,Differential_Var_data}
    # Independent_vars::Independent_Var_data
-    Independent_var_index::Dict{Symbol,Independent_Var_data}
-    Initial_Independent_var_index::Dict{Symbol,Independent_Var_data}
-    Final_Independent_var_index::Dict{Symbol,Independent_Var_data}
+    Independent_var_index::OrderedDict{Symbol,Independent_Var_data}
+    Initial_Independent_var_index::OrderedDict{Symbol,Union{Number,Nothing}}
+    Final_Independent_var_index::OrderedDict{Symbol,Union{Number,Nothing}}
 
-    Algebraic_var_index::Dict{Expr,Algebraic_Var_data}
+    Algebraic_var_index::OrderedDict{Expr,Algebraic_Var_data}
     #constraint data
-    Constraints_index::Dict{Symbol,Constraint_data}
-    Constraints_type::Dict{Symbol,Symbol}  
+    Constraints_index::OrderedDict{Symbol,Constraint_data}
+    Constraints_type::OrderedDict{Symbol,Symbol}  
 
     #dynamic data
     Dynamic_objective::Expr
 end 
 
-# currently using Ipopt as the default optimizer for testing, should be an optimizer with type DOI.AbstractDynamicOptimizer
-Dy_Model() = Dy_Model(DOI.Optimizer(),Dict(),Dict(),Dict(),Dict(),Dict(),Dict(),Dict(),Dict(),:())
+Dy_Model() = Dy_Model(DOI.Optimizer(),OrderedDict(),OrderedDict(),OrderedDict(),
+OrderedDict(),OrderedDict(),OrderedDict(),OrderedDict(),OrderedDict(),:())
 
 
 include("macros.jl")
@@ -124,7 +125,8 @@ include("constraints.jl")
 include("optimizer.jl")
 include("dynamic_func.jl")
 
-export @independent, @differential,@algebraic,@constant,@constraint
+export @independent, @differential,@algebraic,@constant,@constraint,full_info,add_initial_bound,add_trajectory_bound,add_final_bound,
+add_initial_guess,add_interpolant,set_initial_bound,set_trajectory_bound,set_final_bound,set_initial_guess,set_interpolant
 
 
 
@@ -135,13 +137,9 @@ Base.show(io::IO, model::Abstract_Dynamic_Model) = print_JuDO(io, model)
 function print_JuDO(io::IO, model::Abstract_Dynamic_Model)
     println(io, "Dynamic Optimization Model $(model.optimizer)")
 end
-    
-function full_info_print(model::Abstract_Dynamic_Model)
-    println("A general display function")
-end
 
 # show the information of the model
-function JuDO.full_info_print(model::Abstract_Dynamic_Model)
+function full_info(model::Dy_Model)
     println("A $(model.optimizer)")
     println("Dynamic objective function: $(model.Dynamic_objective)")
     println("Constants:")
@@ -158,11 +156,11 @@ function JuDO.full_info_print(model::Abstract_Dynamic_Model)
 
     end
     for (key, value) in model.Initial_Independent_var_index
-        println("Initial independent variable $(value.Sym) with bound/value = $(value.Bound)")
+        println("Initial independent variable $key with value = $value")
 
     end
     for (key, value) in model.Final_Independent_var_index
-        println("Final independent variable $(value.Sym) with bound/value = $(value.Bound)")
+        println("Final independent variable $key with value = $value")
 
     end
 

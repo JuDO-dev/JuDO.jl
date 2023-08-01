@@ -6,7 +6,40 @@ input_style_error() = throw(error("Keyword argument input style incorrect, make 
 
 diff_var_input_style_error() = throw(error("Incorrect use of 'keyword = value' and 'keyword in value'"))
 
-multiple_independent_var_error() = throw(error("Only one independent variable is allowed"))
+multiple_independent_var_error() = throw(error("Only one independent variable is allowed, please use set_independent_var to change the independent variable"))
+
+function same_var_error(_model,sym) 
+    t = collect(keys(_model.Independent_var_index))
+    i = collect(keys(_model.Initial_Independent_var_index))
+    f = collect(keys(_model.Final_Independent_var_index))
+
+    if length(t) != 0
+        (sym == t[1]) ? throw(error("The independent variable $(sym) already exists in the trajectory")) : nothing
+    end
+    if length(i) != 0
+        (sym == i[1]) ? throw(error("The independent variable $(sym) already exists in the initial condition")) : nothing
+    end
+    if length(f) != 0
+        (sym == f[1]) ? throw(error("The independent variable $(sym) already exists in the final condition")) : nothing
+    end
+end
+
+
+function check_contradict(collection,val)
+    val[1] <= val[2] ? nothing : throw(error("Initial value greater than final value in the bound"))
+
+    for i in eachindex(collection)
+        if collection[i][1] >= val[2] || collection[i][2] <= val[1]
+            throw(error("The bound $(val) contradicts with $(collection[i])"))
+        end
+    end
+    
+end
+
+function check_modified(var)
+
+   bound_lower_upper(var.Initial_bound) 
+end
 
 function bound_lower_upper(_bound)
     _bound[1] isa Real && _bound[2] isa Real ? nothing : throw(error("Elements in the bound must be real numbers"))
