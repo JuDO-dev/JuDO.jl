@@ -79,7 +79,65 @@
     println(_model.Differential_var_index)
     println(_model.optimizer.diff_variables)
 
-    #@test 
+    ########################################## test algebraic variables
+    @algebraic(_model,v(t)<=10,Initial_guess=1)
+    @algebraic(_model,w(t),Initial_guess=1)
+    @algebraic(_model,0<=h(t)<=1) 
+    @algebraic(_model,j(t)>=0,Interpolant=c)
+    @algebraic(_model,l(t)>=0,Interpolant=c,Initial_guess=1)
+
+    @test [-Inf, Inf] == _model.Algebraic_var_index[:(u(t))].Bound
+    @test [-Inf, 10.0] == _model.Algebraic_var_index[:(v(t))].Bound
+    @test 1 == _model.Algebraic_var_index[:(v(t))].Initial_guess
+    @test [-Inf, Inf] == _model.Algebraic_var_index[:(w(t))].Bound
+    @test 1 == _model.Algebraic_var_index[:(w(t))].Initial_guess
+    @test [0.0, 1.0] == _model.Algebraic_var_index[:(h(t))].Bound
+    @test [0.0, Inf] == _model.Algebraic_var_index[:(j(t))].Bound
+    @test :c == _model.Algebraic_var_index[:(j(t))].Interpolant
+    @test [0.0, Inf] == _model.Algebraic_var_index[:(l(t))].Bound
+    @test 1 == _model.Algebraic_var_index[:(l(t))].Initial_guess
+    @test :c == _model.Algebraic_var_index[:(l(t))].Interpolant
+
+    println(_model.optimizer.alge_variables)
+
+    @test_throws ErrorException @algebraic(_model,u(t))
+    @test_throws ErrorException @algebraic(_model,100<=i(t)<=10,Initial_guess=1)
+    @test_throws ErrorException @algebraic(_model,i(t),Initial_guess=p)
+    @test_throws ErrorException @algebraic(_model,1<=i(t)<=10,Initial_guess=p)
+    @test_throws ErrorException @algebraic(_model,1<=i(t)<=10,Initial_guess=1,Interpolant=1)
+
+    JuDO.add_interpolant(v,:poly)
+    @test :poly == _model.Algebraic_var_index[:(v(t))].Interpolant
+    @test_throws ErrorException JuDO.add_interpolant(v,:c)
+    @test_throws ErrorException JuDO.add_interpolant(j,:c)
+
+    JuDO.add_trajectory_bound(w,[-10,10])
+    @test [-10.0, 10.0] == _model.Algebraic_var_index[:(w(t))].Bound
+    @test_throws ErrorException JuDO.add_trajectory_bound(v,[-10,10])
+
+    JuDO.add_initial_guess(h,0.5)
+    @test 0.5 == _model.Algebraic_var_index[:(h(t))].Initial_guess
+    @test_throws ErrorException JuDO.add_initial_guess(v,0.5)
+    @test_throws ErrorException JuDO.add_initial_guess(l,0.5)
+
+    JuDO.set_interpolant(j,:poly)
+    @test :poly == _model.Algebraic_var_index[:(j(t))].Interpolant
+    JuDO.set_interpolant(l,:poly)
+    @test :poly == _model.Algebraic_var_index[:(l(t))].Interpolant
+    @test_throws ErrorException JuDO.set_interpolant(w,:poly)
+    @test_throws ErrorException JuDO.set_interpolant(h,:c)
+ 
+    JuDO.set_initial_guess(h,1)
+    @test 1 == _model.Algebraic_var_index[:(h(t))].Initial_guess
+    @test_throws ErrorException JuDO.set_initial_guess(j,1)
+
+    JuDO.set_trajectory_bound(w,[-5,5])
+    @test [-5.0, 5.0] == _model.Algebraic_var_index[:(w(t))].Bound
+    @test_throws ErrorException JuDO.set_trajectory_bound(v,[10,Inf])
+
+    println(_model.optimizer.alge_variables)
+    #JuDO.delete_interpolant(v)
+
 end
 
 @testset "test_delete" begin

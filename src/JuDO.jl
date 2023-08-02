@@ -51,6 +51,8 @@ mutable struct Algebraic_Var_data <: variable_data
     Sym::Expr
     Bound::Vector
 
+    Initial_guess::Union{Real,Nothing}
+    Interpolant::Union{Symbol,Nothing}
 end
 
 """
@@ -165,7 +167,7 @@ function full_info(model::Dy_Model)
     end
 
     for (key, value) in model.Algebraic_var_index
-        println("Algebraic variable $(value.Sym) with bound = $(value.Bound)")
+        println("Algebraic variable $(value.Sym) with bound = $(value.Bound), initial guess = $(value.Initial_guess), interpolant = $(value.Interpolant)")
     end
 
     for (key, value) in model.Constraints_index

@@ -124,11 +124,15 @@ macro algebraic(model,args...)
 
     #if the user is not providing any info, then add default info
     if (c_args[1] isa Expr) && (length(c_args[1].args) == 2)
-        return :(add_new_algebraic($(esc(model)),$[c_args[1],[-Inf,Inf]]))
-    end 
-
-    return :(new_or_exist_algebraic($(esc(model)),$c_args))
-
+        var_ref = :(add_new_algebraic($(esc(model)),$c_args,[-Inf,Inf]))
+        return macro_return(c_args[1].args[1],var_ref)
+    elseif (c_args[1] isa Expr) 
+        var_ref = :(new_info_algebraic($(esc(model)),$c_args))
+        sym,val = check_alge_var_input(c_args[1])
+        return macro_return(sym.args[1],var_ref)
+    else
+        throw(error("Incorrect input style"))
+    end
 end
 
 """

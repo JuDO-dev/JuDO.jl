@@ -1,9 +1,9 @@
 function new_or_exist(_model,_sym,_args) 
-    haskey(_model.Differential_var_index,_sym[1]) ? same_var_error(_model,_sym[1]) : (return add_new(_model,_sym[1],_args))
+    haskey(_model.Differential_var_index,_sym[1]) ? throw(error()) : (return add_new(_model,_sym[1],_args))
 end
 
 ##need to change to not allow multiple use of @independent
-function new_info_independent(_model,_args)
+#= function new_info_independent(_model,_args)
     (length(_args) <= 2) ? nothing : throw(error("Incorrect use of the keyword argument"))
 
     sym,val = check_inde_var_input(_args)
@@ -13,13 +13,21 @@ function new_info_independent(_model,_args)
     else
         return add_new_independent(_model,[sym,val,_args[2]])
     end
-end
+end =#
 
-function new_or_exist_algebraic(_model,_args)
+function new_info_algebraic(_model,_args)
     _args[1] isa Symbol ? throw(error("Make sure to include the independent variable in paranthesis")) : nothing
     sym,val = check_alge_var_input(_args[1])
 
-    haskey(_model.Algebraic_var_index,sym) ? (return add_exist_algebraic(_model,sym,val)) : (return add_new_algebraic(_model,sym,val))
+    info = [sym]
+    if length(_args) == 1
+        return add_new_algebraic(_model,info,val)
+    elseif length(_args) in [2,3]
+        [push!(info,_args[i]) for i in 2:length(_args)]
+        return add_new_algebraic(_model,info,val)
+    else
+        throw(error("Incorrect use of the keyword argument"))
+    end
 end
 
 ##############################################################################################################
@@ -282,7 +290,6 @@ function add_independent(_model,_expr)
     bound_lower_upper(bound)
     indep_var_data = Independent_Var_data(sym,bound)
     _model.Independent_var_index[indep_var_data.Sym] = indep_var_data
-    full_info(_model)
 
     return add_inde_variable(_model,bound,:Trajectory)
 
@@ -395,44 +402,42 @@ function check_alge_var_input(_raw_expr)
     return name,val
 end
 
-function add_exist_algebraic(_model,_sym,_args)
-    (_sym.args[2] == collect(keys(_model.Independent_var_index))[1]) ? nothing : throw(error("The independent variable is not defined yet"))
-
-    _args isa Vector ? nothing : throw(algebraic_input_style_error())
-    bound_lower_upper(_args)
-
-    setfield!(_model.Algebraic_var_index[_sym],:Bound,_args)
-
-    return _model.Algebraic_var_index
-end
-
-function add_new_algebraic(_model,_sym,_args)
-    (_sym.args[2] == collect(keys(_model.Independent_var_index))[1]) ? nothing : throw(error("The independent variable is not defined yet"))
-
-    _args isa Vector ? nothing : throw(algebraic_input_style_error())
-    bound_lower_upper(_args)
-
-    alge_var_data = Algebraic_Var_data(_sym,_args)
-
-    _model.Algebraic_var_index[alge_var_data.Sym] = alge_var_data
-
-    return _model.Algebraic_var_index
-end
-
-#called when the user is not specifying any information about a new algebraic variable
-function add_new_algebraic(_model,_args)
+function add_new_algebraic(_model,_args,bound)
     (_args[1].args[2] == collect(keys(_model.Independent_var_index))[1]) ? nothing : throw(error("The independent variable is not defined yet"))
+    same_var_error(_model,_args[1].args[1])
+    bound_lower_upper(bound)
 
-    bound_lower_upper(eval(_args[2]))
+    if length(_args) == 1
+        alge_var_data = Algebraic_Var_data(_args[1],bound,nothing,nothing)
+        _model.Algebraic_var_index[alge_var_data.Sym] = alge_var_data
 
-    alge_var_data = Algebraic_Var_data(_args[1],eval(_args[2]))
+        return add_alge_variable(_model,alge_var_data)
 
-    _model.Algebraic_var_index[alge_var_data.Sym] = alge_var_data
+    elseif (length(_args) in [2,3]) 
+        val = nothing
+        guess = nothing
+        println(_args)
+        for i in _args[2:end]
+            if (i.args[1] == :Initial_guess) && (i.args[2] isa Number) && (i isa Expr) && (i.head == :(=)) && (length(i.args) == 2) 
+                guess = i.args[2]
+                
+            elseif (i.args[1] == :Interpolant) && (i.args[2] isa Symbol) && (i isa Expr) && (i.head == :(=)) && (length(i.args) == 2)         
+                val = i.args[2]
 
-    return _model.Algebraic_var_index
-    
+            else
+                throw(error("Incorrect input style of the algebraic variable"))
+            end
+        end
+
+        alge_var_data = Algebraic_Var_data(_args[1],bound,guess,val)
+        _model.Algebraic_var_index[alge_var_data.Sym] = alge_var_data
+
+        return add_alge_variable(_model,alge_var_data)
+    else
+        throw(error("Incorrect input style of the algebraic variable"))
+    end
+
 end
-
 
 ##############################################################################################################
 
@@ -473,6 +478,15 @@ function add_diff_variable(_model,_diff_var_data)
 
 end
 
+function add_alge_variable(_model,_alge_var_data)
+    index = DOI.add_variable(_model.optimizer.alge_variables,_alge_var_data)
+    
+    variable_ref = AlgebraicRef(_model,index)
+    
+    return variable_ref
+    
+end
+
 ##############################################################################################################
 
 function add_initial_guess(ref::DifferentialRef,guess::Real)
@@ -486,6 +500,8 @@ end
 ## alge var need to be modified in model and optimizer
 function add_initial_guess(ref::AlgebraicRef,guess::Real)
     val = collect(values(ref.model.Algebraic_var_index))[ref.index.value]
+    check_alge_bound(guess,val.Bound)
+
     val.Initial_guess == nothing ? (val.Initial_guess = guess) : throw(error("An initial guess already exists, please use set_initial_guess to change it"))
     ref.model.optimizer.alge_variables.init_guess[ref.index.value] = guess
     return 0 
@@ -512,23 +528,6 @@ function add_initial_bound(ref::DifferentialRef,bound::Vector)
     return 0#var_name
 end
 
-function add_initial_bound(ref::AlgebraicRef,bound::Vector)
-
-    val = collect(values(ref.model.Algebraic_var_index))[ref.index.value]
-    check_contradict(val.Initial_bound,bound)
-    if val.Initial_guess != nothing
-        if val.Initial_guess < bound[1] || val.Initial_guess > bound[2]
-            throw(error("The initial guess is not within the initial bound"))
-        end
-    end
-
-    delete_default(val.Initial_bound)
-
-    push!(val.Initial_bound,bound)
-
-    ref.model.optimizer.alge_variables.init_bound[ref.index.value] = val.Initial_bound
-end
-
 function add_trajectory_bound(ref::DifferentialRef,bound::Vector)
 
     val = collect(values(ref.model.Differential_var_index))[ref.index.value]
@@ -543,8 +542,19 @@ end
 
     
 function add_trajectory_bound(ref::AlgebraicRef,bound::Vector)
+        
+    val = collect(values(ref.model.Algebraic_var_index))[ref.index.value]
+    check_alge_bound(val.Initial_guess,bound)
+
+    val.Bound == [-Inf,Inf] ? nothing : throw(error("A trajectory bound already exists, please use set_trajectory_bound to change it"))
+
+    val.Bound = bound
     
+    ref.model.optimizer.alge_variables.trajectory_bound[ref.index.value] = val.Bound
+    return 0#var_name
 end
+
+
     
 function add_final_bound(ref::DifferentialRef,bound::Vector)
         
@@ -559,9 +569,6 @@ function add_final_bound(ref::DifferentialRef,bound::Vector)
 
 end
 
-function add_final_bound(ref::AlgebraicRef,bound::Vector)
-    
-end
 
 function add_interpolant(ref::DifferentialRef,interpolant::Symbol)
     val = collect(values(ref.model.Differential_var_index))[ref.index.value]
@@ -628,19 +635,6 @@ function delete_initial_bound(ref::DifferentialRef,place::Int64)
     return 0
 end
 
-function delete_initial_bound(ref::AlgebraicRef,place::Int64)
-    val = collect(values(ref.model.Algebraic_var_index))[ref.index.value]
-    if length(val.Initial_bound) == 1 
-        val.Initial_bound = [[-Inf,Inf]]
-        ref.model.optimizer.alge_variables.init_bound[ref.index.value] = val.Initial_bound
-    else
-        deleteat!(val.Initial_bound,place)
-        ref.model.optimizer.alge_variables.init_bound[ref.index.value] = val.Initial_bound
-    end
-    return 0
-    
-end
-
 function delete_trajectory_bound(ref::DifferentialRef,place::Int64)
     val = collect(values(ref.model.Differential_var_index))[ref.index.value]
     if length(val.Trajectory_bound) == 1 
@@ -653,15 +647,12 @@ function delete_trajectory_bound(ref::DifferentialRef,place::Int64)
     return 0
 end
 
-function delete_trajectory_bound(ref::AlgebraicRef,place::Int64)
+function delete_trajectory_bound(ref::AlgebraicRef)
     val = collect(values(ref.model.Algebraic_var_index))[ref.index.value]
-    if length(val.Trajectory_bound) == 1 
-        val.Trajectory_bound = [[-Inf,Inf]]
-        ref.model.optimizer.alge_variables.trajectory_bound[ref.index.value] = val.Trajectory_bound
-    else
-        deleteat!(val.Trajectory_bound,place)
-        ref.model.optimizer.alge_variables.trajectory_bound[ref.index.value] = val.Trajectory_bound
-    end
+        val.Bound = [-Inf,Inf]
+
+        ref.model.optimizer.alge_variables.trajectory_bound[ref.index.value] = val.Bound
+
     return 0
 end
 
@@ -673,18 +664,6 @@ function delete_final_bound(ref::DifferentialRef,place::Int64)
     else
         deleteat!(val.Final_bound,place)
         ref.model.optimizer.diff_variables.final_bound[ref.index.value] = val.Final_bound
-    end
-    return 0
-end
-
-function delete_final_bound(ref::AlgebraicRef,place::Int64)
-    val = collect(values(ref.model.Algebraic_var_index))[ref.index.value]
-    if length(val.Final_bound) == 1 
-        val.Final_bound = [[-Inf,Inf]] 
-        ref.model.optimizer.alge_variables.final_bound[ref.index.value] = val.Final_bound
-    else
-        deleteat!(val.Final_bound,place)
-        ref.model.optimizer.alge_variables.final_bound[ref.index.value] = val.Final_bound
     end
     return 0
 end
@@ -746,9 +725,7 @@ end
 
 function set_initial_guess(ref::AlgebraicRef,guess::Real)
     val = collect(values(ref.model.Algebraic_var_index))[ref.index.value]
-    for i in eachindex(val.Initial_bound)
-        guess < val.Initial_bound[i][1] || guess > val.Initial_bound[i][2] ? throw(error("The initial guess is not within the initial bound")) : nothing
-    end
+    check_alge_bound(guess,val.Bound)
 
     val.Initial_guess == nothing ? throw(error("An initial guess does not exist, please use add_initial_guess to add it")) : (val.Initial_guess = guess)
     ref.model.optimizer.alge_variables.init_guess[ref.index.value] = guess
@@ -768,18 +745,6 @@ function set_initial_bound(ref::DifferentialRef,bound::Vector,place::Int64)
     return 0
 end
 
-function set_initial_bound(ref::AlgebraicRef,bound::Vector,place::Int64)
-   
-    val = collect(values(ref.model.Algebraic_var_index))[ref.index.value]
-    check_contradict(val.Initial_bound,bound)
-    length(val.Initial_bound) == 0 ? throw(error("The initial bound is empty")) : nothing
-
-    val.Initial_bound[place] = bound
-
-    ref.model.optimizer.alge_variables.init_bound[ref.index.value] = val.Initial_bound
-    return 0
-end
-
 function set_trajectory_bound(ref::DifferentialRef,bound::Vector,place::Int64)
         
     val = collect(values(ref.model.Differential_var_index))[ref.index.value]
@@ -792,15 +757,14 @@ function set_trajectory_bound(ref::DifferentialRef,bound::Vector,place::Int64)
     return 0
 end
 
-function set_trajectory_bound(ref::AlgebraicRef,bound::Vector,place::Int64)
+function set_trajectory_bound(ref::AlgebraicRef,bound::Vector)
    
     val = collect(values(ref.model.Algebraic_var_index))[ref.index.value]
-    check_contradict(val.Trajectory_bound,bound)
-    length(val.Trajectory_bound) == 0 ? throw(error("The trajectory bound is empty")) : nothing
+    check_alge_bound(val.Initial_guess,bound)
 
-    val.Trajectory_bound[place] = bound
+    val.Bound = bound
 
-    ref.model.optimizer.alge_variables.trajectory_bound[ref.index.value] = val.Trajectory_bound
+    ref.model.optimizer.alge_variables.trajectory_bound[ref.index.value] = val.Bound
     return 0
 end
 
@@ -813,18 +777,6 @@ function set_final_bound(ref::DifferentialRef,bound::Vector,place::Int64)
     val.Final_bound[place] = bound
     
     ref.model.optimizer.diff_variables.final_bound[ref.index.value] = val.Final_bound
-    return 0
-end
-
-function set_final_bound(ref::AlgebraicRef,bound::Vector,place::Int64)
-   
-    val = collect(values(ref.model.Algebraic_var_index))[ref.index.value]
-    check_contradict(val.Final_bound,bound)
-    length(val.Final_bound) == 0 ? throw(error("The final bound is empty")) : nothing
-
-    val.Final_bound[place] = bound
-
-    ref.model.optimizer.alge_variables.final_bound[ref.index.value] = val.Final_bound
     return 0
 end
 
@@ -863,15 +815,6 @@ function merge_initial(ref::DifferentialRef)
     ref.model.optimizer.diff_variables.init_bound[ref.index.value] = val.Initial_bound
 end
 
-function merge_initial(ref::AlgebraicRef)
-    
-    val = collect(values(ref.model.Algebraic_var_index))[ref.index.value]
-    length(val.Initial_bound) == 1 ? (return) : nothing
-    
-    val.Initial_bound = merge_intersect(val.Initial_bound)
-    ref.model.optimizer.alge_variables.init_bound[ref.index.value] = val.Initial_bound
-end
-
 function merge_trajectory(ref::DifferentialRef)
     
     val = collect(values(ref.model.Differential_var_index))[ref.index.value]
@@ -881,15 +824,6 @@ function merge_trajectory(ref::DifferentialRef)
     ref.model.optimizer.diff_variables.trajectory_bound[ref.index.value] = val.Trajectory_bound
 end
 
-function merge_trajectory(ref::AlgebraicRef)
-    
-    val = collect(values(ref.model.Algebraic_var_index))[ref.index.value]
-    length(val.Trajectory_bound) == 1 ? (return) : nothing
-    
-    val.Trajectory_bound = merge_intersect(val.Trajectory_bound)
-    ref.model.optimizer.alge_variables.trajectory_bound[ref.index.value] = val.Trajectory_bound
-end
-
 function merge_final(ref::DifferentialRef)
     
     val = collect(values(ref.model.Differential_var_index))[ref.index.value]
@@ -897,13 +831,4 @@ function merge_final(ref::DifferentialRef)
     
     val.Final_bound = merge_intersect(val.Final_bound)
     ref.model.optimizer.diff_variables.final_bound[ref.index.value] = val.Final_bound
-end
-
-function merge_final(ref::AlgebraicRef)
-    
-    val = collect(values(ref.model.Algebraic_var_index))[ref.index.value]
-    length(val.Final_bound) == 1 ? (return) : nothing
-    
-    val.Final_bound = merge_intersect(val.Final_bound)
-    ref.model.optimizer.alge_variables.final_bound[ref.index.value] = val.Final_bound
 end

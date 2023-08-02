@@ -12,15 +12,18 @@ function same_var_error(_model,sym)
     t = collect(keys(_model.Independent_var_index))
     i = collect(keys(_model.Initial_Independent_var_index))
     f = collect(keys(_model.Final_Independent_var_index))
+    diff = collect_keys(_model.Differential_var_index)
+    alg = collect_keys(_model.Algebraic_var_index)
+    con = collect(keys(_model.Constant_index))
 
-    if length(t) != 0
-        (sym == t[1]) ? throw(error("The independent variable $(sym) already exists in the trajectory")) : nothing
-    end
-    if length(i) != 0
-        (sym == i[1]) ? throw(error("The independent variable $(sym) already exists in the initial condition")) : nothing
-    end
-    if length(f) != 0
-        (sym == f[1]) ? throw(error("The independent variable $(sym) already exists in the final condition")) : nothing
+    append!(diff,alg)
+    append!(diff,t)
+    append!(diff,i)
+    append!(diff,f)
+    append!(diff,con)
+
+    if sym in diff
+        throw(error("The symbol $(sym) is already used in the model"))
     end
 end
 
@@ -34,6 +37,13 @@ function check_contradict(collection,val)
         end
     end
     
+end
+
+function check_alge_bound(val,bound)
+    (bound[1] <= bound[2]) ? nothing : throw(error("Initial value greater than final value in the bound"))
+    if val !== nothing
+        (val >= bound[1] && val <= bound[2]) ? nothing : throw(error("The initial guess $(val) is not inside the bound $(bound)"))
+    end
 end
 
 function check_modified(var)
