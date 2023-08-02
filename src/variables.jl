@@ -1,20 +1,3 @@
-function new_or_exist(_model,_sym,_args) 
-    haskey(_model.Differential_var_index,_sym[1]) ? throw(error()) : (return add_new(_model,_sym[1],_args))
-end
-
-##need to change to not allow multiple use of @independent
-#= function new_info_independent(_model,_args)
-    (length(_args) <= 2) ? nothing : throw(error("Incorrect use of the keyword argument"))
-
-    sym,val = check_inde_var_input(_args)
-
-    if length(_args) == 1
-        return add_new_independent(_model,[sym,val,[]])
-    else
-        return add_new_independent(_model,[sym,val,_args[2]])
-    end
-end =#
-
 function new_info_algebraic(_model,_args)
     _args[1] isa Symbol ? throw(error("Make sure to include the independent variable in paranthesis")) : nothing
     sym,val = check_alge_var_input(_args[1])
@@ -174,44 +157,45 @@ function identify_kw(__model,__sym,_kws,_vals,add_new=true)
 
 end
 
-#modify an exist differential variable
-
 #called when the user is specifying information about the differential variable
-function add_new(_model,_sym,_args)
-
-    _sym isa Symbol ? throw(error("The differential variable is not a symbol")) : nothing
-    (_sym.args[2] == collect(keys(_model.Independent_var_index))[1]) ? nothing : throw(error("The independent variable is not defined yet"))
-
+function construct_diff_info(_model,_sym,_args)
     kw_val_vect = check_diff_var_input(_args)
     kws = kw_val_vect[1:2:end]
     vals = kw_val_vect[2:2:end]
 
     var_info = identify_kw(_model,_sym,kws,vals)
-     pushfirst!(var_info,_sym)
+    pushfirst!(var_info,_sym)
 
-    ##changed the bounds by adding square brackets
-    diff_var_data = Differential_Var_data(var_info[1],var_info[2],[var_info[3]],[var_info[4]],[var_info[5]],var_info[6])
-    _model.Differential_var_index[diff_var_data.Run_sym] = diff_var_data    
-
-    return add_diff_variable(_model,diff_var_data)
-
+    return var_info
 end
 
-#called when the user is not specifying any information about the differential variable
-function add_new(_model,_args)
-    _args[1] isa Symbol ? throw(error("The differential variable is not a symbol")) : nothing
-
-    (_args[1].args[2] == collect(keys(_model.Independent_var_index))[1]) ? nothing : throw(error("The independent variable is not defined yet"))
-
-    ## to do
-    haskey(_model.Differential_var_index,_args[1]) ? error("The differential variable already exists, to reset the information, please delete and create again") : nothing
-
+function add_new_vector(_model,_args)
     diff_var_data = Differential_Var_data(_args[1],_args[2],_args[3],_args[4],_args[5],_args[6])
     _model.Differential_var_index[diff_var_data.Run_sym] = diff_var_data
 
     return add_diff_variable(_model,diff_var_data)
+end
 
-    #return _model.Differential_var_index
+#called when the user is not specifying any information about the differential variable
+function add_new(_model,_args,extra_args=false)
+    _args[1] isa Symbol ? throw(error("The differential variable is not a symbol")) : nothing
+    (_args[1].args[2] == collect(keys(_model.Independent_var_index))[1]) ? nothing : throw(error("The independent variable is not defined yet"))
+
+    ## to do
+    same_var_error(_model,_args[1].args[1])
+
+    if extra_args == false
+        diff_var_data = Differential_Var_data(_args[1],nothing,[[-Inf,Inf]],[[-Inf,Inf]],[[-Inf,Inf]],nothing)
+    else
+        var_info = construct_diff_info(_model,_args[1],_args[2:end])
+
+        diff_var_data = Differential_Var_data(var_info[1],var_info[2],[var_info[3]],[var_info[4]],[var_info[5]],var_info[6])
+    end
+
+    _model.Differential_var_index[diff_var_data.Run_sym] = diff_var_data
+
+    return add_diff_variable(_model,diff_var_data)
+
 end
 
 ##############################################################################################################
@@ -831,4 +815,16 @@ function merge_final(ref::DifferentialRef)
     
     val.Final_bound = merge_intersect(val.Final_bound)
     ref.model.optimizer.diff_variables.final_bound[ref.index.value] = val.Final_bound
+end
+
+##############################################################################################################
+function assign_vector(_model,i,args,result,extra_args = false)
+    if extra_args == false
+        info = [Expr(:call,Symbol(string(args[1].args[1].args[1],"_vect_",i)),collect(keys(_model.Independent_var_index))[1]),nothing,[[-Inf,Inf]],[[-Inf,Inf]],[[-Inf,Inf]],nothing]
+    else
+        var_info = construct_diff_info(_model,args[1],args[2:end])
+        info = [Expr(:call,Symbol(string(var_info[1].args[1].args[1],"_vect_",i)),collect(keys(_model.Independent_var_index))[1]),var_info[2],[var_info[3]],[var_info[4]],[var_info[5]],var_info[6]]
+    end
+    var_ref = add_new_vector(_model,info)
+    return   quote push!($result,$var_ref) end
 end

@@ -27,6 +27,19 @@ function same_var_error(_model,sym)
     end
 end
 
+function check_vector_input(_expr)
+    length(_expr.args) == 2 ? nothing : throw(error("Incorrect input style of vector."))
+    
+    #independent_var = collect(keys(_model.Independent_var_index))[1]          && (_expr.args[1].args[2] == independent_var) 
+    
+    (_expr.args[1] isa Expr) && (length(_expr.args[1].args) == 2) ? nothing : throw(error("Incorrect input style of vector."))
+
+    (_expr.args[2].head == :call) && (length(_expr.args[2].args) == 3) && (_expr.args[2].args[1] == :(:)) ? nothing : throw(error("Incorrect input style of vector."))
+
+    (_expr.args[2].args[2] == 1) && (_expr.args[2].args[3] isa Int64) && (_expr.args[2].args[3] > 1) ? nothing : throw(error("Incorrect input style of vector."))
+
+    return _expr.args[2].args[3]
+end
 
 function check_contradict(collection,val)
     val[1] <= val[2] ? nothing : throw(error("Initial value greater than final value in the bound"))

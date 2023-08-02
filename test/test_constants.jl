@@ -1,23 +1,18 @@
 @testset "test_constants" begin
     _model = JuDO.Dy_Model()
-    @test _model isa JuDO.Dy_Model
 
-    function test_const(test_cond)
-        vector_of_info = []
+    @constant( _model, g = 9.81)
+    @constant( _model, k = 0.0069)
+    @constant( _model, A = [1 2;3 4])
+    @constant( _model, P = 1.01e5)
 
-        push!(vector_of_info,test_cond.Sym)
-        push!(vector_of_info,test_cond.Value)
+    @test 9.81 == _model.Constant_index[:g].Value
+    @test 0.0069 == _model.Constant_index[:k].Value
+    @test [1 2;3 4] == _model.Constant_index[:A].Value
+    @test 101000 == _model.Constant_index[:P].Value
 
-        return vector_of_info
-    end
-
-    @test [:g,9.81] == test_const(@constant( _model, g = 9.81)[:g])
-
-    @test [:k,0.0069] == test_const(@constant( _model, k = 0.0069)[:k])
-
-    @test [:k,0] == test_const(@constant( _model, k = 0)[:k])
-
-    @test [:P,101000] == test_const(@constant( _model, P = 1.01e5)[:P])
+    @test_throws ErrorException @constant( _model, g = 9.81)
+    println(_model.optimizer.constants)
 
 
 end

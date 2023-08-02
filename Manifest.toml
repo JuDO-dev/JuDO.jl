@@ -104,7 +104,7 @@ version = "1.6.0"
 
 [[DynOptInterface]]
 deps = ["MathOptInterface"]
-git-tree-sha1 = "571264c7bd5da8c9b40db37ed626ffde09b9d29e"
+git-tree-sha1 = "8ba5c0e0a037a3349aff7a471d43c5670099b4fb"
 repo-rev = "dev"
 repo-url = "https://github.com/JuDO-dev/DynOptInterface.jl"
 uuid = "80a7045d-d411-400a-b3f5-1501539f8fe7"

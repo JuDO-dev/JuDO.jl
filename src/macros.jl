@@ -30,20 +30,33 @@ keyword arguments can contain:
 """
 
 macro differential(model,args...)
-
-    if length(args) == 1 
-        empty_info = [args[1],nothing,[[-Inf,Inf]],[[-Inf,Inf]],[[-Inf,Inf]],nothing]
-
-        var_ref = :(add_new($(esc(model)),$empty_info))
-        return macro_return(args,var_ref)
+    expr_of_args = collect(args)
+    if expr_of_args[1].head == :ref
+        len = check_vector_input(expr_of_args[1])
+        result = []
+    
+        if length(expr_of_args) == 1
+            for i in 1:len
+                result = :(assign_vector($(esc(model)),$i,$expr_of_args,$result))
+            end
+            return macro_return(args[1].args[1].args[1],result) 
+        else
+            for i in 1:len
+                result = :(assign_vector($(esc(model)),$i,$expr_of_args,$result,true))
+            end
+            return macro_return(args[1].args[1].args[1],result) 
+        end
     end
     
-    expr_of_args = collect(args)[2:end]
+    if length(expr_of_args) == 1 
 
-    var_ref = :(new_or_exist($(esc(model)),$([args[1]]),$expr_of_args))
+        var_ref = :(add_new($(esc(model)),$expr_of_args))
+        return macro_return(expr_of_args[1].args[1],var_ref)
+    else
 
-    return macro_return(args[1].args[1],var_ref)
-
+        var_ref = :(add_new($(esc(model)),$expr_of_args,true))
+        return macro_return(expr_of_args[1].args[1],var_ref)
+    end
 end
 
 function macro_return(sym,ref)
@@ -153,8 +166,9 @@ macro constant(model,args...)
 
     c_args = collect(args)
 
-    return :(new_or_exist_constant($(esc(model)),$c_args))
+    const_ref = :(new_or_exist_constant($(esc(model)),$c_args))
 
+    return macro_return(c_args[1].args[1],const_ref)
 end
 
 """

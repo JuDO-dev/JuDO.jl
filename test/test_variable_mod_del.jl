@@ -43,6 +43,11 @@
     @test [-10.0, Inf] == _model.optimizer.inde_variables.traj_bound
 
     ########################################## test differential variables
+    @differential(_model,x(t))
+    @differential(_model,y(t),0<=Trajectory_bound<=100)  
+    @test_throws ErrorException @differential(_model,x(t))
+    @test_throws ErrorException @differential(_model,x(t),Initial_guess=1)
+
     @test 0 == JuDO.add_initial_bound(n,[0,5])
     @test 0 == JuDO.add_trajectory_bound(n,[0,50])
     @test 0 == JuDO.add_final_bound(n,[40,Inf])
