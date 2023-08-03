@@ -84,6 +84,40 @@
     println(_model.Differential_var_index)
     println(_model.optimizer.diff_variables)
 
+    ######### test vectorized diff_variables
+    m=JuDO.Dy_Model()
+    JuDO.@independent(m,t)
+    JuDO.@differential(m,xx(t)[1:3])
+    JuDO.@differential(m,xx1(t)[1:3],0<=Initial_bound<=15)
+    JuDO.@differential(m,xx2(t)[1:2],0<=Trajectory_bound<=100,Initial_guess=1)
+
+    println(m.Differential_var_index[:(xx_vect_1(t))])
+    println(m.Differential_var_index[:(xx_vect_2(t))])
+    println(m.Differential_var_index[:(xx_vect_3(t))])
+    println(m.Differential_var_index[:(xx1_vect_1(t))])
+    println(m.Differential_var_index[:(xx1_vect_2(t))])
+    println(m.Differential_var_index[:(xx1_vect_3(t))])
+    println(m.Differential_var_index[:(xx2_vect_1(t))])
+    println(m.Differential_var_index[:(xx2_vect_2(t))])
+
+    JuDO.@algebraic(m,uu(t)[1:2])
+    JuDO.@algebraic(m,uu1(t)[1:3],Initial_guess=1)
+    JuDO.@algebraic(m,vv(t)[1:3]<=10)
+    JuDO.@algebraic(m,1<=vv1(t)[1:2]<=10,Interpolant=c)
+
+    @test_throws ErrorException @algebraic(m,0<=uut(t)<=-10)
+
+    println(m.Algebraic_var_index[:(uu_vect_1(t))])
+    println(m.Algebraic_var_index[:(uu_vect_2(t))])
+    println(m.Algebraic_var_index[:(uu1_vect_1(t))])
+    println(m.Algebraic_var_index[:(uu1_vect_2(t))])
+    println(m.Algebraic_var_index[:(uu1_vect_3(t))])
+    println(m.Algebraic_var_index[:(vv_vect_1(t))])
+    println(m.Algebraic_var_index[:(vv_vect_2(t))])
+    println(m.Algebraic_var_index[:(vv_vect_3(t))])
+    println(m.Algebraic_var_index[:(vv1_vect_1(t))])
+    println(m.Algebraic_var_index[:(vv1_vect_2(t))])
+
     ########################################## test algebraic variables
     @algebraic(_model,v(t)<=10,Initial_guess=1)
     @algebraic(_model,w(t),Initial_guess=1)

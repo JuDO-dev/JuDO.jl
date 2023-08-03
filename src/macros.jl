@@ -133,7 +133,20 @@ end
 
 macro algebraic(model,args...)
 
-    c_args = collect(args)      
+    c_args = collect(args) 
+    
+    name,val = check_alge_var_input(c_args[1])
+
+    if name.head == :ref
+        len = check_vector_input(name)
+        result = []
+       
+        for i in 1:len
+            result = :(assign_alge_vector($(esc(model)),$i,$c_args,$result,$val))
+        end
+        return macro_return(name.args[1].args[1],result) 
+        
+    end
 
     #if the user is not providing any info, then add default info
     if (c_args[1] isa Expr) && (length(c_args[1].args) == 2)

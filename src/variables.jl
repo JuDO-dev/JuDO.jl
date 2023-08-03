@@ -375,10 +375,12 @@ function check_alge_var_input(_raw_expr)
 
     if _raw_expr.head == :call && length(_raw_expr.args) == 3
        name,val = one_side_alge(_raw_expr)
-
+       return name,val
     elseif _raw_expr.head == :comparison && length(_raw_expr.args) == 5
        name,val = two_sides_alge(_raw_expr)
-
+       return name,val
+    elseif (length(_raw_expr.args) == 2) && (_raw_expr.head in [:call,:ref])
+        return _raw_expr,[-Inf,Inf]
     else
         throw(error("Incorrect input style of the algebraic variable"))
     end
@@ -386,9 +388,13 @@ function check_alge_var_input(_raw_expr)
     return name,val
 end
 
-function add_new_algebraic(_model,_args,bound)
-    (_args[1].args[2] == collect(keys(_model.Independent_var_index))[1]) ? nothing : throw(error("The independent variable is not defined yet"))
-    same_var_error(_model,_args[1].args[1])
+function add_new_algebraic(_model,_args,bound,vect=false)
+    if vect == false
+        (_args[1].args[2] == collect(keys(_model.Independent_var_index))[1]) ? nothing : throw(error("The independent variable is not defined yet"))
+        same_var_error(_model,_args[1].args[1])
+    else
+        (_args[1].args[2] == collect(keys(_model.Independent_var_index))[1]) ? nothing : throw(error("The independent variable is not defined yet"))
+    end
     bound_lower_upper(bound)
 
     if length(_args) == 1
@@ -826,5 +832,17 @@ function assign_vector(_model,i,args,result,extra_args = false)
         info = [Expr(:call,Symbol(string(var_info[1].args[1].args[1],"_vect_",i)),collect(keys(_model.Independent_var_index))[1]),var_info[2],[var_info[3]],[var_info[4]],[var_info[5]],var_info[6]]
     end
     var_ref = add_new_vector(_model,info)
-    return   quote push!($result,$var_ref) end
+    return   push!(result,var_ref) 
+end
+
+function assign_alge_vector(_model,i,args,result,val)
+    name,_val = check_alge_var_input(args[1])
+
+    info = Expr(:call,Symbol(string(name.args[1].args[1],"_vect_",i)),collect(keys(_model.Independent_var_index))[1])
+    temp = copy(args)
+    temp[1] = info
+    println(temp)
+    var_ref = add_new_algebraic(_model,temp,val,true)
+    return   push!(result,var_ref) 
+    
 end
