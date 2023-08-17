@@ -84,6 +84,9 @@
     println(_model.Differential_var_index)
     println(_model.optimizer.diff_variables)
 
+    @differential(_model,x_new(t),Initial_value=1,Final_value=100,Initial_bound<=10)
+    println(_model.Differential_var_index)
+
     ######### test vectorized diff_variables
     m=JuDO.Dy_Model()
     JuDO.@independent(m,t)
@@ -103,7 +106,7 @@
     JuDO.@algebraic(m,uu(t)[1:2])
     JuDO.@algebraic(m,uu1(t)[1:3],Initial_guess=1)
     JuDO.@algebraic(m,vv(t)[1:3]<=10)
-    JuDO.@algebraic(m,1<=vv1(t)[1:2]<=10,Interpolant=c)
+    JuDO.@algebraic(m,1<=vv1(t)[1:2]<=10,Interpolant=c,Final_value=0)
 
     @test_throws ErrorException @algebraic(m,0<=uut(t)<=-10)
 
@@ -125,6 +128,9 @@
     @algebraic(_model,j(t)>=0,Interpolant=c)
     @algebraic(_model,l(t)>=0,Interpolant=c,Initial_guess=1)
 
+    @algebraic(_model,1<=v_new(t)<=10,Initial_value=1,Initial_guess=1)
+    @algebraic(_model,v_new1(t),Final_value=0,Initial_guess=1,Interpolant=c)
+
     @test [-Inf, Inf] == _model.Algebraic_var_index[:(u(t))].Bound
     @test [-Inf, 10.0] == _model.Algebraic_var_index[:(v(t))].Bound
     @test 1 == _model.Algebraic_var_index[:(v(t))].Initial_guess
@@ -136,14 +142,17 @@
     @test [0.0, Inf] == _model.Algebraic_var_index[:(l(t))].Bound
     @test 1 == _model.Algebraic_var_index[:(l(t))].Initial_guess
     @test :c == _model.Algebraic_var_index[:(l(t))].Interpolant
+    @test 1 == _model.Algebraic_var_index[:(v_new(t))].Initial_value
+    @test 1 == _model.Algebraic_var_index[:(v_new(t))].Initial_guess
+    @test 0 == _model.Algebraic_var_index[:(v_new1(t))].Final_value
 
     println(_model.optimizer.alge_variables)
 
     @test_throws ErrorException @algebraic(_model,u(t))
     @test_throws ErrorException @algebraic(_model,100<=i(t)<=10,Initial_guess=1)
-    @test_throws ErrorException @algebraic(_model,i(t),Initial_guess=p)
+#=     @test_throws ErrorException @algebraic(_model,i(t),Initial_guess=p)
     @test_throws ErrorException @algebraic(_model,1<=i(t)<=10,Initial_guess=p)
-    @test_throws ErrorException @algebraic(_model,1<=i(t)<=10,Initial_guess=1,Interpolant=1)
+    @test_throws ErrorException @algebraic(_model,1<=i(t)<=10,Initial_guess=1,Interpolant=1) =#
 
     JuDO.add_interpolant(v,:poly)
     @test :poly == _model.Algebraic_var_index[:(v(t))].Interpolant

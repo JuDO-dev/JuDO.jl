@@ -23,7 +23,9 @@ mutable struct Differential_Var_data <: variable_data
     Initial_guess::Union{Real,Nothing}
 
     Initial_bound::Vector 
+    Initial_value::Union{Real,Nothing}
     Final_bound::Vector
+    Final_value::Union{Real,Nothing}
     Trajectory_bound::Vector
 
     Interpolant::Union{Symbol,Nothing}
@@ -52,6 +54,8 @@ mutable struct Algebraic_Var_data <: variable_data
     Bound::Vector
 
     Initial_guess::Union{Real,Nothing}
+    Initial_value::Union{Real,Nothing}
+    Final_value::Union{Real,Nothing}
     Interpolant::Union{Symbol,Nothing}
 end
 
@@ -100,23 +104,26 @@ mutable struct Dy_Model <: Abstract_Dynamic_Model
 
     #variable data
     #Differential_vars::Vector{Differential_Var_data}
-    Differential_var_index::OrderedDict{Expr,Differential_Var_data}
+    Differential_var_index::OrderedDict{Expr,Union{Differential_Var_data,Array}}
    # Independent_vars::Independent_Var_data
     Independent_var_index::OrderedDict{Symbol,Independent_Var_data}
     Initial_Independent_var_index::OrderedDict{Symbol,Union{Number,Nothing}}
     Final_Independent_var_index::OrderedDict{Symbol,Union{Number,Nothing}}
 
-    Algebraic_var_index::OrderedDict{Expr,Algebraic_Var_data}
+    Algebraic_var_index::OrderedDict{Expr,Union{Algebraic_Var_data,Array}}
     #constraint data
     Constraints_index::OrderedDict{Symbol,Constraint_data}
     Constraints_type::OrderedDict{Symbol,Symbol}  
 
-    #dynamic data
+    #dynamics
+    Dynamics_index::Vector{Expr}
+
+    #objective function data
     Dynamic_objective::Expr
 end 
 
 Dy_Model() = Dy_Model(DOI.Optimizer(),OrderedDict(),OrderedDict(),OrderedDict(),
-OrderedDict(),OrderedDict(),OrderedDict(),OrderedDict(),OrderedDict(),:())
+OrderedDict(),OrderedDict(),OrderedDict(),OrderedDict(),OrderedDict(),[],:())
 
 
 include("macros.jl")
@@ -125,10 +132,14 @@ include("errors.jl")
 include("constants.jl") 
 include("constraints.jl")
 include("optimizer.jl")
-include("dynamic_func.jl")
+include("objective_func.jl")
+include("solver.jl")
+include("dynamics.jl")
 
-export @independent, @differential,@algebraic,@constant,@constraint,full_info,add_initial_bound,add_trajectory_bound,add_final_bound,
+export @independent, @differential,@algebraic,@constant,@constraint,@objective_func,@dynamics,full_info,add_initial_bound,add_trajectory_bound,add_final_bound,
 add_initial_guess,add_interpolant,set_initial_bound,set_trajectory_bound,set_final_bound,set_initial_guess,set_interpolant
+
+export optimize!,set_meshpoints
 
 
 
@@ -150,8 +161,15 @@ function full_info(model::Dy_Model)
     end
     println("Variables:")
     for (key, value) in model.Differential_var_index
-        println("Differential variable $(value.Run_sym) with")
-        println("Initial guess = $(value.Initial_guess), Initial bounds = $(value.Initial_bound), Final bounds = $(value.Final_bound), Trajectory bounds = $(value.Trajectory_bound), Interpolant = $(value.Interpolant)")
+        if value isa Array
+            for i in eachindex(value)
+                println("Differential variable $(key) with")
+                println("Initial guess = $(value[i].Initial_guess), Initial value = $(value[i].Initial_value), Initial bounds = $(value[i].Initial_bound), \nFinal value = $(value[i].Final_value), Final bounds = $(value[i].Final_bound), Trajectory bounds = $(value[i].Trajectory_bound), Interpolant = $(value[i].Interpolant)")
+            end
+        else
+            println("Differential variable $(key) with")
+            println("Initial guess = $(value.Initial_guess), Initial value = $(value.Initial_value), Initial bounds = $(value.Initial_bound), \nFinal value = $(value.Final_value), Final bounds = $(value.Final_bound), Trajectory bounds = $(value.Trajectory_bound), Interpolant = $(value.Interpolant)")
+        end
     end
     for (key, value) in model.Independent_var_index
         println("Independent variable $(value.Sym) with bound = $(value.Bound)")
@@ -167,7 +185,13 @@ function full_info(model::Dy_Model)
     end
 
     for (key, value) in model.Algebraic_var_index
-        println("Algebraic variable $(value.Sym) with bound = $(value.Bound), initial guess = $(value.Initial_guess), interpolant = $(value.Interpolant)")
+        if value isa Array
+            for i in eachindex(value)
+                println("Algebraic variable $(value[i].Sym) with bound = $(value[i].Bound), Initial value = $(value[i].Initial_value), Initial guess = $(value[i].Initial_guess), Final value = $(value[i].Final_value), Interpolant = $(value[i].Interpolant)")
+            end
+        else
+            println("Algebraic variable $(value.Sym) with bound = $(value.Bound), Initial value = $(value.Initial_value), Initial guess = $(value.Initial_guess), Final value = $(value.Final_value), Interpolant = $(value.Interpolant)")
+        end
     end
 
     for (key, value) in model.Constraints_index
@@ -176,6 +200,6 @@ function full_info(model::Dy_Model)
 
 end
 
-end
 
+end
 

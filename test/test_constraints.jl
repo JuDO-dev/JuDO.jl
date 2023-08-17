@@ -5,15 +5,16 @@
 
     #registering the variables to the model, otherwise encountering any symbol unregistered will throw an error
     @independent( _model, t >= 0)
-    @independent( _model,t0 == 0,initial)
-    @independent( _model,tₚ == 10,final)
+    @independent( _model,t0 = 0,type=initial)
+    @independent( _model,tₚ = 10,type=final)
     @differential(_model,y(t),Initial_guess=10)
     @differential(_model,x(t),0<=Trajectory_bound<=100)
 
-    @algebraic(_model,a(t),0<=Trajectory_bound<=1)
-    @algebraic(_model,A(t),0<=Trajectory_bound<=10)
+    @algebraic(_model,0<=a(t)<=10,Initial_guess=1)
+    @algebraic(_model,A(t))
     @constant(_model,d=0.5)
     @constant(_model,p=1.5)
+    @constant(_model,Q=[2 0;0 2])
 
     #test adding initial constraints
     @test [:(a(t0)), :sin,:p] == @constraint(_model,c1,(a(t0)+3)*sin(8-2*(p*a(t0)-9))<=0,initial)
@@ -76,13 +77,13 @@
 
     _model = JuDO.Dy_Model()
     @independent( _model, t >= 0)
-    @independent( _model,t0 == 0,initial)
-    @independent( _model,tₚ == 10,final)
+    @independent( _model,t0 = 0,type=initial)
+    @independent( _model,tₚ = 10,type=final)
     @differential(_model,y(t),Initial_guess=10)
     @differential(_model,x(t),0<=Trajectory_bound<=100)
 
-    @algebraic(_model,a(t),0<=Trajectory_bound<=1)
-    @algebraic(_model,A(t),0<=Trajectory_bound<=10)
+    @algebraic(_model,a(t)>=0)
+    @algebraic(_model,A(t),Interpolant=c)
     @constant(_model,d=0.5)
     @constant(_model,p=1.5)
 
@@ -130,10 +131,135 @@
     @test [:p,:(x(t))] == @constraint(_model,c21,(p+9)^x(t)>=2,trajectory)
 end
  
+## usecase for cartpole.jl
+#= m=JuDO.Dy_Model()
+JuDO.@independent( m,0 <= t <= 5)
+JuDO.@independent( m,t0,type=initial)
+JuDO.@independent( m,tf,type=final)
+JuDO.@algebraic(m,-3<=u(t)<=3)
+JuDO.@constant(m,Q = [0.01 0 0 0; 0 0.01 0 0; 0 0 0.01 0; 0 0 0 0.01])
+JuDO.@constant(m,Qf = [100 0 0 0; 0 100 0 0; 0 0 100 0; 0 0 0 100])
+JuDO.@constant(m,R = 0.1)
+JuDO.@differential(m,xx(t)[1:4],Initial_value=0,Final_value=0)
+JuDO.@objective_func(m,(xx(tf)-[0; pi; 0; 0])'*Qf*(xx(tf)-[0; pi; 0; 0])+∫((xx(t)-[0; pi; 0; 0])'*Q*(xx(t)-[0; pi; 0; 0])+R*u(t)*u(t)))
+JuDO.set_final_value(xx[2],pi)
+JuDO.set_meshpoints(m,101)
+JuDO.optimize!(m)
 
-#= JuDO.@independent(m,t)
-JuDO.@differential(m,x(t))
+##usecase for car.jl
+m=JuDO.Dy_Model()
+JuDO.@independent( m,0 <= t <= 10)
+JuDO.@independent( m,t0,type=initial)
+JuDO.@independent( m,tf,type=final)
+JuDO.@algebraic(m,-10<=u(t)[1:2]<=10)
+JuDO.@constant(m,Q = [0.1 0 0; 0 0.01 0; 0 0 0.01])
+JuDO.@constant(m,Qf = [0.1 0 0; 0 0.1 0; 0 0 0.1])
+JuDO.@constant(m,R = [0.5 0;0 0.5])
+JuDO.@differential(m,xx(t)[1:3],Initial_value=0,Final_value=5)
+JuDO.@objective_func(m,((xx(tf)-[5; 5; 0])'*Qf*(xx(tf)-[5; 5; 0])+∫((xx(t)-[5; 5; 0])'*Q*(xx(t)-[5; 5; 0])+u(t)'*R*u(t))))
+JuDO.set_final_value(xx[3],pi/2)
+JuDO.set_meshpoints(m,101)
+JuDO.optimize!(m)
+
+
+## usecase for the 1 x 1 u model
+m=JuDO.Dy_Model()
+JuDO.@independent( m,0 <= t <= 15)
+JuDO.@independent( m,t0,type=initial)
+JuDO.@independent( m,tf,type=final)
+JuDO.@algebraic(m,-10<=u(t)<=10)
+JuDO.@constant(m,Q = 0.1)
+JuDO.@constant(m,Qf = 0.1)
+JuDO.@constant(m,R = 0.5)
+JuDO.@differential(m,xx(t),Initial_value=0,Final_value=5)
+JuDO.@objective_func(m,(Qf*(xx(tf)-5)^2+∫(Q*(xx(t)-5)^2+u(t)^2)))
+JuDO.set_meshpoints(m,20)
+JuDO.@dynamics(m, ẏ(t) == 2 + u(t))
+JuDO.optimize!(m)
+
+
+#
+@parameter(m, 4.0 <= tf <= 5.0)
+@ind(m, 0.0 <= t <= tf)
+
+JuDO.@objective_func(m,xx(tf)'*Qf*xx(tf))
+JuDO.@objective_func(m,xx(tf)'*[100 0 0 0; 0 100 0 0; 0 0 100 0; 0 0 0 100]*xx(tf))
+JuDO.@objective_func(m,∫(xx(t)'*Q*xx(t)+0.1*u(t)*u(t)))
+JuDO.@objective_func(m,∫(xx(t)'*[0.01 0 0 0; 0 0.01 0 0; 0 0 0.01 0; 0 0 0 0.01]*xx(t)+0.1*u(t)*u(t)))
+
+
+JuDO.@objective_func(m,x(tf)^2+∫(u(t)^2+x(t)^2))
+JuDO.set_meshpoints(m,101)
+
+
+JuDO.@objective_func(m,6*x(t)^2)
+JuDO.@objective_func(m,x(t)^2)
+JuDO.@objective_func(m,2*(u(t)-9)^2+(x(t)-9)^2)
+JuDO.@objective_func(m,∫(u(t)^2+x(t)^2))
+JuDO.@objective_func(m,(u(t)-9)^2+5*x(t)^2)
+JuDO.@objective_func(m,2*(u(t)-9)^2+(x(t)-9)^2-∫(u(t)^2+x(t)^2))
+
+JuDO.@objective_func(m,u(t)+5*x(t)^2),
+JuDO.@objective_func(m,u(t)+5*x(t))
+JuDO.@objective_func(m,3*(6*x(t)^2))
+
+JuDO.@algebraic(m,uop(t)[1:3],Initial_guess=1)
+JuDO.@algebraic(m,v(t)[1:3]<=10)
+JuDO.@algebraic(m,1<=vc(t)[1:3]<=10,Interpolant=c)
+
+JuDO.@differential(m,xx(t)[1:3])
+JuDO.@differential(m,xx1(t)[1:3],0<=Initial_bound<=15)
+
 JuDO.@algebraic(m,u(t))
-JuDO.@constant(m,c=4)
-JuDO.@dynamic_func(m,x(t)+u(t)-1) =#
+JuDO.@algebraic(m,v(t)<=10,Initial_guess=1)
+JuDO.@algebraic(m,w(t),Initial_guess=1)
+JuDO.@algebraic(m,0<=h(t)<=1)
 
+JuDO.@independent(m,tf=100,type=final)
+JuDO.@independent(m,t0=0,type=initial)
+JuDO.@differential(m,n(t),0<=Initial_bound<=15)
+
+JuDO.@constant(m,c=4)
+JuDO.add_initial_bound(n,[0,5])
+JuDO.add_trajectory_bound(n,[0,50])
+JuDO.add_final_bound(n,[40,Inf])
+JuDO.add_interpolant(n,:const)
+JuDO.set_initial_bound(n,[-5,5],2)
+
+JuDO.add_initial_bound(n,[-10,25])
+JuDO.add_initial_bound(n,[-3,52])
+JuDO.delete_initial_bound(n,1)
+JuDO.delete_initial_bound(n,1)
+JuDO.set_initial_guess(n,1)
+JuDO.set_initial_bound(n,[-5,5],1)
+JuDO.delete_initial_bound(n,1)
+
+JuDO.full_info(m)
+m.optimizer.diff_variables
+m.optimizer.inde_variables
+
+JuDO.@objective_func(m,x(t)+u(t)-1) =#
+#= function _finalize_dy_macro(model, code, source::LineNumberNode)
+    return Expr(
+        :block,
+        source,
+        code,
+    )
+end =#
+
+"""
+julia> v=collect(values(d))[3]
+1-element Vector{Vector{Int64}}:
+ [3, 2]
+
+julia> push!(v,[1,1])
+2-element Vector{Vector{Int64}}:
+ [3, 2]
+ [1, 1]
+
+julia> d
+OrderedDict{Any, Any} with 3 entries:
+  1   => 'c'
+  'a' => 'e'
+  3   => [[3, 2], [1, 1]]
+"""

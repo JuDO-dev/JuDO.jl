@@ -55,7 +55,7 @@ end
 
 function check_division(_model,_side,type)
     if (_side.args[1] == :/) 
-        possible_const = check_all_const(_model,_side.args[end],[])
+        possible_const = check_all_const(_side.args[end],[])
         for term in possible_const
             if check_diff_alge(_model,term)
                 push!(type,:nonlinear)
@@ -73,7 +73,7 @@ end
 function check_hat(_model,_side,type)
     if (_side.args[1] == :^) 
         for i in 2:length(_side.args)
-            possible_const = check_all_const(_model,_side.args[i],[])
+            possible_const = check_all_const(_side.args[i],[])
             for term in possible_const
                 if check_diff_alge(_model,term)
                     push!(type,:nonlinear)
@@ -114,7 +114,7 @@ function check_multiplication(_model,_side,type)
                 return type
             elseif (i != pos) && (_terms[i] isa Expr) && (length(_terms[i].args) > 2)
                 #if there is an expression that contains x(t) like term, then parse it
-                possible_const = check_all_const(_model,_terms[i],[]) 
+                possible_const = check_all_const(_terms[i],[]) 
                 #a differential variable or algebraic variable or independent variable is found in the inner term, then it is nonlinear
                 for term in possible_const
                     if check_diff_alge(_model,term)
@@ -132,7 +132,7 @@ function check_multiplication(_model,_side,type)
     return push!(type,:linear)
 end
 
-function check_all_const(_model,_expr,all_terms)
+function check_all_const(_expr,all_terms)
 
 
     if !(_expr isa Expr) && !(_expr in [:+,:-,:*,:/,:^])
@@ -147,7 +147,7 @@ function check_all_const(_model,_expr,all_terms)
             push!(all_terms,term)
 
         elseif term isa Expr
-            for element in check_all_const(_model,term,[])  
+            for element in check_all_const(term,[])  
                 push!(all_terms,element)
                 
             end
@@ -179,7 +179,7 @@ function check_two_sides(_model,_side,type)
             check = []
             for i in pos
         
-                possible_const = check_all_const(_model,_terms[i],[]) 
+                possible_const = check_all_const(_terms[i],[]) 
                 #check if a differential variable or algebraic variable or independent variable is found in the inner term
                 for term in possible_const
                     if check_diff_alge(_model,term)
@@ -205,7 +205,7 @@ end
 function check_math_func(_model,_side,type)
     
     if (_side isa Expr) && (length(_side.args) == 2) && isconst(MathConstants,_side.args[1]) && !(_side.args[1] in [:+,:-,:*,:/,:^,:%])
-        possible_const = check_all_const(_model,_side.args[2],[])
+        possible_const = check_all_const(_side.args[2],[])
         #a differential variable or algebraic variable or independent variable is found in the inner term, then it is nonlinear
         for term in possible_const
             if check_diff_alge(_model,term)
@@ -226,7 +226,7 @@ function check_math_func(_model,_side,type)
         for i in 1:len
             if (_terms[i] isa Expr) && isconst(MathConstants,_terms[i].args[1]) && !(_terms[i].args[1] in [:+,:-,:*,:/,:^,:%])
                 
-                possible_const = check_all_const(_model,_terms[i].args[2],[]) 
+                possible_const = check_all_const(_terms[i].args[2],[]) 
                 #a differential variable or algebraic variable or independent variable is found in the inner term, then it is nonlinear
                 for term in possible_const
                     if check_diff_alge(_model,term)
@@ -258,7 +258,7 @@ function parse_and_separate(_model,true_terms,_side,sub,check_set,type)
         !(isconst(MathConstants,_side.args[1])) ? (return push!(container,_side),:linear) : nothing
 
         if (isconst(MathConstants,_side.args[1])) 
-            possible_const = check_all_const(_model,_side.args[2],[]) 
+            possible_const = check_all_const(_side.args[2],[]) 
             #a differential variable or algebraic variable or independent variable is found in the inner term, then it is nonlinear
             for term in possible_const
                 if check_diff_alge(_model,term)

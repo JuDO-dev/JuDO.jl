@@ -1,32 +1,36 @@
 
 """
-@differential(model, args...)
+    @differential(model, args...)
 
-Add a dynamic variable into the dynamic model.
-The user is required to put the dynamic model and the variable symbol in the first two positions, the rest are optional keyword arguments.
-Expressions of bounds should be put in the form of "keyword <= / >= value", "value <= / >= keyword", or "value <= keyword <= value".
-Initial guess and interpolant should be put in the form of "keyword = value".
+    Add a dynamic variable into the dynamic model.
 
-## args
+    The user is required to put the dynamic model and the variable symbol in the first two positions, the rest are optional keyword arguments.
 
-keyword arguments can contain:
-    The Initial_guess, x₀
-    The Initial_bound, [lb₀,ub₀]
-    The Final_bound, [lb₁,ub₁]
-    The Trajectory_bound, [lb,ub]
-    The Interpolant, L
+    Expressions of bounds should be put in the form of "keyword <= / >= value", "value <= / >= keyword", or "value <= keyword <= value".
+    Initial guess and interpolant should be put in the form of "keyword = value".
 
- @differential(_model,x(t))
+    The vectorized input only supports defining differential variables with the same information, use set to modify the individual fields.
 
- @differential(_model,x(t),Initial_guess = 8)
+    ## args
 
- @differential(_model,x(t),Initial_guess = 8,0 <= Initial_bound <= 10)
+    keyword arguments can contain:
+        The Initial_guess, x₀
+        The Initial_bound, [lb₀,ub₀]
+        The Final_bound, [lb₁,ub₁]
+        The Trajectory_bound, [lb,ub]
+        The Interpolant, L
 
- @differential(_model,x(t),0 <= Initial_bound <= 10,Initial_guess = 8)
+    @differential(_model,x(t))
 
- @differential(_model,x(t),Initial_guess = 8,Final_bound >= 100)
+    @differential(_model,x(t),Initial_guess = 8)
 
- @differential(_model,x(t),Interpolant = L,Initial_guess = 8,Final_bound >= 100)
+    @differential(_model,x(t),Initial_guess = 8,0 <= Initial_bound <= 10)
+
+    @differential(_model,x(t),0 <= Initial_bound <= 10,Initial_guess = 8)
+
+    @differential(_model,x(t),Initial_guess = 8,Final_bound >= 100)
+
+    @differential(_model,x(t)[1:3],Interpolant = L,Initial_guess = 8,Final_bound >= 100)
 """
 
 macro differential(model,args...)
@@ -70,19 +74,11 @@ end
     
     If the bound is not provided, then a free-time problem is assumed.
 
-    Only one independent variable is allowed in a problem.
-    
-    @independent( model, t) 
-
-    @independent( model, 0 <= t <= 10)
+    Only one independent variable for each type is allowed in a problem.
 
     @independent( model, t >= 0)
 
-    @independent( model, 0 <= t)
-
-    @independent( model, t <= 10)
-
-    If keyword "initial" or "final" is provided, then the independent variable is fixed at the initial or final time
+    If keyword "initial" or "final" is provided, then the independent variable is for the initial or final time
 
     @independent( model, t0, type = initial)
 
@@ -121,13 +117,17 @@ end
 
     The user is required to put a model in the first argument, an expression (or symbol) in the second argument.
 
+    The third argument is optional, it can be the value of Initial guess, Initial value, Final value or the value of Interpolant.
+
+    The vectorized input only supports defining algebraic variables with the same bound and initial guess, use set to modify the bound and initial guess.
+
     @algebraic( model, u(t))
 
-    @algebraic( model, 0 <= u(t) <= 10)
+    @algebraic( model, 0 <= u(t) <= 10,Initial_guess=1)
 
-    @algebraic( model, -10 <= v(t) <= 10)
+    @algebraic( model, -10 <= v(t) <= 10,Interpolant=c)
 
-    @algebraic( model, 10 <= w(t))
+    @algebraic( model, w(t)[1:3] >=0,Initial_guess=1)
 
 """
 
@@ -235,23 +235,41 @@ macro constraint(model,args...)
 end 
 
 """
-    @dynamic_func(model, args...)
+    @objective_func(model, args...)
 
-    This macro is used to add a dynamic function into the model.
+    This macro is used to add a objective function into the model.
 
     The user is required to put an expression as the argument.
 
-    The dynamic function is considered as a minimization problem, so for maximization problem, 
+    The objective function is considered as a minimization problem, so for maximization problem, 
     the user is required to add a negative sign in front of the expression.
 
-    The dynamic function can only be added once in the model, it can only contain the registered variables and constants.
+    The objective function can only be added once in the model, it can only contain the registered variables and constants.
 
-    @dynamic_func( model, x(t) + u(t) + v(t) + g)
+    Pure quadratic problems:
+    1. Scalar function: @objective_func( model, x(t)^2 + u(t)^2)
 """
-
-macro dynamic_func(model,args...)
+macro objective_func(model,args...)
     c_args = collect(args)
 
     return :(parse_objective_function($(esc(model)),$c_args))
 end
 
+"""
+    @dynamics(model, args...)
+
+    Add the dynamics into the model.
+
+    The args... containts one or multiple equations, each equation is a dynamics equation.
+
+    @dynamics( model, ẋ(t) == x(t) + u(t), ẏ(t) == y(t) + v(t))
+
+    @dynamics( model, ẋ(t)[1] == x(t)[2], ẋ(t)[2] == -x(t)[1] + u(t))
+
+    @dynamics( model, ẋ(t)[1] == u(t)[1]*cos(x(t)[2]), ẋ(t)[2] == u(t)[1]*sin(x(t)[2]))
+"""
+macro dynamics(model,args...)
+    c_args = collect(args)
+
+    return :(parse_dynamics($(esc(model)),$c_args))
+end
