@@ -901,17 +901,17 @@ function find_var_place(_model,place::Int64)
 
     position = []
     for i in eachindex(allkeys)
-        _model.Differential_var_index[allkeys[i]] isa Array ? len = length(_model.Differential_var_index[allkeys[i]]) : len = 1
+       ( _model.Differential_var_index[allkeys[i]] isa Array) ? (len = length(_model.Differential_var_index[allkeys[i]])) : (len = 1)
         push!(position,len)
     end
     position = cumsum(position)
     if place in position
         index = findfirst(isequal(place),position)
-        index == 1 ? index_in_vector = 1 : index_in_vector = position[index] - position[index-1]
+        (index == 1) ? (index_in_vector = place) : (index_in_vector = position[index] - position[index-1])
     
     else
         index = findfirst(x -> x >= place,position)
-        index == 1 ? index_in_vector = 1 : index_in_vector = place - position[index-1] 
+        (index == 1) ? (index_in_vector = place) : (index_in_vector = place - position[index-1]) 
         
     end
     return index, index_in_vector
@@ -919,7 +919,11 @@ end
 
 function set_final_value(ref::DifferentialRef,val::Real)
     index, index_in_vector = find_var_place(ref.model,ref.index.value)
-    ref.model.optimizer.diff_variables.final_value[index+index_in_vector] = val
+    if length(collect(keys(ref.model.Differential_var_index))) == 1
+        ref.model.optimizer.diff_variables.final_value[index_in_vector] = val
+    else
+        ref.model.optimizer.diff_variables.final_value[index+index_in_vector] = val
+    end
 
     sym = collect(keys(ref.model.Differential_var_index))[index]
     if ref.model.Differential_var_index[sym] isa Array
@@ -927,7 +931,7 @@ function set_final_value(ref::DifferentialRef,val::Real)
     else
         ref.model.Differential_var_index[sym].Final_value = val
     end
-    return 0
+    return nothing
     
 end
 
