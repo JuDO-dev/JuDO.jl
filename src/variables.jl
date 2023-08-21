@@ -165,10 +165,9 @@ function identify_kw(_kws,_vals)
     for i in eachindex(kw_collection)
         
         if i in index_matches
-            push!(full_info,_vals[index_matches .== i][1]) #isodd(i) ? : push!(full_info,decide_bound(__model,__sym,i,_vals[index_matches .== i][1],add_new))
-            
+            push!(full_info,_vals[index_matches .== i][1]) 
         else
-            push!(full_info,default_info[i]) #: push!(full_info,getfield(__model.Differential_var_index[__sym],i+1))
+            push!(full_info,default_info[i]) 
         end
          
     end
@@ -282,19 +281,6 @@ function add_independent(_model,_expr)
 
     sym,bound = check_inde_var_input(_expr[1])
 
-    i = _model.Initial_Independent_var_index
-    f = _model.Final_Independent_var_index
-    if length(i) != 0
-        if bound[1] != collect(values(i))[1]
-            throw(error("The initial value is not consistent with the initial value in the initial condition"))
-        end
-    end
-    if length(f) != 0
-        if bound[2] != collect(values(f))[1]
-            throw(error("The final value is not consistent with the final value in the final condition"))
-        end
-    end
-
     same_var_error(_model,sym)
     bound_lower_upper(bound)
     indep_var_data = Independent_Var_data(sym,bound)
@@ -306,57 +292,39 @@ end
 
 #called when the user is not specifying any information about a new differential variable
 function add_independent(_model,_expr,kw)
+    length(_model.Independent_var_index) == 0 ? nothing : multiple_independent_var_error()
+    sym,bound = check_inde_var_input(_expr[1])
 
-    if (kw[1] isa Expr) && (kw[1].head == :(=)) && (length(kw[1].args) == 2)
-        if kw[1].args[1] == :type
-            kw[1].args[2] == :initial ? (type = :Initial) : (type = :Final)
+    same_var_error(_model,sym)
+    bound_lower_upper(bound)
+    indep_var_data = Independent_Var_data(sym,bound)
+
+
+    for i in eachindex(kw)
+        if (kw[i] isa Expr) && (kw[i].head == :(=)) && (length(kw[i].args) == 2) && (kw[i].args[2] isa Symbol)
+            if kw[i].args[1] == :initial
+                length(_model.Initial_Independent_var_index) == 0 ? nothing : multiple_independent_var_error()
+                _model.Initial_Independent_var_index[kw[i].args[2]] = bound[1]
+
+            elseif kw[i].args[1] == :final
+                length(_model.Final_Independent_var_index) == 0 ? nothing : multiple_independent_var_error()
+                _model.Final_Independent_var_index[kw[i].args[2]] = bound[2]
+
+            else
+                _model.Initial_Independent_var_index = OrderedDict()
+                _model.Final_Independent_var_index = OrderedDict()
+                throw(error("Incorrect input style of the independent variable"))
+            end
         else
+            _model.Initial_Independent_var_index = OrderedDict()
+            _model.Final_Independent_var_index = OrderedDict()
             throw(error("Incorrect input style of the independent variable"))
         end
-    else
-        throw(error("Incorrect input style of the independent variable"))
+
     end
 
-    if type == :Initial 
-        length(_model.Initial_Independent_var_index) == 0 ? nothing : multiple_independent_var_error()
-    elseif type == :Final
-        length(_model.Final_Independent_var_index) == 0 ? nothing : multiple_independent_var_error()
-    end
-
-    t = _model.Independent_var_index
-    if (_expr[1] isa Expr) && (_expr[1].head == :(=)) && (length(_expr[1].args) == 2) && (_expr[1].args[2] isa Number)
-        sym = _expr[1].args[1]
-        val = _expr[1].args[2]
-        same_var_error(_model,sym)
-
-        if (length(t) != 0) && (type == :Initial) 
-            if (val != collect(values(t))[1].Bound[1]) && (collect(values(t))[1].Bound[1] != -Inf)
-                throw(error("The value is not consistent with the value in the trajectory"))
-            end
-            _model.Initial_Independent_var_index[sym] = val
-            return IndependendRef(_model,:Initial)
-
-        elseif (length(t) != 0) && (type == :Final)
-            if (val != collect(values(t))[1].Bound[2]) && (collect(values(t))[1].Bound[2] != Inf)
-                throw(error("The value is not consistent with the value in the trajectory"))
-            end
-            _model.Final_Independent_var_index[sym] = val
-            return IndependendRef(_model,:Final)
-        end
-        
-    elseif _expr[1] isa Symbol
-        sym = _expr[1]
-        same_var_error(_model,sym)
-        if type == :Initial 
-            _model.Initial_Independent_var_index[sym] = nothing
-            return IndependendRef(_model,:Initial)
-        elseif type == :Final
-            _model.Final_Independent_var_index[sym] = nothing
-            return IndependendRef(_model,:Final)
-        end
-    else
-        throw(error("Incorrect input style of the independent variable"))
-    end
+    _model.Independent_var_index[indep_var_data.Sym] = indep_var_data
+    return add_inde_variable(_model,bound,:Trajectory)
 
 end
 
@@ -495,7 +463,7 @@ mutable struct AlgebraicRef <: AbstractDynamicRef
 
 end
 
-mutable struct IndependendRef <: AbstractDynamicRef
+mutable struct IndependentRef <: AbstractDynamicRef
     model::Abstract_Dynamic_Model
     type::Symbol
 end
@@ -503,7 +471,7 @@ end
 function add_inde_variable(_model,_val,type)
     DOI.add_variable(_model.optimizer.inde_variables,_val)
  
-    variable_ref = IndependendRef(_model,type)
+    variable_ref = IndependentRef(_model,type)
     return variable_ref
 end
 
@@ -634,7 +602,7 @@ function delete_default(bounds)
 
 end
 
-function delete_independent(ref::IndependendRef)
+function delete_independent(ref::IndependentRef)
     if ref.type == :Initial
         empty!(ref.model.Initial_Independent_var_index)
 
@@ -723,7 +691,7 @@ function delete_interpolant(ref::AlgebraicRef)
 end
 
 ##############################################################################################################
-function set_independent(ref::IndependendRef,info)
+function set_independent(ref::IndependentRef,info)
     
     if ref.type == :Initial 
         collection_i = ref.model.Initial_Independent_var_index

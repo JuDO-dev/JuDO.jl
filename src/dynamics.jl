@@ -91,12 +91,14 @@ end
 
 #a function that checks if _args[i] is a number or symbol
 function check_rhs_num(_model,_args)
-    if (_args isa Symbol) && (_args in collect(keys(_model.Constant_index)))
-        return _model.Constant_index[_args].Value
+    if (_args isa Symbol) 
+        (_args in collect(keys(_model.Constant_index))) ? (return _model.Constant_index[_args].Value) : nothing
+        (_args in [:+,:-,:*,:/,:^,:\,:∫]) ? (return _args) : nothing
+        (isconst(MathConstants,_args)) ? (return eval(_args)) : nothing
+
     elseif _args isa Number
         return _args
-    elseif (_args isa Symbol) && (_args in [:+,:-,:*,:/,:^,:\])
-        return _args
+
     end
     
 end
@@ -121,7 +123,7 @@ function vector_dynamics(_model,_head,terms)
     subs = []
     if all(expr -> (expr isa Expr) && (expr.head == :row), terms.args)
         # it is a matrix
-        println("matrix")
+        println("f-matrix")
         rows = []
         for i in eachindex(terms.args)
             for j in eachindex(terms.args[i].args)
@@ -134,7 +136,7 @@ function vector_dynamics(_model,_head,terms)
         return Expr(:vcat,rows...)
     
     else
-        # it is a vector
+        println("f-vector")
         for j in eachindex(terms.args)
             push!(subs,direct_expressions(_model,terms.args[j]))
         end
@@ -161,6 +163,7 @@ function parse_dynamics_expression(_model,terms,operator)
     expressions = []
 
     for i in eachindex(terms)
+        print(i,"  ",terms[i])
         #bottom level
         if (terms[i] isa Symbol) || (terms[i] isa Number)
             push!(expressions,check_rhs_num(_model,terms[i]))
@@ -175,19 +178,26 @@ function parse_dynamics_expression(_model,terms,operator)
             println("in vector")
            
             if terms[i].head == Symbol("'")
-                head = terms[i].args[1].head
-                push!(expressions,Expr(Symbol("'"), vector_dynamics(_model,head,terms[i].args[1])))
+                #head = terms[i].args[1].head
+                push!(expressions,Expr(Symbol("'"), scalar_dynamics(_model,terms[i].args[1])))
             else
                 push!(expressions,vector_dynamics(_model,terms[i].head,terms[i]))
             end
 
         #upper level
-        elseif (length(terms[i].args) > 2)
+        elseif (terms[i].args[1] isa Symbol) && isconst(MathConstants,terms[i].args[1]) && !(terms[i].args[1] in [:+,:-,:*,:/,:^,:\,:∫])
+            if length(terms[i].args) == 2
+                push!(expressions,Expr(:call,terms[i].args[1],scalar_dynamics(_model,terms[i].args[2])))
+            else
+                subs = []
+                [push!(subs,scalar_dynamics(_model,terms[i].args[j])) for j in 2:length(terms[i].args)]
+                push!(expressions,Expr(:call,terms[i].args[1],subs...))
+            end
+
+        elseif length(terms[i].args) > 2
             println("here2")
             push!(expressions,parse_dynamics_expression(_model,terms[i].args[2:end],terms[i].args[1]))
 
-        elseif (length(terms[i].args) == 2) && (terms[i].args[1] isa Symbol) && isconst(MathConstants,terms[i].args[1])
-            push!(expressions,Expr(:call,terms[i].args[1],scalar_dynamics(_model,terms[i].args[2])))
         end
     end
 
@@ -210,19 +220,25 @@ function scalar_dynamics(_model,_args)
     elseif (length(_args.args) == 2) && (_args.head in [:vect,:vcat,:hcat,Symbol("'")]) 
         #deal with [1,2]' or [1,2]/ [1 2]' or [1 2]/ [1;2]'or [1;2]
         if _args.head == Symbol("'")
-            head = _args.args[1].head
-            sub = Expr(Symbol("'"),vector_dynamics(_model,head,_args.args[1]))
+            #head = _args.args[1].head
+            sub = Expr(Symbol("'"),scalar_dynamics(_model,_args.args[1]))
         else
             sub = vector_dynamics(_model,_args.head,_args)
         end
 
-    #upper level: ...+..., ...*... / -(...), sin(...), log(...)
-    elseif (length(_args.args) > 2)
+        #upper level: ...+..., ...*... / -(...), sin(...), log(...)
+    elseif (_args.args[1] isa Symbol) && isconst(MathConstants,_args.args[1]) && !(_args.args[1] in [:+,:-,:*,:/,:^,:\,:∫])
+        if length(_args.args) == 2
+            return Expr(:call,_args.args[1],scalar_dynamics(_model,_args.args[2]))
+        else
+            subs = []
+            [push!(subs,scalar_dynamics(_model,_args.args[i])) for i in 2:length(_args.args)]
+            return Expr(:call,_args.args[1],subs...)
+        end
+
+    elseif length(_args.args) > 2
         println("scalar expression type")
         return parse_dynamics_expression(_model,_args.args[2:end],_args.args[1])
-
-    elseif (length(_args.args) == 2) && (_args.args[1] isa Symbol) && isconst(MathConstants,_args.args[1])
-        return Expr(:call,_args.args[1],scalar_dynamics(_model,_args.args[2])) 
 
     end
 
@@ -274,7 +290,7 @@ function parse_dynamics(_model,_args)
 
     ### vectorized differential variable on the left hand side
     elseif type == :vectorized
-
+        println("vectorized")
         for i in eachindex(_args)
             lhs = _args[i].args[2]
             push!(lhs_terms,check_lhs_vector(_model,lhs))
@@ -297,19 +313,27 @@ function parse_dynamics(_model,_args)
 
             elseif (rhs.head in [:vect,:vcat,:hcat,Symbol("'")]) 
                 #deal with [1,2]' or [1,2]/ [1 2]' or [1 2]/ [1;2]'or [1;2]
+                println("00")
                 if rhs.head == Symbol("'")
-                    head = rhs.args[1].head
-                    push!(sub,Expr(Symbol("'"),vector_dynamics(_model,head,rhs.args[1])))
+                    #head = rhs.args[1].head
+                    push!(sub,Expr(Symbol("'"),scalar_dynamics(_model,rhs.args[1])))
                 else
                     push!(sub,vector_dynamics(_model,rhs.head,rhs))
                 end
     
             #upper level
-            elseif (length(rhs.args) > 2)
-                push!(sub,parse_dynamics_expression(_model,rhs.args[2:end],rhs.args[1]))
+            elseif (rhs.args[1] isa Symbol) && isconst(MathConstants,rhs.args[1]) && !(rhs.args[1] in [:+,:-,:*,:/,:^,:\,:∫])
+                if length(rhs.args) == 2 
+                    push!(sub,Expr(:call,rhs.args[1],scalar_dynamics(_model,rhs.args[2])))
+                else 
+                    subs = []
+                    [push!(subs,scalar_dynamics(_model,rhs.args[i])) for i in 2:length(rhs.args)]
+                    push!(sub,Expr(:call,rhs.args[1],subs...))
+                end
 
-            elseif (length(rhs.args) == 2) && (rhs.args[1] isa Symbol) && isconst(MathConstants,rhs.args[1])
-                push!(sub,Expr(:call,rhs.args[1],scalar_dynamics(_model,rhs.args[2])))
+            elseif length(rhs.args) > 2
+                println("11")
+                push!(sub,parse_dynamics_expression(_model,rhs.args[2:end],rhs.args[1]))
 
             end
 
@@ -322,19 +346,20 @@ function parse_dynamics(_model,_args)
         end
 
         #each element in sub is now a vector, hence ordered is now a collection of vectors, 
-        
+
         D = Expr(:block, 
         Expr(:function, 
-            Expr(:call, :t3, :model, :x, :u), 
+            Expr(:call, :altro_dynamic, :model, :x, :u), 
             Expr(:block, Expr(:(=), :ẋ, Expr(:vcat,ordered...))),
             Expr(:return , :ẋ)
             ))
+        
     end
 
     
     
     #return D
-    return DOI.add_dynamic(_model.optimizer, D)
+    return DOI.add_dynamic(_model.optimizer, ordered)
 end 
 
 #= 

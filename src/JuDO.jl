@@ -97,7 +97,7 @@ abstract type Abstract_Dynamic_Model end
 mutable struct Dy_Model <: Abstract_Dynamic_Model 
 
     #optimizer data
-    optimizer::DOI.AbstractDynamicOptimizer     #currently using MOI for testing, should be optimizer::DOI.AbstractDynamicOptimizer
+    optimizer::DOI.AbstractDynamicOptimizer    
 
     #constant data
     Constant_index::Dict{Symbol,Constant_data}
@@ -202,4 +202,3 @@ end
 
 
 end
-

@@ -14,8 +14,10 @@
     ## args
 
     keyword arguments can contain:
-        The Initial_guess, x₀
+        The Initial_guess, xₛ
+        The Initial_value, x₀
         The Initial_bound, [lb₀,ub₀]
+        The Final_value, xₑ
         The Final_bound, [lb₁,ub₁]
         The Trajectory_bound, [lb,ub]
         The Interpolant, L
@@ -78,15 +80,11 @@ end
 
     @independent( model, t >= 0)
 
-    If keyword "initial" or "final" is provided, then the independent variable is for the initial or final time
+    @independent( model, t <= 10)
 
-    @independent( model, t0, type = initial)
+    The keyword "initial" or "final" should be provided if the initial or final condition is to be specified.
 
-    @independent( model, tₚ, type = final)
-
-    @independent( model, t0 = 0, type = initial)
-
-    @independent( model, tₚ = 10, type = final)
+    @independent( model, 0 <= t <= 10, initial = t0, final = tf)
 """
 
 macro independent(model, args...)
@@ -97,9 +95,9 @@ macro independent(model, args...)
         sym,val = check_inde_var_input(args[1])   
         return macro_return(sym,var_ref)
 
-    elseif length(expr_of_args) == 2
-        var_ref = :(add_independent($(esc(model)),$([expr_of_args[1]]),$([expr_of_args[2]])))
-        (args[1]) isa Expr ? (sym = args[1].args[1]) : (sym = args[1])  
+    elseif length(expr_of_args) >= 2
+        var_ref = :(add_independent($(esc(model)),$([expr_of_args[1]]),$(expr_of_args[2:end])))
+        sym,val = check_inde_var_input(args[1])  
         return macro_return(sym,var_ref)
 
     else
