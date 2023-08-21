@@ -179,7 +179,7 @@ version = "1.6.0"
 
 [[DynOptInterface]]
 deps = ["Altro", "FiniteDiff", "ForwardDiff", "LinearAlgebra", "MathOptInterface", "RobotDynamics", "RobotZoo", "StaticArrays", "TrajectoryOptimization"]
-git-tree-sha1 = "276583ac1923fc79b457ab9c9b5a8508427b3803"
+git-tree-sha1 = "7bffe2af4aa19faefe6d743a6e1134df86eba715"
 repo-rev = "dev"
 repo-url = "https://github.com/JuDO-dev/DynOptInterface.jl"
 uuid = "80a7045d-d411-400a-b3f5-1501539f8fe7"
@@ -344,9 +344,9 @@ version = "5.4.1+0"
 
 [[MacroTools]]
 deps = ["Markdown", "Random"]
-git-tree-sha1 = "42324d08725e200c23d4dfb549e0d5d89dede2d2"
+git-tree-sha1 = "9ee1618cbf5240e6d4e0371d6f24065083f60c48"
 uuid = "1914dd2f-81c6-5fcd-8719-6d5c9610ff09"
-version = "0.5.10"
+version = "0.5.11"
 
 [[ManualMemory]]
 git-tree-sha1 = "bcaef4fc7a0cfe2cba636d84cda54b5e4e4ca3cd"
@@ -377,9 +377,9 @@ version = "2022.2.1"
 
 [[MutableArithmetics]]
 deps = ["LinearAlgebra", "SparseArrays", "Test"]
-git-tree-sha1 = "964cb1a7069723727025ae295408747a0b36a854"
+git-tree-sha1 = "5879579adbd9bc3017fe63c766371aace1a1d641"
 uuid = "d8a4904e-b15c-11e9-3269-09a3773c0cb0"
-version = "1.3.0"
+version = "1.3.1"
 
 [[NaNMath]]
 deps = ["OpenLibm_jll"]

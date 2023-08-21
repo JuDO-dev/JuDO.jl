@@ -14,7 +14,7 @@ function same_var_error(_model,sym)
     f = collect(keys(_model.Final_Independent_var_index))
     diff = collect_keys(_model.Differential_var_index)
     alg = collect_keys(_model.Algebraic_var_index)
-    con = collect(keys(_model.Constant_index))
+    con = collect(keys(_model.Parameter_index))
 
     append!(diff,alg)
     append!(diff,t)

@@ -51,12 +51,12 @@ function pure_qua_scalar(_model,_expr,coeff)
 
         #check composite scalar quadratic term like 3*x(t)^2 or 3*(x(t)-x_ref)^2
         elseif (_expr.args[1] == :*) && const_Number_array(_model,_expr.args[2])
-            (_expr.args[2] isa Number) ? (coeff = _expr.args[2]) : (coeff = _model.Constant_index[_expr.args[2]].Value)
+            (_expr.args[2] isa Number) ? (coeff = _expr.args[2]) : (coeff = _model.Parameter_index[_expr.args[2]].Value)
             (pure_qua_scalar(_model,_expr.args[3],coeff) == true) ? (return true) : (return false)
         end
     #check composite scalar quadratic term like 3*x(t)*x(t) or 3*(x(t)-x_ref)*(x(t)-x_ref)
     elseif (_expr.head == :call) && (length(_expr.args) == 4) && (_expr.args[1] == :*) && const_Number_array(_model,_expr.args[2]) && (_expr.args[3] == _expr.args[4])
-        (_expr.args[2] isa Number) ? (coeff = _expr.args[2]) : (coeff = _model.Constant_index[_expr.args[2]].Value)
+        (_expr.args[2] isa Number) ? (coeff = _expr.args[2]) : (coeff = _model.Parameter_index[_expr.args[2]].Value)
            (check_inner_composite(_model,_expr.args[3],coeff) == true) ? (return true) : (return false)
     end
 
@@ -76,7 +76,7 @@ function check_quad_term(_model,_expr,container,coeff)
     elseif (_expr isa Expr) && (_expr.head == :call) && (((length(_expr.args) == 2) && (_expr.args[1] == :∫)) || (length(_expr.args) >= 3))
         #if there is a explicit coefficient
         (_expr.args[1] == :*) && (_expr.args[2] isa Number) ? (coeff = _expr.args[2]) : nothing 
-        (_expr.args[1] == :*) && (_expr.args[2] in collect(keys(_model.Constant_index))) ? (coeff = _model.Constant_index[_expr.args[2]].Value) : nothing
+        (_expr.args[1] == :*) && (_expr.args[2] in collect(keys(_model.Parameter_index))) ? (coeff = _model.Parameter_index[_expr.args[2]].Value) : nothing
         #= julia> m.optimizer.Purequadratic_coeff
         DynOptInterface.PureQuadraticCoefficients(Any[[0.01 0.0 0.0 0.0; 0.0 0.01 0.0 0.0; 0.0 0.0 0.01 0.0; 0.0 0.0 0.0 0.01], :R, [100 0 0 0; 0 100 0 0; 0 0 100 0; 0 0 
         0 100], 0])   =#      
@@ -92,15 +92,15 @@ end
 
 #####################
 function const_and_Number(_model,arg)
-    (arg in collect(keys(_model.Constant_index))) || (arg isa Number) ? (return true) : (return false)
+    (arg in collect(keys(_model.Parameter_index))) || (arg isa Number) ? (return true) : (return false)
 end
 
 function const_and_array(_model,arg)
-    (arg in collect(keys(_model.Constant_index))) || ((arg.head == :vcat) && (arg.args isa Array)) ? (return true) : (return false)
+    (arg in collect(keys(_model.Parameter_index))) || ((arg.head == :vcat) && (arg.args isa Array)) ? (return true) : (return false)
 end
 
 function const_Number_array(_model,arg)
-    (arg in collect(keys(_model.Constant_index))) || (arg isa Number) || ((arg.head == :vcat) && (arg.args isa Array)) ? (return true) : (return false)
+    (arg in collect(keys(_model.Parameter_index))) || (arg isa Number) || ((arg.head == :vcat) && (arg.args isa Array)) ? (return true) : (return false)
 end
 
 function pure_qua_vector(_model,_expr)
@@ -108,7 +108,7 @@ function pure_qua_vector(_model,_expr)
     (_expr isa Expr) && (_expr.head == :call) && (length(_expr.args) == 4) && (_expr.args[1] == :*) && (_expr.args[2].head == Symbol("'")) && const_and_array(_model,_expr.args[3]) ? nothing : (return false)
     (_expr.args[2].args[1] == _expr.args[4]) ? nothing : (return false)
 
-    (_expr.args[3] isa Expr) && ((_expr.args[3].head == :vcat) && (_expr.args[3].args isa Array)) ? (coeff = _expr.args[3]) : (coeff = _model.Constant_index[_expr.args[3]].Value)
+    (_expr.args[3] isa Expr) && ((_expr.args[3].head == :vcat) && (_expr.args[3].args isa Array)) ? (coeff = _expr.args[3]) : (coeff = _model.Parameter_index[_expr.args[3]].Value)
     if _expr.args[2].args[1].head == :call
         #check basic vector quadratic term like x(t)'*Q*x(t) or (x(t)-x_ref)'*Q*(x(t)-x_ref) 
         (check_inner_composite(_model,_expr.args[4],coeff) == true) ? (return true) : (return false)

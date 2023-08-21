@@ -139,7 +139,7 @@ function check_all_const(_expr,all_terms)
         return push!(all_terms,_expr)
     end
 
-    #parse the term until it is a symbol, check if the symbol is a registered constant or a number
+    #parse the term until it is a symbol, check if the symbol is a registered parameter or a number
     terms = _expr.args
     
     for term in terms
@@ -355,12 +355,12 @@ function detect_diff_alge(_model,_sym)
 end
 
 function detect_const(_model,_sym)
-    const_var_names = collect(keys(_model.Constant_index))
+    const_var_names = collect(keys(_model.Parameter_index))
 
     _sym isa Number ? (return true) : nothing
     (isconst(MathConstants,_sym)==true) ? (return true) : nothing
 
-    (_sym in const_var_names) ? (return true) : throw(error("The symbol $_sym without paranthesis is not a valid, make sure it is a registered constant.\nIf it is a variable, make sure it is followed by a paranthesis with independent variable inside"))
+    (_sym in const_var_names) ? (return true) : throw(error("The symbol $_sym without paranthesis is not a valid, make sure it is a registered parameter.\nIf it is a variable, make sure it is followed by a paranthesis with independent variable inside"))
 end
 
 function call_trajectory(_model,_terms,_code_of_independent_var)
@@ -479,7 +479,7 @@ function _doi_add_constraint(_model,_terms,_func_type,_set)
             end
 
         elseif i isa Symbol
-            if (i in collect(keys(_model.Constant_index))) || (i isa Number)
+            if (i in collect(keys(_model.Parameter_index))) || (i isa Number)
                 push!(aff,true)
             else
                 push!(lin,true)

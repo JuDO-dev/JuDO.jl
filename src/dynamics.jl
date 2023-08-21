@@ -92,7 +92,7 @@ end
 #a function that checks if _args[i] is a number or symbol
 function check_rhs_num(_model,_args)
     if (_args isa Symbol) 
-        (_args in collect(keys(_model.Constant_index))) ? (return _model.Constant_index[_args].Value) : nothing
+        (_args in collect(keys(_model.Parameter_index))) ? (return _model.Parameter_index[_args].Value) : nothing
         (_args in [:+,:-,:*,:/,:^,:\,:∫]) ? (return _args) : nothing
         (isconst(MathConstants,_args)) ? (return eval(_args)) : nothing
 

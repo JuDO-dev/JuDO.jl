@@ -60,11 +60,11 @@ mutable struct Algebraic_Var_data <: variable_data
 end
 
 """
-    Constant_data
+    Parameter_data
 
-    A DataType for storing a collection of constants
+    A DataType for storing a collection of Parameters
 """
-mutable struct Constant_data <: variable_data
+mutable struct Parameter_data <: variable_data
     Sym::Symbol
     Value::Union{Number,Array}
 end
@@ -99,8 +99,8 @@ mutable struct Dy_Model <: Abstract_Dynamic_Model
     #optimizer data
     optimizer::DOI.AbstractDynamicOptimizer    
 
-    #constant data
-    Constant_index::Dict{Symbol,Constant_data}
+    #parameter data
+    Parameter_index::Dict{Symbol,Parameter_data}
 
     #variable data
     #Differential_vars::Vector{Differential_Var_data}
@@ -129,14 +129,14 @@ OrderedDict(),OrderedDict(),OrderedDict(),OrderedDict(),OrderedDict(),[],:())
 include("macros.jl")
 include("variables.jl")
 include("errors.jl")
-include("constants.jl") 
+include("parameters.jl") 
 include("constraints.jl")
 include("optimizer.jl")
 include("objective_func.jl")
 include("solver.jl")
 include("dynamics.jl")
 
-export @independent, @differential,@algebraic,@constant,@constraint,@objective_func,@dynamics,full_info,add_initial_bound,add_trajectory_bound,add_final_bound,
+export @independent, @differential,@algebraic,@parameter,@constraint,@objective_func,@dynamics,full_info,add_initial_bound,add_trajectory_bound,add_final_bound,
 add_initial_guess,add_interpolant,set_initial_bound,set_trajectory_bound,set_final_bound,set_initial_guess,set_interpolant
 
 export optimize!,set_meshpoints
@@ -155,9 +155,9 @@ end
 function full_info(model::Dy_Model)
     println("A $(model.optimizer)")
     println("Dynamic objective function: $(model.Dynamic_objective)")
-    println("Constants:")
-    for (key, value) in model.Constant_index
-        println("Constant $(value.Sym) with value = $(value.Value)")
+    println("Parameters:")
+    for (key, value) in model.Parameter_index
+        println("Parameter $(value.Sym) with value = $(value.Value)")
     end
     println("Variables:")
     for (key, value) in model.Differential_var_index

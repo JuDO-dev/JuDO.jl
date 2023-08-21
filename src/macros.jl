@@ -160,24 +160,24 @@ macro algebraic(model,args...)
 end
 
 """
-    @constant(model, args...)
+    @parameter(model, args...)
 
-    This macro is used to add a constant into the model to simplify future macro calls by using the constant symbol.
+    This macro is used to add a parameter into the model to simplify future macro calls by using the parameter symbol.
 
     The user is required to put a model in the first argument, an equality equation in the second argument.
 
-    @constant( model, g = 9.81)
+    @parameter( model, g = 9.81)
 
-    @constant( model, k = 0.0069)
+    @parameter( model, k = 0.0069)
 
-    @constant( model, P = 1.01e5)
+    @parameter( model, P = 1.01e5)
 """
 
-macro constant(model,args...)
+macro parameter(model,args...)
 
     c_args = collect(args)
 
-    const_ref = :(new_or_exist_constant($(esc(model)),$c_args))
+    const_ref = :(new_or_exist_parameter($(esc(model)),$c_args))
 
     return macro_return(c_args[1].args[1],const_ref)
 end
@@ -193,7 +193,7 @@ end
     the third element it can be "trajectory", "initial", "final" or "all". 
 
     The equation must use "==", "<=", or ">=" and each terms in the equation must contain either 
-    a registered variable or constant, or a number.
+    a registered variable or parameter, or a number.
 
     In the constraint function, the user is required to add ("name of the independent variable") like ẋ(t), u(t), A(t)
     to indicate the dependency with respected to the independent variable.
@@ -242,7 +242,7 @@ end
     The objective function is considered as a minimization problem, so for maximization problem, 
     the user is required to add a negative sign in front of the expression.
 
-    The objective function can only be added once in the model, it can only contain the registered variables and constants.
+    The objective function can only be added once in the model, it can only contain the registered variables and parameters.
 
     Pure quadratic problems:
     1. Scalar function: @objective_func( model, x(t)^2 + u(t)^2)

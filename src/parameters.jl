@@ -1,4 +1,4 @@
-function new_or_exist_constant(_model,_args)
+function new_or_exist_parameter(_model,_args)
 
     _args[1].head == :(=) && length(_args[1].args) == 2 ? nothing : error("Incorrect input style, make sure 'symbol = value' is used")
 
@@ -12,16 +12,16 @@ function new_or_exist_constant(_model,_args)
 end
 
 function add_new_const(_model,_sym,_args)
-    const_data = Constant_data(_sym,eval(_args))
-    _model.Constant_index[const_data.Sym] = const_data
+    const_data = Parameter_data(_sym,eval(_args))
+    _model.Parameter_index[const_data.Sym] = const_data
 
-    index = DOI.add_constant(_model.optimizer.constants,const_data)
-    constant_ref = ConstantRef(_model,index)
+    index = DOI.add_parameter(_model.optimizer.parameters,const_data)
+    parameter_ref = ParameterRef(_model,index)
 
-    return constant_ref
+    return parameter_ref
 end
 
-mutable struct ConstantRef <: AbstractDynamicRef
+mutable struct ParameterRef <: AbstractDynamicRef
     model::Abstract_Dynamic_Model
-    index::DOI.ConstantIndex
+    index::DOI.ParameterIndex
 end
