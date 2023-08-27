@@ -29,21 +29,21 @@ function check_lhs_vector(_model,_args)
 end
 
 #a function that checks if _args[i] is a vector of algebraic variables
-function check_rhs_vect(_model,_args)
+function check_rhs_vect(_model,_args,independent)
     #check single element in vectorized algebraic variable uu(t)[1]
-    if (_args.args[2] isa Number) && (_args.args[1].args[1] in collect_keys(_model.Algebraic_var_index)) && (_args.args[1].args[2] == collect(keys(_model.Independent_var_index))[1])
-        println("vector algebraic")
+    if (_args.args[2] isa Number) && (_args.args[1].args[1] in collect_keys(_model.Algebraic_var_index)) && (_args.args[1].args[2] == independent)
+        #println("vector algebraic")
         index = findfirst(x->x==_args.args[1].args[1],collect_keys(_model.Algebraic_var_index))
         return Expr(:ref,:u,_args.args[2] + index - 1)
 
     #check single element in vectorized differential variable xx(t)[1]
-    elseif (_args.args[2] isa Number) && (_args.args[1].args[1] in collect_keys(_model.Differential_var_index)) && (_args.args[1].args[2] == collect(keys(_model.Independent_var_index))[1])
-        println("vector differential")
+    elseif (_args.args[2] isa Number) && (_args.args[1].args[1] in collect_keys(_model.Differential_var_index)) && (_args.args[1].args[2] == independent)
+        #println("vector differential")
         index = findfirst(x->x==_args.args[1].args[1],collect_keys(_model.Differential_var_index))
         return Expr(:ref,:x,_args.args[2] + index - 1)
 
     #check partial vectorized algebraic variable uu(t)[1:3]
-    elseif (_args.args[2] isa Expr) && (_args.args[1].args[1] in collect_keys(_model.Algebraic_var_index)) && (_args.args[1].args[2] == collect(keys(_model.Independent_var_index))[1])
+    elseif (_args.args[2] isa Expr) && (_args.args[1].args[1] in collect_keys(_model.Algebraic_var_index)) && (_args.args[1].args[2] == independent)
         
         index = findfirst(x->x==_args.args[1].args[1],collect_keys(_model.Algebraic_var_index))
         if index > 1
@@ -64,7 +64,7 @@ function check_rhs_vect(_model,_args)
             return Expr(:ref,:u, Expr(:call,:(:), first + index - 1, last + index - 1))
         end
     #check partial vectorized differential variable xx(t)[1:3]
-    elseif (_args.args[2] isa Expr) && (_args.args[1].args[1] in collect_keys(_model.Differential_var_index)) && (_args.args[1].args[2] == collect(keys(_model.Independent_var_index))[1])
+    elseif (_args.args[2] isa Expr) && (_args.args[1].args[1] in collect_keys(_model.Differential_var_index)) && (_args.args[1].args[2] == independent)
         
         index = findfirst(x->x==_args.args[1].args[1],collect_keys(_model.Differential_var_index))
         if index > 1
@@ -104,11 +104,11 @@ function check_rhs_num(_model,_args)
 end
 
 #a function that checks if the expression is length 2 
-function direct_expressions(_model,_expr)
+function direct_expressions(_model,_expr,sym)
     if !(_expr isa Expr) || (length(_expr.args) == 2)
-        return scalar_dynamics(_model,_expr)
+        return scalar_dynamics(_model,_expr,sym)
     elseif length(_expr.args) > 2
-        return parse_dynamics_expression(_model,_expr.args[2:end],_expr.args[1])
+        return parse_dynamics_expression(_model,_expr.args[2:end],_expr.args[1],sym)
     end 
 end
 
@@ -119,15 +119,15 @@ end
 ##############################################################################################################
 
 #a function used to parse a pure vector or matrix
-function vector_dynamics(_model,_head,terms)
+function vector_dynamics(_model,_head,terms,sym)
     subs = []
     if all(expr -> (expr isa Expr) && (expr.head == :row), terms.args)
         # it is a matrix
-        println("f-matrix")
+        #println("f-matrix")
         rows = []
         for i in eachindex(terms.args)
             for j in eachindex(terms.args[i].args)
-                push!(subs,direct_expressions(_model,terms.args[i].args[j]))
+                push!(subs,direct_expressions(_model,terms.args[i].args[j],sym))
             end
             push!(rows,Expr(:row,subs...))
             subs = []
@@ -136,67 +136,77 @@ function vector_dynamics(_model,_head,terms)
         return Expr(:vcat,rows...)
     
     else
-        println("f-vector")
+        #println("f-vector")
         for j in eachindex(terms.args)
-            push!(subs,direct_expressions(_model,terms.args[j]))
+            push!(subs,direct_expressions(_model,terms.args[j],sym))
         end
         return Expr(_head,subs...)
     end
 end
 
 #a function that checks if _args[i] is a diff or alge variable
-function check_rhs_var(_model,_args)
-    if (_args.args[2] == collect(keys(_model.Independent_var_index))[1]) && (_args.args[1] in collect_keys(_model.Algebraic_var_index))
-        index = findfirst(x->x==_args,collect(keys(_model.Algebraic_var_index)))
-        return Expr(:ref,:u,index)
+function check_rhs_var(_model,_args,independent)
+    if (_args.args[2] == independent) && (_args.args[1] in collect_keys(_model.Algebraic_var_index))
+        index = findfirst(x->x==_args.args[1],collect_keys(_model.Algebraic_var_index))
 
-    elseif (_args.args[2] == collect(keys(_model.Independent_var_index))[1]) && (_args.args[1] in collect_keys(_model.Differential_var_index))
-        index = findfirst(x->x==_args,collect(keys(_model.Differential_var_index)))
-        return Expr(:ref,:x,index)
+        if _model.Algebraic_var_index[collect(keys(_model.Algebraic_var_index))[index]] isa Vector
+            prev = 0
+            for i in 1:index-1
+                var = _model.Algebraic_var_index[collect(keys(_model.Algebraic_var_index))[i]]
+                (var isa Vector) ? (prev += length(var)) : (prev += 1)
+            end
+            return Expr(:ref,:u,Expr(:call,:(:),prev+1,prev+length(_model.Algebraic_var_index[collect(keys(_model.Algebraic_var_index))[index]])))
+        else
+            return Expr(:ref,:u,index)
+        end
 
+    elseif (_args.args[2] == independent) && (_args.args[1] in collect_keys(_model.Differential_var_index))
+        index = findfirst(x->x==_args.args[1],collect_keys(_model.Differential_var_index))
+
+        if (_model.Differential_var_index[collect(keys(_model.Differential_var_index))[index]] isa Vector)
+            prev = 0
+            for i in 1:index-1
+                var = _model.Differential_var_index[collect(keys(_model.Differential_var_index))[i]]
+                (var isa Vector) ? (prev += length(var)) : (prev += 1)
+            end
+            return Expr(:ref,:x,Expr(:call,:(:),prev+1,prev+length(_model.Differential_var_index[collect(keys(_model.Differential_var_index))[index]])))
+        else
+            return Expr(:ref,:x,index)
+        end
     end
     throw(error("Incorrect style of the right hand side variable"))
 end
 
 #iteratively parse the dynamics expression for scalar differential variables
-function parse_dynamics_expression(_model,terms,operator)
+function parse_dynamics_expression(_model,terms,operator,sym)
     expressions = []
 
     for i in eachindex(terms)
-        print(i,"  ",terms[i])
+        #print(i,"  ",terms[i])
         #bottom level
         if (terms[i] isa Symbol) || (terms[i] isa Number)
             push!(expressions,check_rhs_num(_model,terms[i]))
 
         elseif (terms[i].head == :ref) && (length(terms[i].args) == 2) && (length(terms[i].args[1].args) == 2)
-            push!(expressions,check_rhs_vect(_model,terms[i]))
+            push!(expressions,check_rhs_vect(_model,terms[i],sym))
 
-        elseif (length(terms[i].args) == 2) && (terms[i].args[2] == collect(keys(_model.Independent_var_index))[1])
-            push!(expressions,check_rhs_var(_model,terms[i]))
+        elseif (length(terms[i].args) == 2) && (terms[i].args[2] == sym)
+            push!(expressions,check_rhs_var(_model,terms[i],sym))
 
         elseif (terms[i].head in [:vect,:vcat,:hcat,Symbol("'")])
-            println("in vector")
+            #println("in vector")
            
             if terms[i].head == Symbol("'")
                 #head = terms[i].args[1].head
-                push!(expressions,Expr(Symbol("'"), scalar_dynamics(_model,terms[i].args[1])))
+                push!(expressions,Expr(Symbol("'"), scalar_dynamics(_model,terms[i].args[1],sym)))
             else
-                push!(expressions,vector_dynamics(_model,terms[i].head,terms[i]))
+                push!(expressions,vector_dynamics(_model,terms[i].head,terms[i],sym))
             end
 
         #upper level
-        elseif (terms[i].args[1] isa Symbol) && isconst(MathConstants,terms[i].args[1]) && !(terms[i].args[1] in [:+,:-,:*,:/,:^,:\,:∫])
-            if length(terms[i].args) == 2
-                push!(expressions,Expr(:call,terms[i].args[1],scalar_dynamics(_model,terms[i].args[2])))
-            else
-                subs = []
-                [push!(subs,scalar_dynamics(_model,terms[i].args[j])) for j in 2:length(terms[i].args)]
-                push!(expressions,Expr(:call,terms[i].args[1],subs...))
-            end
-
-        elseif length(terms[i].args) > 2
-            println("here2")
-            push!(expressions,parse_dynamics_expression(_model,terms[i].args[2:end],terms[i].args[1]))
+        elseif length(terms[i].args) >= 2
+            #println("here2")
+            push!(expressions,parse_dynamics_expression(_model,terms[i].args[2:end],terms[i].args[1],sym))
 
         end
     end
@@ -206,39 +216,39 @@ function parse_dynamics_expression(_model,terms,operator)
 end
 
 #a function used to parse a scalar term (on rhs or inside a vector)
-function scalar_dynamics(_model,_args)
+function scalar_dynamics(_model,_args,sym)
     #lower level: number, symbol, x(t), x(t)[m:n], [1,2,...]
     if (_args isa Symbol) || (_args isa Number)
         sub = check_rhs_num(_model,_args)
 
     elseif (_args.head == :ref) && (length(_args.args) == 2) && (length(_args.args[1].args) == 2)
-        sub = check_rhs_vect(_model,_args)
+        sub = check_rhs_vect(_model,_args,sym)
 
-    elseif (length(_args.args) == 2) && (_args.args[2] == collect(keys(_model.Independent_var_index))[1])    
-        sub = check_rhs_var(_model,_args) 
+    elseif (length(_args.args) == 2) && (_args.args[2] == sym)    
+        sub = check_rhs_var(_model,_args,sym) 
 
     elseif (length(_args.args) == 2) && (_args.head in [:vect,:vcat,:hcat,Symbol("'")]) 
         #deal with [1,2]' or [1,2]/ [1 2]' or [1 2]/ [1;2]'or [1;2]
         if _args.head == Symbol("'")
             #head = _args.args[1].head
-            sub = Expr(Symbol("'"),scalar_dynamics(_model,_args.args[1]))
+            sub = Expr(Symbol("'"),scalar_dynamics(_model,_args.args[1],sym))
         else
-            sub = vector_dynamics(_model,_args.head,_args)
+            sub = vector_dynamics(_model,_args.head,_args,sym)
         end
 
         #upper level: ...+..., ...*... / -(...), sin(...), log(...)
-    elseif (_args.args[1] isa Symbol) && isconst(MathConstants,_args.args[1]) && !(_args.args[1] in [:+,:-,:*,:/,:^,:\,:∫])
+#=     elseif (_args.args[1] isa Symbol) && isconst(MathConstants,_args.args[1]) && !(_args.args[1] in [:+,:-,:*,:/,:^,:\,:∫])
         if length(_args.args) == 2
-            return Expr(:call,_args.args[1],scalar_dynamics(_model,_args.args[2]))
+            return Expr(:call,_args.args[1],scalar_dynamics(_model,_args.args[2],sym))
         else
             subs = []
-            [push!(subs,scalar_dynamics(_model,_args.args[i])) for i in 2:length(_args.args)]
+            [push!(subs,scalar_dynamics(_model,_args.args[i],sym)) for i in 2:length(_args.args)]
             return Expr(:call,_args.args[1],subs...)
-        end
+        end =#
 
-    elseif length(_args.args) > 2
+    elseif length(_args.args) >= 2
         println("scalar expression type")
-        return parse_dynamics_expression(_model,_args.args[2:end],_args.args[1])
+        return parse_dynamics_expression(_model,_args.args[2:end],_args.args[1],sym)
 
     end
 
@@ -249,12 +259,32 @@ function parse_dynamics(_model,_args)
     #each element in _args is an expression of equation
     type = :scalarized
     for i in eachindex(_args)
-        if _args[i].args[2].head == :ref
-            type = :vectorized
-            break
-        end
-    end
 
+        if _args[i].args[2].head == :ref
+            target_code = get_normalized_unicode(string(_args[i].args[2].args[1].args[1]))
+        elseif length(_args[i].args[2].args) == 2
+            target_code = get_normalized_unicode(string(_args[i].args[2].args[1]))
+        else
+            throw(error("Incorrect style of the left hand side of the dynamics"))
+        end
+
+        (target_code[end] == 0x307) ? nothing : throw(error("Dot operator not recognized"))
+
+        diff_var_names = collect_keys(_model.Differential_var_index)
+        diff_var_codes = []
+        #store the unicode of all differential variables in diff_var_codes
+        [push!(diff_var_codes,get_unicode(string(diff_var_names[i]))) for i in eachindex(diff_var_names)]
+
+        for i in eachindex(diff_var_codes)
+            if target_code[1:end-1] == diff_var_codes[i] 
+                key = collect(keys(_model.Differential_var_index))[i]
+                (_model.Differential_var_index[key] isa Vector) ? (type = :vectorized) : nothing
+            end
+        end
+
+        println(type)
+    end
+    
     #parse the input mathematical expression into the form of the elements in sub
     lhs_terms = []
     if type == :scalarized
@@ -268,7 +298,7 @@ function parse_dynamics(_model,_args)
         for i in eachindex(_args)
             #each expression (_args[i]) must have the first argument as :(==), and the second as the derivative term
             rhs = _args[i].args[3]
-            push!(sub,scalar_dynamics(_model,rhs))
+            push!(sub,scalar_dynamics(_model,rhs,collect(keys(_model.Independent_var_index))[1]))
 
         end
 
@@ -306,34 +336,25 @@ function parse_dynamics(_model,_args)
                 push!(sub,check_rhs_num(_model,rhs))
 
             elseif (rhs.head == :ref) && (length(rhs.args) == 2) && (length(rhs.args[1].args) == 2)
-                push!(sub,check_rhs_vect(_model,rhs))
+                push!(sub,check_rhs_vect(_model,rhs,collect(keys(_model.Independent_var_index))[1]))
 
             elseif (length(rhs.args) == 2) && (rhs.args[2] == collect(keys(_model.Independent_var_index))[1])   #need?
-                push!(sub,check_rhs_var(_model,rhs)) 
+                push!(sub,check_rhs_var(_model,rhs,collect(keys(_model.Independent_var_index))[1])) 
 
             elseif (rhs.head in [:vect,:vcat,:hcat,Symbol("'")]) 
                 #deal with [1,2]' or [1,2]/ [1 2]' or [1 2]/ [1;2]'or [1;2]
                 println("00")
                 if rhs.head == Symbol("'")
                     #head = rhs.args[1].head
-                    push!(sub,Expr(Symbol("'"),scalar_dynamics(_model,rhs.args[1])))
+                    push!(sub,Expr(Symbol("'"),scalar_dynamics(_model,rhs.args[1],collect(keys(_model.Independent_var_index))[1])))
                 else
-                    push!(sub,vector_dynamics(_model,rhs.head,rhs))
+                    push!(sub,vector_dynamics(_model,rhs.head,rhs,collect(keys(_model.Independent_var_index))[1]))
                 end
     
             #upper level
-            elseif (rhs.args[1] isa Symbol) && isconst(MathConstants,rhs.args[1]) && !(rhs.args[1] in [:+,:-,:*,:/,:^,:\,:∫])
-                if length(rhs.args) == 2 
-                    push!(sub,Expr(:call,rhs.args[1],scalar_dynamics(_model,rhs.args[2])))
-                else 
-                    subs = []
-                    [push!(subs,scalar_dynamics(_model,rhs.args[i])) for i in 2:length(rhs.args)]
-                    push!(sub,Expr(:call,rhs.args[1],subs...))
-                end
-
-            elseif length(rhs.args) > 2
+            elseif length(rhs.args) >= 2
                 println("11")
-                push!(sub,parse_dynamics_expression(_model,rhs.args[2:end],rhs.args[1]))
+                push!(sub,parse_dynamics_expression(_model,rhs.args[2:end],rhs.args[1],collect(keys(_model.Independent_var_index))[1]))
 
             end
 
@@ -350,33 +371,14 @@ function parse_dynamics(_model,_args)
         D = Expr(:block, 
         Expr(:function, 
             Expr(:call, :altro_dynamic, :model, :x, :u), 
-            Expr(:block, Expr(:(=), :ẋ, Expr(:vcat,ordered...))),
+            Expr(:block, Expr(:(=), :ẋ, Expr(:vect,ordered...))),
             Expr(:return , :ẋ)
             ))
         
     end
 
     
-    
-    #return D
-    return DOI.add_dynamic(_model.optimizer, ordered)
+    return D
+    #return ordered
+    #return DOI.add_dynamic(_model.optimizer, ordered)
 end 
-
-#= 
-Expr(:vcat,1,2,3,4) / Expr(:vect,1,2,3,4)
-4-element Vector{Int64}:
- 1
- 2
- 3
- 4
-
-Expr(:hcat,1,2,3,4)
-1×4 Matrix{Int64}:
- 1  2  3  4
-
-Expr(:vcat,Expr(:row,1,2),Expr(:row,3,4))
-2×2 Matrix{Int64}:
- 1  2
- 3  4 
- 
- =#

@@ -1,3 +1,5 @@
+integrate_sym = [:integrate,:∫]
+
 function check_inner_quad_term(_model,_expr,coeff)
     #check the term is about x(.) or u(.), t or tf, and give the coefficient to DOI
     (_expr isa Expr) ? nothing : (return false)
@@ -129,84 +131,101 @@ function pure_qua_vector(_model,_expr)
     
 end
 
-function check_integral(_expr,sym)
-    
-    if (_expr isa Expr) && (_expr.head == :call) && (length(_expr.args) == 2) 
-        (_expr.args[2] == sym) ? nothing : throw(error("Incorrect use of independent variable in the objective function"))
-    end
+#####################
 
-    terms = _expr.args
-    for term in terms
-        if (term isa Expr) && (term.head == :call) && (length(term.args) == 2) 
-            (term.args[2] == sym) ? nothing : throw(error("Incorrect use of independent variable in the objective function"))
-        elseif (term isa Expr) && (length(term.args) > 2)
-            check_integral(term,sym)  
-        end
-    end
+#parse the expression outside or inside the integral
+function check_mayer_lagrange(_model,_args,sym)
+    
+    return scalar_dynamics(_model,_args,sym)
 
 end
 
-function check_bolza_mayer(_model,_expr)
-    run_sym = collect(keys(_model.Independent_var_index))[1]
-    final_sym = collect(keys(_model.Final_Independent_var_index))[1]
+function check_bolza_mayer(_model,_args,_has_integrand,type)
+    if (_args isa Number) || (_args isa Symbol) || (_args === nothing)
+        m_func = check_mayer_lagrange(_model,_args,collect(keys(_model.Independent_var_index))[1])
 
-    if (_expr isa Expr) && (_expr.head == :call) && (length(_expr.args) == 2)
-        if (_expr.args[1] == :∫) 
-            check_integral(_expr.args[2],run_sym)
-        elseif (_expr.args[2] != final_sym) 
-            throw(error("Incorrect use of independent variable in the objective function"))
+    #check mayer function
+    elseif !_has_integrand
+        m_func = check_mayer_lagrange(_model,_args,collect(keys(_model.Final_Independent_var_index))[1])
+        println("mayer",m_func)
+        type[2] = m_func
+
+    #check lagrange function ∫() 
+    elseif (length(_args.args) == 2) && (_args.args[1] in integrate_sym) 
+        l_func = check_mayer_lagrange(_model,_args.args[2],collect(keys(_model.Independent_var_index))[1])
+        println("lagrange",l_func)
+        type[1] = l_func
+        
+    #-∫() 
+    elseif ((length(_args.args) == 2) && (_args.args[1] == :-) && (_args.args[2].args[1] in integrate_sym))
+        l_func = check_mayer_lagrange(_model,_args.args[2].args[2],collect(keys(_model.Independent_var_index))[1])
+        expression = Expr(:call,:-,l_func)
+        println("lagrange",expression)
+        type[1] = expression
+
+    #a*∫(), ()/()...*∫()
+    elseif (length(_args.args) > 2) && !(_args.args[1] in [:+,:-]) 
+        l_func = []
+        println("111")
+        
+        lagrange = false
+        for i in 2:length(_args.args)
+            if (_args.args[i] isa Expr) && (_args.args[i].args[1] in integrate_sym) && length(_args.args[i].args) == 2
+                lagrange = true
+                push!(l_func, check_mayer_lagrange(_model,_args.args[i].args[2],collect(keys(_model.Independent_var_index))[1]))
+                break
+            end
+            
+            push!(l_func, check_mayer_lagrange(_model,_args.args[i],collect(keys(_model.Independent_var_index))[1]))
+ 
         end
+        
+        (lagrange == true) ? (l_func = Expr(:call,_args.args[1],l_func...)) : (l_func = nothing)
+        println("lagrange",l_func)
+        type[1] = l_func
+
+    elseif (length(_args.args) > 2) && _has_integrand
+        
+        if length(_args.args) > 3
+            total = Expr(:call,_args.args[1],_args.args[2:end-1]...)
+            type[1] = check_mayer_lagrange(_model,total,collect(keys(_model.Final_Independent_var_index))[1])
+        
+        else
+            type[1] = check_mayer_lagrange(_model,_args.args[2],collect(keys(_model.Final_Independent_var_index))[1])
+        end
+
+        type[2] = check_mayer_lagrange(_model,_args.args[end].args[2],collect(keys(_model.Independent_var_index))[1])
+        println("bolza",type)
     end
 
-    if (_expr isa Expr) && (_expr.head == :call) && (length(_expr.args) > 2)
-        terms = _expr.args
-    
-        for term in terms
-            check_bolza_mayer(_model,term)
-        end
-    end
+    return type
+
 end
 
 function parse_objective_function(_model,_args)
     (_model.Dynamic_objective != :()) ? error("The objective function can only be added once in the model") : nothing
     (length(_args) != 1) ? error("Incorrect number of arguments") : nothing
 
-    feasibility = false
-    bolza = false
-    mayer = false
-    lagrange = false
-    pure_quad = false
-    # determine the type of the objective function, whether it is a mayer or lagrange function
+    # feasibility, bolza, mayer, lagrange, pure_quad 
+    #types = fill(false,5)
 
-    if (_args[1] isa Number) || (_args[1] === nothing)
-        feasibility = true
-    elseif ((length(_args[1].args) == 2) && (_args[1].args[1] == :∫)) || ((length(_args[1].args) == 3) && (_args[1].args[2] isa Number) && (_args[1].args[3].args[1] == :∫))
-        
-        (length(_args[1].args) == 2) ? (run_cost = _args[1].args[2]) : nothing
-        (length(_args[1].args) == 3) ? (run_cost = _args[1].args[3].args[2]) : nothing
-        check_integral(run_cost,collect(keys(_model.Independent_var_index))[1])
+    has_integrand = (:∫ in check_all_const(_args[1],[])) || (:integrate in check_all_const(_args[1],[]))
+    type = Any[:(),:()]
 
-        lagrange = true
-    elseif (length(_args[1].args) >= 2)
-        (:∫ in check_all_const(_args[1],[])) ? (bolza = true) : (mayer = true)
-
-        check_bolza_mayer(_model,_args[1])
-
-    end
+    lagrange, mayer = check_bolza_mayer(_model,_args[1],has_integrand,type)
 
 
     !(false in check_quad_term(_model,_args[1],[],nothing)) ? (pure_quad = true) : (DOI.delete_quadratic(_model.optimizer.Purequadratic_coeff))
 
     #!(false in check_quad_term_vector(_model,_args[1],[])) ? (pure_quad = true) : (DOI.delete_quadratic(_model.optimizer.Purequadratic_coeff))
-    println("feasibility =",feasibility," bolza =",bolza," mayer =",mayer," lagrange =",lagrange," pure_quad =",pure_quad)
-
+ 
     #= terms,type = parse_and_separate(_model,[],_args[1],nothing,[],[])
 
     code_of_independent_var = get_unicode(string(collect(keys(_model.Independent_var_index))[1]))
     call_trajectory(_model,unique(terms),code_of_independent_var)
 
     _model.Dynamic_objective = _args[1] =#
-
-    return #terms,type
+    
+    return #lagrange,mayer#terms,type
 end
 

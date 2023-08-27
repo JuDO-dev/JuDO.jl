@@ -69,7 +69,7 @@ function two_sides_diff(_expr)
 end
 
 function equality(_expr)
-    kw_collection = [:Initial_guess,:Initial_value,:Final_value,:Interpolant]
+    kw_collection = [:Initial_value,:Final_value]
     left_val = _expr.args[1]
     right_val = _expr.args[2]
 
@@ -133,8 +133,8 @@ function check_diff_var_input(_raw_expr)
 end
 
 function identify_kw_alge(_kws,_vals)
-    kw_collection = [:Initial_guess,:Initial_value,:Final_value,:Interpolant]
-    default_info = [nothing, nothing, nothing, nothing]
+    kw_collection = [:Initial_value,:Final_value]
+    default_info = [nothing, nothing]
 
     #return the indices of user-input keywords in kw_collection
     index_matches=[]
@@ -154,8 +154,8 @@ end
 
 # identify the keyword in the user input and its value
 function identify_kw(_kws,_vals)
-    kw_collection = [:Initial_guess,:Initial_bound,:Initial_value,:Final_bound,:Final_value,:Trajectory_bound,:Interpolant]
-    default_info = [nothing, [-Inf,Inf], nothing, [-Inf,Inf], nothing, [-Inf,Inf], nothing]
+    kw_collection = [:Initial_bound,:Initial_value,:Final_bound,:Final_value,:Trajectory_bound]
+    default_info = [[-Inf,Inf], nothing, [-Inf,Inf], nothing, [-Inf,Inf]]
 
     #return the indices of user-input keywords in kw_collection
     index_matches=[]
@@ -189,7 +189,7 @@ function construct_diff_info(_model,_sym,_args)
 end
 
 function add_new_diffvector(_model,_args)
-    diff_var_data = Differential_Var_data(_args[1],_args[2],_args[3],_args[4],_args[5],_args[6],_args[7],_args[8])
+    diff_var_data = Differential_Var_data(_args[1],_args[2],_args[3],_args[4],_args[5],_args[6])
 
     if haskey(_model.Differential_var_index,diff_var_data.Run_sym)
         push!(_model.Differential_var_index[diff_var_data.Run_sym],diff_var_data)
@@ -209,11 +209,11 @@ function add_new(_model,_args,extra_args=false)
     same_var_error(_model,_args[1].args[1])
 
     if extra_args == false
-        diff_var_data = Differential_Var_data(_args[1],nothing,[[-Inf,Inf]],nothing,[[-Inf,Inf]],nothing,[[-Inf,Inf]],nothing)
+        diff_var_data = Differential_Var_data(_args[1],[[-Inf,Inf]],nothing,[[-Inf,Inf]],nothing,[[-Inf,Inf]])
     else
         var_info = construct_diff_info(_model,_args[1],_args[2:end])
 
-        diff_var_data = Differential_Var_data(var_info[1],var_info[2],[var_info[3]],var_info[4],[var_info[5]],var_info[6],[var_info[7]],var_info[8])
+        diff_var_data = Differential_Var_data(var_info[1],[var_info[2]],var_info[3],[var_info[4]],var_info[5],[var_info[6]])
     end
 
     _model.Differential_var_index[diff_var_data.Run_sym] = diff_var_data
@@ -330,7 +330,7 @@ end
 
 ##############################################################################################################
 function add_new_algevector(_model,_args)
-    alge_var_data = Algebraic_Var_data(_args[1],_args[2],_args[3],_args[4],_args[5],_args[6])
+    alge_var_data = Algebraic_Var_data(_args[1],_args[2],_args[3],_args[4])
 
     if haskey(_model.Algebraic_var_index,alge_var_data.Sym)
         push!(_model.Algebraic_var_index[alge_var_data.Sym],alge_var_data)
@@ -404,15 +404,15 @@ function add_new_algebraic(_model,_args,bound,vect=false)
 
     if length(_args) == 1
         if vect == false
-            alge_var_data = Algebraic_Var_data(_args[1],bound,nothing,nothing,nothing,nothing)
+            alge_var_data = Algebraic_Var_data(_args[1],bound,nothing,nothing)
             _model.Algebraic_var_index[alge_var_data.Sym] = alge_var_data
 
             return add_alge_variable(_model,alge_var_data)
         else
-            return add_new_algevector(_model,[_args[1],bound,nothing,nothing,nothing,nothing])
+            return add_new_algevector(_model,[_args[1],bound,nothing,nothing])
         end
         
-    elseif (length(_args) in [2,3,4,5]) 
+    elseif (length(_args) >=2) && (length(_args) <= 3)
 
         names_vals = []
         for expr in _args[2:end] 
@@ -431,12 +431,12 @@ function add_new_algebraic(_model,_args,bound,vect=false)
         pushfirst!(var_info,_args[1])
 
         if vect == false
-            alge_var_data = Algebraic_Var_data(var_info[1],bound,var_info[2],var_info[3],var_info[4],var_info[5])
+            alge_var_data = Algebraic_Var_data(var_info[1],bound,var_info[2],var_info[3])
             _model.Algebraic_var_index[alge_var_data.Sym] = alge_var_data
 
             return add_alge_variable(_model,alge_var_data)
         else
-            return add_new_algevector(_model,[var_info[1],bound,var_info[2],var_info[3],var_info[4],var_info[5]])
+            return add_new_algevector(_model,[var_info[1],bound,var_info[2],var_info[3]])
         end
         
     else
@@ -842,10 +842,10 @@ end
 ##############################################################################################################
 function assign_vector(_model,i,args,result,extra_args = false)
     if extra_args == false
-        info = [Expr(:call,args[1].args[1].args[1],collect(keys(_model.Independent_var_index))[1]),nothing,[[-Inf,Inf]],nothing,[[-Inf,Inf]],nothing,[[-Inf,Inf]],nothing]
+        info = [Expr(:call,args[1].args[1].args[1],collect(keys(_model.Independent_var_index))[1]),[[-Inf,Inf]],nothing,[[-Inf,Inf]],nothing,[[-Inf,Inf]]]
     else
         var_info = construct_diff_info(_model,args[1],args[2:end])
-        info = [Expr(:call,args[1].args[1].args[1],collect(keys(_model.Independent_var_index))[1]),var_info[2],[var_info[3]],var_info[4],[var_info[5]],var_info[6],[var_info[7]],var_info[8]]
+        info = [Expr(:call,args[1].args[1].args[1],collect(keys(_model.Independent_var_index))[1]),[var_info[2]],var_info[3],[var_info[4]],var_info[5],[var_info[6]]]
     end
     var_ref = add_new_diffvector(_model,info)
     return   push!(result,var_ref) 

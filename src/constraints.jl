@@ -48,9 +48,21 @@ function check_diff_alge(_model,_term)
     return false
 end
 
-function print_info(_type,_terms)
-    #= println(_type," in ",_terms)
-    println("check: ",_terms.args[1]) =#
+function check_vector_constraint(_model,term)
+    diff_var_names = collect_keys(_model.Differential_var_index)
+    alg_var_names = collect_keys(_model.Algebraic_var_index)
+
+    for i in eachindex(diff_var_names)
+        if term == diff_var_names[i]
+           (_model.Differential_var_index[collect(keys(_model.Differential_var_index))[i]] isa Vector) ? (return true) : (return false)
+        end
+    end
+
+    for i in eachindex(alg_var_names)
+        if term == alg_var_names[i]
+            (_model.Algebraic_var_index[collect(keys(_model.Algebraic_var_index))[i]] isa Vector) ? (return true) : (return false)
+        end
+    end
 end
 
 function check_division(_model,_side,type)
@@ -110,7 +122,7 @@ function check_multiplication(_model,_side,type)
             if (i != pos) && (_terms[i] isa Expr) && (length(_terms[i].args) == 2) && check_diff_alge(_model,_terms[i].args[1])
                 #if there is another x(t) like term, then it is nonlinear
                 push!(type,:nonlinear)
-                print_info(type,_terms)
+                #print_info(type,_terms)
                 return type
             elseif (i != pos) && (_terms[i] isa Expr) && (length(_terms[i].args) > 2)
                 #if there is an expression that contains x(t) like term, then parse it
@@ -210,7 +222,7 @@ function check_math_func(_model,_side,type)
         for term in possible_const
             if check_diff_alge(_model,term)
                 push!(type,:nonlinear)
-                print_info(type,_side)
+                #print_info(type,_side)
                 return type
                 
             end
@@ -231,7 +243,7 @@ function check_math_func(_model,_side,type)
                 for term in possible_const
                     if check_diff_alge(_model,term)
                         push!(type,:nonlinear)
-                        print_info(type,_terms)
+                        #print_info(type,_terms)
                         return type
                         
                     end
@@ -246,7 +258,7 @@ function check_math_func(_model,_side,type)
     push!(type,:linear)
 end
 
-function parse_and_separate(_model,true_terms,_side,sub,check_set,type)
+function parse_and_separate(_model,true_terms,_side,type)
     container = copy(true_terms)
 
     separating_ops = [:*,:/,:+,:-,:^] 
@@ -293,7 +305,7 @@ function parse_and_separate(_model,true_terms,_side,sub,check_set,type)
                 push!(container,term) 
             else
                 
-                for element in parse_and_separate(_model,[],term,sub,check_set,type)[1]
+                for element in parse_and_separate(_model,[],term,type)[1]
                     push!(container,element) 
                 end
 
@@ -313,141 +325,42 @@ function parse_and_separate(_model,true_terms,_side,sub,check_set,type)
 
 end
 
-#input a vector of unicode of the symbol, return the symbol without the dot operator
-function detect_diff_alge(_model,_sym)
 
-    isdefined(Base.Math,_sym) ? (return true) : nothing
-    
-    #get all the names of the registered differential variables
-    diff_var_names = collect_keys(_model.Differential_var_index)
-    diff_var_codes = []
-    #store the unicode of all differential variables in diff_var_codes
-    [push!(diff_var_codes,get_unicode(string(diff_var_names[i]))) for i in eachindex(diff_var_names)]
-
-    alg_var_names = collect_keys(_model.Algebraic_var_index)
-    alg_var_codes = []
-    [push!(alg_var_codes,get_unicode(string(alg_var_names[i]))) for i in eachindex(alg_var_names)]
-
-    #decompose input _sym into another string (in NFC sense), and store the unicode 
-    target_code = get_normalized_unicode(string(_sym))
-
-    if target_code[end] == 0x307
-        #if a dot operator exists, then check if the symbol is a differential variable or an algebraic variable
-        for i in eachindex(diff_var_codes)
-            target_code[1:end-1] == diff_var_codes[i] ? (return true) : nothing
-        end
-        for i in eachindex(alg_var_codes)
-            target_code[1:end-1] == alg_var_codes[i] ? (return true) : nothing
+function get_set( _type_of_equation, _operator,_vector)
+    if _vector == false
+        if _type_of_equation == :initial
+            _operator == :(==) ? (return DOI.EqualToInitial) : nothing
+            _operator == :(<=) ? (return DOI.NonpositiveForInitial) : (return DOI.NonnegativeForInitial)
+            
+        elseif _type_of_equation == :final
+            _operator == :(==) ? (return DOI.EqualToFinal) : nothing
+            _operator == :(<=) ? (return DOI.NonpositiveForFinal) : (return DOI.NonnegativeForFinal)
+            
+        elseif _type_of_equation == :trajectory
+            _operator == :(==) ? (return DOI.ZeroForAll) : nothing
+            _operator == :(<=) ? (return DOI.NonpositiveForAll) : (return DOI.NonnegativeForAll)
+            
         end
 
     else
-        #if no dot, then check if the symbol is an algebraic variable or a differential variable
-        for i in eachindex(alg_var_codes)
-            target_code == alg_var_codes[i] ? (return false) : nothing
+        if _type_of_equation == :initial
+            _operator == :(==) ? (return DOI.EqualToInitials) : nothing
+            _operator == :(<=) ? (return DOI.NonpositivesForInitial) : (return DOI.NonnegativesForInitial)
+
+        elseif _type_of_equation == :final
+            _operator == :(==) ? (return DOI.EqualToFinals) : nothing
+            _operator == :(<=) ? (return DOI.NonpositivesForFinal) : (return DOI.NonnegativesForFinal)
+
+        elseif _type_of_equation == :trajectory
+            _operator == :(==) ? (return DOI.ZerosForAll) : nothing
+            _operator == :(<=) ? (return DOI.NonpositivesForAll) : (return DOI.NonnegativesForAll)
+
         end
-        for i in eachindex(diff_var_codes)
-            target_code == diff_var_codes[i] ? (return false) : nothing
-        end
-    end
 
-
-    throw(error("The symbol before the paranthesis of $_sym is not a valid, make sure it is a variable.\n If it is a derivative, make sure the dot is on top of a registered differential variable"))
+     end
 end
 
-function detect_const(_model,_sym)
-    const_var_names = collect(keys(_model.Parameter_index))
-
-    _sym isa Number ? (return true) : nothing
-    (isconst(MathConstants,_sym)==true) ? (return true) : nothing
-
-    (_sym in const_var_names) ? (return true) : throw(error("The symbol $_sym without paranthesis is not a valid, make sure it is a registered parameter.\nIf it is a variable, make sure it is followed by a paranthesis with independent variable inside"))
-end
-
-function call_trajectory(_model,_terms,_code_of_independent_var)
- 
-    verify = []
-    len_of_independent_var = length(_code_of_independent_var) - 1
-
-    for i in eachindex(_terms)
-        if _terms[i] isa Expr
-            check_term = get_unicode(string(_terms[i]))
-
-            if (check_term[end] == 0x29) && (0x28 in check_term) && (check_term[end-1-len_of_independent_var:end-1] == _code_of_independent_var) 
-                sym_with_paranthesis = _terms[i].args[1] 
-                
-                detect_diff_alge(_model,sym_with_paranthesis) == true ? nothing : push!(verify,sym_with_paranthesis) 
-                
-            elseif (check_term[end] == 0x29) && (0x28 in check_term) && (isconst(MathConstants,_terms[i].args[1]))
-                sym_with_paranthesis = _terms[i].args[1] 
-
-                (check_term[end-1-len_of_independent_var:end-1] == _code_of_independent_var) ? (return push!(verify,sym_with_paranthesis)) : nothing
-                
-                detect_const(_model,sym_with_paranthesis) ? push!(verify,sym_with_paranthesis) : nothing
-            else
-                throw(error("Invalid independent variable in the paranthesis"))
-            end
-            
-        elseif _terms[i] isa Symbol
-            detect_const(_model,_terms[i]) == true ? push!(verify,_terms[i]) : nothing
-            
-        end
-    end
-    #println("verify",verify)
-end
-
-function check_consistency(registered, input)
-
-    registered != input ? throw(error("The input symbol $input is not consistent with the registered symbol $registered")) : nothing
-    
-end
-
-function call_instantaneous(_model,_terms,_type_of_equation)
- 
-    verify = []
-    for i in eachindex(_terms)
-        if _terms[i] isa Expr
-            check_term = get_unicode(string(_terms[i]))
-
-            if (check_term[end] == 0x29) && (0x28 in check_term) && (findfirst(isequal(0x28), check_term) != 1)
-                
-                if _type_of_equation == :initial
-                    check_consistency(collect(keys(_model.Initial_Independent_var_index))[1],_terms[i].args[2])
-
-                elseif _type_of_equation == :final
-                    check_consistency(collect(keys(_model.Final_Independent_var_index))[1],_terms[i].args[2])
-                end 
-
-                sym_with_paranthesis = _terms[i].args[1] 
-                
-                detect_diff_alge(_model,sym_with_paranthesis) == true ? nothing : push!(verify,sym_with_paranthesis)
-            end
-        elseif _terms[i] isa Symbol
-            detect_const(_model,_terms[i])
-        end
-    end
-    
-    #println("verify",verify)
-    #a constraint ref  
-end
-
-function get_set( _type_of_equation, _operator)
-    if _type_of_equation == :initial
-        _operator == :(==) ? (return DOI.EqualToInitial) : nothing
-        _operator == :(<=) ? (return DOI.NonpositiveForInitial) : (return DOI.NonnegativeForInitial)
-        
-    elseif _type_of_equation == :final
-        _operator == :(==) ? (return DOI.EqualToFinal) : nothing
-        _operator == :(<=) ? (return DOI.NonpositiveForFinal) : (return DOI.NonnegativeForFinal)
-        
-    elseif _type_of_equation == :trajectory
-        _operator == :(==) ? (return DOI.ZeroForAll) : nothing
-        _operator == :(<=) ? (return DOI.NonpositiveForAll) : (return DOI.NonnegativeForAll)
-        
-    end
-     
-end
-
-function _doi_add_constraint(_model,_terms,_func_type,_set)
+function _doi_add_constraint(_model,_terms,_func_type,DOI_settype,_vectorized)
 
     diff = []
     alge = []
@@ -488,14 +401,38 @@ function _doi_add_constraint(_model,_terms,_func_type,_set)
         end
     end
 
-    if _func_type == (:linear)
-        println("linear   ",_set)
-    elseif _func_type == (:nonlinear)
-        (true in diff) && (true in alge) ? (println(DOI.ScalarNonlinearDifferentialAlgebraicFunction,"   ",_set); return) : nothing
-        (true in diff) ? (println(DOI.ScalarNonlinearDifferentialFunction,"   ",_set); return) : nothing
-        (true in alge) ? (println(DOI.ScalarNonlinearAlgebraicFunction,"   ",_set); return) : nothing
+    if _vectorized == false
+        if _func_type == (:linear)
+            (true in diff) && (true in alge) ? (DOI_functype = DOI.ScalarAffineDifferentialAlgebraicFunction) : nothing
+            (true in diff) ? (DOI_functype = DOI.ScalarAffineDifferentialFunction) : nothing
+            (true in alge) ? (DOI_functype = DOI.ScalarAffineAlgebraicFunction) : nothing
+        elseif _func_type == (:nonlinear)
+            (true in diff) && (true in alge) ? (DOI_functype = DOI.ScalarNonlinearDifferentialAlgebraicFunction) : nothing
+            (true in diff) ? (DOI_functype = DOI.ScalarNonlinearDifferentialFunction) : nothing
+            (true in alge) ? (DOI_functype = DOI.ScalarNonlinearAlgebraicFunction) : nothing
 
+        end
+
+    else
+        if _func_type == (:linear)
+
+            (true in diff) && (true in alge) ? (DOI_functype = DOI.VectorAffineDifferentialAlgebraicFunction) : nothing
+            (true in diff) ? (DOI_functype = DOI.VectorAffineDifferentialFunction) : nothing
+            (true in alge) ? (DOI_functype = DOI.VectorAffineAlgebraicFunction) : nothing
+        elseif _func_type == (:nonlinear)
+            (true in diff) && (true in alge) ? (DOI_functype = DOI.VectorNonlinearDifferentialAlgebraicFunction) : nothing
+            (true in diff) ? (DOI_functype = DOI.VectorNonlinearDifferentialFunction) : nothing
+            (true in alge) ? (DOI_functype = DOI.VectorNonlinearAlgebraicFunction) : nothing
+
+        end
     end
+
+    #DOI.add_constraint(_model.optimizer,DOI_functype,DOI_settype,functions**)
+end
+
+mutable struct ConstraintRef <: AbstractDynamicRef
+    model::Abstract_Dynamic_Model
+    index::DOI.DynamicConstraintIndex
 end
 
 function parse_equation(_model,_expr)
@@ -503,20 +440,43 @@ function parse_equation(_model,_expr)
     check_constraint_name(_model,_expr[1])
 
     expr = _expr[2]
-    type = _expr[3]
 
     head = expr.head
     operator = expr.args[1]
 
-    #Uint 8 code of independent variable
-    code_of_independent_var = get_unicode(string(collect(keys(_model.Independent_var_index))[1]))
+    #check the constraint is scalarized or vectorized, as well as the type of the constraint (initial, final, or trajectory)
+    vectorized = false
+    type = nothing
+    l_terms = check_all_const(expr.args[2],[])
+    r_terms = check_all_const(expr.args[3],[])
+    [push!(l_terms,r_terms[i]) for i in eachindex(r_terms)]
+    for i in l_terms
+        if (vectorized == false) && (check_vector_constraint(_model,i) == true)
+            vectorized = true
+        end
+
+        if i in collect(keys(_model.Initial_Independent_var_index))
+            (type === nothing) ? (type = :initial) : nothing
+            (type != :initial) ? throw(error("The expression is not a valid equation")) : nothing
+            independent_var =collect(keys(_model.Initial_Independent_var_index))[1]
+        elseif i in collect(keys(_model.Final_Independent_var_index))
+            (type === nothing) ? (type = :final) : nothing
+            (type != :final) ? throw(error("The expression is not a valid equation")) : nothing
+            independent_var =collect(keys(_model.Final_Independent_var_index))[1]
+        elseif i in collect(keys(_model.Independent_var_index))
+            (type === nothing) ? (type = :trajectory) : nothing
+            (type != :trajectory) ? throw(error("The expression is not a valid equation")) : nothing
+            independent_var =collect(keys(_model.Independent_var_index))[1]
+        end
+    end
+    (type === nothing) ? throw(error("The expression is not a valid equation")) : nothing
 
     if head == :call
         #for expressions with one operator
         (operator == :(==) || operator == :(<=) || operator == :(>=)) && length(expr.args) == 3 ? nothing : throw(error("The expression is not a valid equation"))
 
-        _lhs_terms,typel = parse_and_separate(_model,[],expr.args[2],nothing,[],[])
-        _rhs_terms,typer = parse_and_separate(_model,[],expr.args[3],nothing,[],[])
+        _lhs_terms,typel = parse_and_separate(_model,[],expr.args[2],[])
+        _rhs_terms,typer = parse_and_separate(_model,[],expr.args[3],[])
 
         (typel == :nonlinear || typer == :nonlinear) ? (func_type = :nonlinear) : (func_type = :linear)
 
@@ -524,34 +484,39 @@ function parse_equation(_model,_expr)
         all_terms = Any[]
         [push!(all_terms,element) for element in _lhs_terms]
         [push!(all_terms,element) for element in _rhs_terms]
-        
 
-        #println("all_terms",all_terms) 
-
-        type == :initial || type == :final ? call_instantaneous(_model,unique(all_terms),type) : call_trajectory(_model,unique(all_terms),code_of_independent_var)
-
-        doi_set = get_set(type,operator)
+        doi_set = get_set(type,operator,vectorized)
         println(_expr[1])
-        _doi_add_constraint(_model,unique(all_terms),func_type,doi_set) 
+        _doi_add_constraint(_model,unique(all_terms),func_type,doi_set,vectorized) 
+
+        #currently only support one-sided constraints with all terms on the left-hand-side
+        constraint_output = scalar_dynamics(_model,expr.args[2].args[1],independent_var)
+        constraint_func = Expr(:block,
+                                    Expr(:function,
+                                        Expr(:call,_expr[1],:x,:u),
+                                        Expr(:return,constraint_output)
+                                    )
+                                 )
 
     elseif head == :comparison
         #for expressions with two operators
         (operator == :(<=) || operator == :(>=)) && length(expr.args) == 5 ? nothing : throw(error("The expression is not a valid equation"))
         
-        _lhs_terms,type = parse_and_separate(_model,[],expr.args[1],nothing,[],[])
-        _center_terms,type = parse_and_separate(_model,[],expr.args[3],nothing,[],[])
-        _rhs_terms,type = parse_and_separate(_model,[],expr.args[5],nothing,[],[])
+        _lhs_terms,typel = parse_and_separate(_model,[],expr.args[1],[])
+        _center_terms,typec = parse_and_separate(_model,[],expr.args[3],[])
+        _rhs_terms,typer = parse_and_separate(_model,[],expr.args[5],[])
+
+        (typel == :nonlinear || typec == :nonlinear || typer == :nonlinear) ? (func_type = :nonlinear) : (func_type = :linear)
  
         all_terms = Any[]
         [push!(all_terms,element) for element in _lhs_terms]
         [push!(all_terms,element) for element in _center_terms]
         [push!(all_terms,element) for element in _rhs_terms]
-        
 
-        println("all_terms",all_terms) 
-
-        type == :initial || type == :final ? call_instantaneous(_model,unique(all_terms),type) : call_trajectory(_model,unique(all_terms),code_of_independent_var)
-
+    
+        doi_set = get_set(type,operator,vectorized)
+        println(_expr[1])
+        _doi_add_constraint(_model,unique(all_terms),func_type,doi_set,vectorized)
     else
         throw(error("The expression is not a valid equation"))
     end
@@ -559,8 +524,8 @@ function parse_equation(_model,_expr)
     #filter out the Number type elements from the lhs_terms
     all_terms = filter(x -> !(x isa Number),unique(all_terms))
 
-    constraint_func = Constraint_data(_expr[2])
-    _model.Constraints_index[_expr[1]] = constraint_func
+    constraint_data = Constraint_data(_expr[2])
+    _model.Constraints_index[_expr[1]] = constraint_data
 
     return all_terms
 end

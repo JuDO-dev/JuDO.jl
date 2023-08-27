@@ -14,25 +14,23 @@
     ## args
 
     keyword arguments can contain:
-        The Initial_guess, xₛ
         The Initial_value, x₀
         The Initial_bound, [lb₀,ub₀]
         The Final_value, xₑ
         The Final_bound, [lb₁,ub₁]
         The Trajectory_bound, [lb,ub]
-        The Interpolant, L
 
     @differential(_model,x(t))
 
-    @differential(_model,x(t),Initial_guess = 8)
+    @differential(_model,x(t),Initial_value = 8)
 
-    @differential(_model,x(t),Initial_guess = 8,0 <= Initial_bound <= 10)
+    @differential(_model,x(t),Initial_value = 8,0 <= Initial_bound <= 10)
 
-    @differential(_model,x(t),0 <= Initial_bound <= 10,Initial_guess = 8)
+    @differential(_model,x(t),0 <= Initial_bound <= 10,Initial_value = 8)
 
-    @differential(_model,x(t),Initial_guess = 8,Final_bound >= 100)
+    @differential(_model,x(t),Initial_value = 8,Final_bound >= 100)
 
-    @differential(_model,x(t)[1:3],Interpolant = L,Initial_guess = 8,Final_bound >= 100)
+    @differential(_model,x(t)[1:3],Initial_value = 8,Final_bound >= 100)
 """
 
 macro differential(model,args...)
@@ -115,17 +113,17 @@ end
 
     The user is required to put a model in the first argument, an expression (or symbol) in the second argument.
 
-    The third argument is optional, it can be the value of Initial guess, Initial value, Final value or the value of Interpolant.
+    The third argument is optional, it can be the value of Initial value or Final value.
 
-    The vectorized input only supports defining algebraic variables with the same bound and initial guess, use set to modify the bound and initial guess.
+    The vectorized input only supports defining algebraic variables with the same bound and values, use set to modify the individual information.
 
     @algebraic( model, u(t))
 
-    @algebraic( model, 0 <= u(t) <= 10,Initial_guess=1)
+    @algebraic( model, 0 <= u(t) <= 10,Initial_value=1)
 
-    @algebraic( model, -10 <= v(t) <= 10,Interpolant=c)
+    @algebraic( model, -10 <= v(t) <= 10)
 
-    @algebraic( model, w(t)[1:3] >=0,Initial_guess=1)
+    @algebraic( model, w(t)[1:3] >=0,Initial_value=1)
 
 """
 
@@ -189,8 +187,7 @@ end
 
     The user is required to put a dynamic model "model" as the first argument.
         
-    "args..." contains a name (symbol) for the constraint in its first element, the second element is the constraint function, 
-    the third element it can be "trajectory", "initial", "final" or "all". 
+    "args..." contains a name (symbol) for the constraint in its first element, the second element is the constraint function.
 
     The equation must use "==", "<=", or ">=" and each terms in the equation must contain either 
     a registered variable or parameter, or a number.
@@ -208,19 +205,19 @@ end
     the detail is shown in DynOptInterface Readme.
 
             Function (subtypes):              Sets:                             Example:
-            LinearDifferentialFunction        NonpositiveForAll:                @constraint( model, c1, a*x(t) <= 0, trajectory)
+            ScalarLinearDifferentialFunction        NonpositiveForAll:                @constraint( model, c1, a*x(t) <= 0)
  
-            LinearDifferentialFunction        NonnegativeForAll:                @constraint( model, c2, ẋ(t) - y(t) + p >= 0, trajectory)
+            ScalarAffineDifferentialFunction        NonnegativeForAll:                @constraint( model, c2, ẋ(t) - y(t) + p >= 0)
 
-            LinearDifferentialFunction        ZeroForAll:                       @constraint( model, c3, ẋ(t) - sin(t) == 0, trajectory)
+            ScalarNonlinearDifferentialFunction        ZeroForAll:                       @constraint( model, c3, x(t)*y(t)== 0)
             
-            VectorLinearDifferentialFunction, NonpositiveForAll:                @constraint( model, c4, B(t)*ẋ(t) - A(t)*x(t) <= 0, trajectory)
+            VectorLinearDifferentialFunction,       NonpositiveForAll:                @constraint( model, c4, B(t)*ẋ(t) - A(t)*x(t) <= 0)
 
-            LinearAlgebraicFunction,          NonnegativeForAll:                @constraint( model, c5, u(t) - d/2 >= 0, trajectory)
+            ScalarAffineAlgebraicFunction,          NonnegativeForAll:                @constraint( model, c5, u(t) - d/2 >= 0)
 
-            LinearDifferentialAlgebraicFunction, ZeroForAll:                    @constraint( model, c6, u(t) - x(t)*d == 0, trajectory)
+            ScalarLinearDifferentialAlgebraicFunction, ZeroForAll:                    @constraint( model, c6, u(t) - x(t)*d == 0)
 
-            LinearDifferentialAlgebraicFunction, EqualToInitial:                @constraint( model, c7, u(t0) - x(t0)*d - 1 == 0, initial)
+            ScalarAffineDifferentialAlgebraicFunction, EqualToInitial:                @constraint( model, c7, u(t0) - x(t0)*d - 1 == 0)
             ...
 
 """
@@ -233,7 +230,7 @@ macro constraint(model,args...)
 end 
 
 """
-    @objective_func(model, args...)
+    @objective(model, args...)
 
     This macro is used to add a objective function into the model.
 
@@ -245,9 +242,9 @@ end
     The objective function can only be added once in the model, it can only contain the registered variables and parameters.
 
     Pure quadratic problems:
-    1. Scalar function: @objective_func( model, x(t)^2 + u(t)^2)
+    1. Scalar function: @objective( model, x(t)^2 + u(t)^2)
 """
-macro objective_func(model,args...)
+macro objective(model,args...)
     c_args = collect(args)
 
     return :(parse_objective_function($(esc(model)),$c_args))

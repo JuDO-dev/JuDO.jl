@@ -20,15 +20,12 @@ abstract type variable_data end
 """
 mutable struct Differential_Var_data <: variable_data
     Run_sym::Union{Expr,Nothing}
-    Initial_guess::Union{Real,Nothing}
 
     Initial_bound::Vector 
     Initial_value::Union{Real,Nothing}
     Final_bound::Vector
     Final_value::Union{Real,Nothing}
     Trajectory_bound::Vector
-
-    Interpolant::Union{Symbol,Nothing}
     
 end
 
@@ -53,10 +50,8 @@ mutable struct Algebraic_Var_data <: variable_data
     Sym::Expr
     Bound::Vector
 
-    Initial_guess::Union{Real,Nothing}
     Initial_value::Union{Real,Nothing}
     Final_value::Union{Real,Nothing}
-    Interpolant::Union{Symbol,Nothing}
 end
 
 """
@@ -132,14 +127,14 @@ include("errors.jl")
 include("parameters.jl") 
 include("constraints.jl")
 include("optimizer.jl")
-include("objective_func.jl")
+include("objective.jl")
 include("solver.jl")
 include("dynamics.jl")
 
-export @independent, @differential,@algebraic,@parameter,@constraint,@objective_func,@dynamics,full_info,add_initial_bound,add_trajectory_bound,add_final_bound,
+export @independent, @differential,@algebraic,@parameter,@constraint,@objective,@dynamics,full_info,add_initial_bound,add_trajectory_bound,add_final_bound,
 add_initial_guess,add_interpolant,set_initial_bound,set_trajectory_bound,set_final_bound,set_initial_guess,set_interpolant
 
-export optimize!,set_meshpoints
+export optimize!,set_meshpoints,set_initial_guess,set_discretization,set_parametrization,set_continuity,set_flex_mesh,set_residual_quad_order,set_hessian_approx
 
 
 
@@ -164,11 +159,11 @@ function full_info(model::Dy_Model)
         if value isa Array
             for i in eachindex(value)
                 println("Differential variable $(key) with")
-                println("Initial guess = $(value[i].Initial_guess), Initial value = $(value[i].Initial_value), Initial bounds = $(value[i].Initial_bound), \nFinal value = $(value[i].Final_value), Final bounds = $(value[i].Final_bound), Trajectory bounds = $(value[i].Trajectory_bound), Interpolant = $(value[i].Interpolant)")
+                println("Initial value = $(value[i].Initial_value), Initial bounds = $(value[i].Initial_bound), \nFinal value = $(value[i].Final_value), Final bounds = $(value[i].Final_bound), Trajectory bounds = $(value[i].Trajectory_bound)")
             end
         else
             println("Differential variable $(key) with")
-            println("Initial guess = $(value.Initial_guess), Initial value = $(value.Initial_value), Initial bounds = $(value.Initial_bound), \nFinal value = $(value.Final_value), Final bounds = $(value.Final_bound), Trajectory bounds = $(value.Trajectory_bound), Interpolant = $(value.Interpolant)")
+            println("Initial value = $(value.Initial_value), Initial bounds = $(value.Initial_bound), \nFinal value = $(value.Final_value), Final bounds = $(value.Final_bound), Trajectory bounds = $(value.Trajectory_bound)")
         end
     end
     for (key, value) in model.Independent_var_index
@@ -187,10 +182,10 @@ function full_info(model::Dy_Model)
     for (key, value) in model.Algebraic_var_index
         if value isa Array
             for i in eachindex(value)
-                println("Algebraic variable $(value[i].Sym) with bound = $(value[i].Bound), Initial value = $(value[i].Initial_value), Initial guess = $(value[i].Initial_guess), Final value = $(value[i].Final_value), Interpolant = $(value[i].Interpolant)")
+                println("Algebraic variable $(value[i].Sym) with bound = $(value[i].Bound), Initial value = $(value[i].Initial_value),  Final value = $(value[i].Final_value)")
             end
         else
-            println("Algebraic variable $(value.Sym) with bound = $(value.Bound), Initial value = $(value.Initial_value), Initial guess = $(value.Initial_guess), Final value = $(value.Final_value), Interpolant = $(value.Interpolant)")
+            println("Algebraic variable $(value.Sym) with bound = $(value.Bound), Initial value = $(value.Initial_value), Final value = $(value.Final_value)")
         end
     end
 

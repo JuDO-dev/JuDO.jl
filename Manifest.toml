@@ -179,7 +179,7 @@ version = "1.6.0"
 
 [[DynOptInterface]]
 deps = ["Altro", "FiniteDiff", "ForwardDiff", "LinearAlgebra", "MathOptInterface", "RobotDynamics", "RobotZoo", "StaticArrays", "TrajectoryOptimization"]
-git-tree-sha1 = "7bffe2af4aa19faefe6d743a6e1134df86eba715"
+git-tree-sha1 = "f0902009e4a93c1815811e6a8d3fc346b8ce045c"
 repo-rev = "dev"
 repo-url = "https://github.com/JuDO-dev/DynOptInterface.jl"
 uuid = "80a7045d-d411-400a-b3f5-1501539f8fe7"
@@ -317,9 +317,9 @@ uuid = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 
 [[LogExpFunctions]]
 deps = ["ChainRulesCore", "ChangesOfVariables", "DocStringExtensions", "InverseFunctions", "IrrationalConstants", "LinearAlgebra"]
-git-tree-sha1 = "5ab83e1679320064c29e8973034357655743d22d"
+git-tree-sha1 = "7d6dd4e9212aebaeed356de34ccf262a3cd415aa"
 uuid = "2ab3a3ac-af41-5b50-aa03-7779005ae688"
-version = "0.3.25"
+version = "0.3.26"
 
 [[Logging]]
 uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
@@ -449,9 +449,9 @@ version = "0.2.1"
 
 [[PrecompileTools]]
 deps = ["Preferences"]
-git-tree-sha1 = "9673d39decc5feece56ef3940e5dafba15ba0f81"
+git-tree-sha1 = "03b4c25b43cb84cee5c90aa9b5ea0a78fd848d2f"
 uuid = "aea7be01-6a6a-4083-8856-8a6e6704d82a"
-version = "1.1.2"
+version = "1.2.0"
 
 [[Preferences]]
 deps = ["TOML"]
