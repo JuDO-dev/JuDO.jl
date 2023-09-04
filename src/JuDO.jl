@@ -55,31 +55,13 @@ mutable struct Algebraic_Var_data <: variable_data
 end
 
 """
-    Parameter_data
+    Constant_data
 
-    A DataType for storing a collection of Parameters
+    A DataType for storing a collection of Constants
 """
-mutable struct Parameter_data <: variable_data
+mutable struct Constant_data <: variable_data
     Sym::Symbol
-    Value::Union{Number,Array}
-end
-
-"""
-    constraint_data
-
-    A DataType for storing a collection of constraints
-"""
-mutable struct Constraint_data <: variable_data
-    Equation::Expr
-end
-
-"""
-    Dynamic_objective
-
-    A DataType for storing the dynamic objective function
-"""
-mutable struct Dynamic_objective <: variable_data
-    Expression::Expr
+    Value::Union{Number,Array,Expr}
 end
 
 """
@@ -94,8 +76,8 @@ mutable struct Dy_Model <: Abstract_Dynamic_Model
     #optimizer data
     optimizer::DOI.AbstractDynamicOptimizer    
 
-    #parameter data
-    Parameter_index::Dict{Symbol,Parameter_data}
+    #constant data
+    Constant_index::OrderedDict{Symbol,Constant_data}
 
     #variable data
     #Differential_vars::Vector{Differential_Var_data}
@@ -107,35 +89,33 @@ mutable struct Dy_Model <: Abstract_Dynamic_Model
 
     Algebraic_var_index::OrderedDict{Expr,Union{Algebraic_Var_data,Array}}
     #constraint data
-    Constraints_index::OrderedDict{Symbol,Constraint_data}
-    Constraints_type::OrderedDict{Symbol,Symbol}  
+    Constraints_index::OrderedDict{Symbol,Expr}
 
     #dynamics
-    Dynamics_index::Vector{Expr}
+    Dynamics_index::Vector
 
     #objective function data
-    Dynamic_objective::Expr
+    Objective_index::Expr
 end 
 
-Dy_Model() = Dy_Model(DOI.Optimizer(),OrderedDict(),OrderedDict(),OrderedDict(),
-OrderedDict(),OrderedDict(),OrderedDict(),OrderedDict(),OrderedDict(),[],:())
+Dy_Model() = Dy_Model(DOI.Altro_Optimizer(),OrderedDict(),OrderedDict(),OrderedDict(),
+OrderedDict(),OrderedDict(),OrderedDict(),OrderedDict(),[],:())
 
 
 include("macros.jl")
 include("variables.jl")
 include("errors.jl")
-include("parameters.jl") 
+include("constants.jl") 
 include("constraints.jl")
 include("optimizer.jl")
 include("objective.jl")
 include("solver.jl")
 include("dynamics.jl")
 
-export @independent, @differential,@algebraic,@parameter,@constraint,@objective,@dynamics,full_info,add_initial_bound,add_trajectory_bound,add_final_bound,
+export @independent, @differential,@algebraic,@constant,@constraint,@objective,@dynamics,full_info,add_initial_bound,add_trajectory_bound,add_final_bound,
 add_initial_guess,add_interpolant,set_initial_bound,set_trajectory_bound,set_final_bound,set_initial_guess,set_interpolant
 
 export optimize!,set_meshpoints,set_initial_guess,set_discretization,set_parametrization,set_continuity,set_flex_mesh,set_residual_quad_order,set_hessian_approx
-
 
 
 
@@ -148,11 +128,16 @@ end
 
 # show the information of the model
 function full_info(model::Dy_Model)
-    println("A $(model.optimizer)")
-    println("Dynamic objective function: $(model.Dynamic_objective)")
-    println("Parameters:")
-    for (key, value) in model.Parameter_index
-        println("Parameter $(value.Sym) with value = $(value.Value)")
+    #println("A $(model.optimizer)")
+    println("System dynamics:")
+    for i in eachindex(model.Dynamics_index)
+        println("$(model.Dynamics_index[i])")
+    end
+
+    println("Objective function: $(model.Objective_index)")
+    println("Constants:")
+    for (key, value) in model.Constant_index
+        println("Constant $(value.Sym) with value = $(value.Value)")
     end
     println("Variables:")
     for (key, value) in model.Differential_var_index
@@ -190,7 +175,7 @@ function full_info(model::Dy_Model)
     end
 
     for (key, value) in model.Constraints_index
-        println("Constraint $key :$(value.Equation)")
+        println("Constraint $key :$value")
     end    
 
 end

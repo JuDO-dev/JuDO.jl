@@ -92,9 +92,16 @@ end
 #a function that checks if _args[i] is a number or symbol
 function check_rhs_num(_model,_args)
     if (_args isa Symbol) 
-        (_args in collect(keys(_model.Parameter_index))) ? (return _model.Parameter_index[_args].Value) : nothing
+        (_args in collect(keys(_model.Constant_index))) ? (return _model.Constant_index[_args].Value) : nothing
         (_args in [:+,:-,:*,:/,:^,:\,:∫]) ? (return _args) : nothing
         (isconst(MathConstants,_args)) ? (return eval(_args)) : nothing
+        (mathematical_packages_functions(_args)) ? (return _args) : nothing
+
+        if (length(collect(keys(_model.Initial_Independent_var_index))) != 0) && (_args == collect(keys(_model.Initial_Independent_var_index))[1])
+            return _model.Independent_var_index.vals[1].Bound[1]
+        elseif (length(collect(keys(_model.Final_Independent_var_index))) != 0) && (_args == collect(keys(_model.Final_Independent_var_index))[1])
+            return _model.Independent_var_index.vals[1].Bound[2]
+        end 
 
     elseif _args isa Number
         return _args
@@ -247,7 +254,6 @@ function scalar_dynamics(_model,_args,sym)
         end =#
 
     elseif length(_args.args) >= 2
-        println("scalar expression type")
         return parse_dynamics_expression(_model,_args.args[2:end],_args.args[1],sym)
 
     end
@@ -282,7 +288,6 @@ function parse_dynamics(_model,_args)
             end
         end
 
-        println(type)
     end
     
     #parse the input mathematical expression into the form of the elements in sub
@@ -320,7 +325,6 @@ function parse_dynamics(_model,_args)
 
     ### vectorized differential variable on the left hand side
     elseif type == :vectorized
-        println("vectorized")
         for i in eachindex(_args)
             lhs = _args[i].args[2]
             push!(lhs_terms,check_lhs_vector(_model,lhs))
@@ -343,7 +347,6 @@ function parse_dynamics(_model,_args)
 
             elseif (rhs.head in [:vect,:vcat,:hcat,Symbol("'")]) 
                 #deal with [1,2]' or [1,2]/ [1 2]' or [1 2]/ [1;2]'or [1;2]
-                println("00")
                 if rhs.head == Symbol("'")
                     #head = rhs.args[1].head
                     push!(sub,Expr(Symbol("'"),scalar_dynamics(_model,rhs.args[1],collect(keys(_model.Independent_var_index))[1])))
@@ -353,7 +356,6 @@ function parse_dynamics(_model,_args)
     
             #upper level
             elseif length(rhs.args) >= 2
-                println("11")
                 push!(sub,parse_dynamics_expression(_model,rhs.args[2:end],rhs.args[1],collect(keys(_model.Independent_var_index))[1]))
 
             end
@@ -378,7 +380,9 @@ function parse_dynamics(_model,_args)
     end
 
     
-    return D
+    #return D
     #return ordered
-    #return DOI.add_dynamic(_model.optimizer, ordered)
+    DOI.add_dynamics(_model.optimizer, ordered)
+    push!(_model.Dynamics_index,_args);
+    return 
 end 

@@ -14,7 +14,7 @@ function same_var_error(_model,sym)
     f = collect(keys(_model.Final_Independent_var_index))
     diff = collect_keys(_model.Differential_var_index)
     alg = collect_keys(_model.Algebraic_var_index)
-    con = collect(keys(_model.Parameter_index))
+    con = collect(keys(_model.Constant_index))
 
     append!(diff,alg)
     append!(diff,t)
@@ -93,3 +93,35 @@ end
 
 ### Error messages for the algebraic variables
 algebraic_input_style_error() = throw(error("Argument input style incorrect, make sure 'symbol in bound' is used expressions"))
+
+######################
+
+_Linear_algebra = [:/, :Adjoint, :BLAS, :Bidiagonal, :BunchKaufman, :Cholesky, :CholeskyPivoted, :ColumnNorm, :Diagonal, :Eigen, 
+:Factorization, :GeneralizedEigen, :GeneralizedSVD, :GeneralizedSchur, :Hermitian, :Hessenberg, :I, :LAPACK, :LAPACKException, :LDLt, :LQ,
+:LU, :LinearAlgebra, :LowerTriangular, :NoPivot, :PosDefException, :QR, :QRPivoted, :RankDeficientException, :RowMaximum, :SVD, :Schur, 
+:SingularException, :SymTridiagonal, :Symmetric, :Transpose, :Tridiagonal, :UniformScaling, :UnitLowerTriangular, :UnitUpperTriangular, 
+:UpperHessenberg, :UpperTriangular, :ZeroPivotException, :\, :adjoint, :adjoint!, :axpby!, :axpy!, :bunchkaufman, :bunchkaufman!, 
+:cholesky, :cholesky!, :cond, :condskeel, :copy_transpose!, :copyto!, :cross, :det, :diag, :diagind, :diagm, :dot, :eigen, :eigen!, 
+:eigmax, :eigmin, :eigvals, :eigvals!, :eigvecs, :factorize, :givens, :hessenberg, :hessenberg!, :isdiag, :ishermitian, :isposdef, 
+:isposdef!, :issuccess, :issymmetric, :istril, :istriu, :kron, :ldiv!, :ldlt, :ldlt!, :lmul!, :logabsdet, :logdet, :lowrankdowndate, 
+:lowrankdowndate!, :lowrankupdate, :lowrankupdate!, :lq, :lq!, :lu, :lu!, :lyap, :mul!, :norm, :normalize, :normalize!, 
+:nullspace, :opnorm, :ordschur, :ordschur!, :pinv, :qr, :qr!, :rank, :rdiv!, :reflect!, :rmul!, :rotate!, :schur, :schur!, :svd, :svd!, 
+:svdvals, :svdvals!, :sylvester, :tr, :transpose, :transpose!, :tril, :tril!, :triu, :triu!, :×, :⋅]
+
+_Statistics = [:Statistics, :cor, :cov, :mean, :mean!, :median, :median!, :middle, :quantile, :quantile!, :std, :stdm, :var, :varm]
+
+_Sparse_Arrays = [:AbstractSparseArray, :AbstractSparseMatrix, :AbstractSparseVector, :SparseArrays, :SparseMatrixCSC, :SparseVector, 
+:blockdiag, :droptol!, :dropzeros, :dropzeros!, :findnz, :issparse, :nnz, :nonzeros, :nzrange, :permute, :rowvals, :sparse, :sparse_hcat, 
+:sparse_hvcat, :sparse_vcat, :sparsevec, :spdiagm, :sprand, :sprandn, :spzeros]
+
+_Special_Functions = [:SpecialFunctions, :airy, :airyai, :airyaiprime, :airyaiprimex, :airyaix, :airybi, :airybiprime, :airybiprimex, 
+:airybix, :airyprime, :airyx, :besselh, :besselhx, :besseli, :besselix, :besselj, :besselj0, :besselj1, :besseljx, :besselk, :besselkx, 
+:bessely, :bessely0, :bessely1, :besselyx, :beta, :beta_inc, :beta_inc_inv, :cosint, :dawson, :digamma, :ellipe, :ellipk, :erf, :erfc, 
+:erfcinv, :erfcx, :erfi, :erfinv, :eta, :expint, :expinti, :expintx, :faddeeva, :gamma, :gamma_inc, :gamma_inc_inv, :hankelh1, :hankelh1x,
+:hankelh2, :hankelh2x, :invdigamma, :jinc, :lbeta, :lbinomial, :lfact, :lfactorial, :lgamma, :lgamma_r, :logabsbeta, :logabsbinomial, 
+:logabsgamma, :logbeta, :logerf, :logerfc, :logerfcx, :logfactorial, :loggamma, :ncF, :ncbeta, :polygamma, :sinint, :sphericalbesselj, 
+:sphericalbessely, :trigamma, :zeta]
+
+function mathematical_packages_functions(sym)
+    (sym in _Linear_algebra) || (sym in _Statistics) || (sym in _Sparse_Arrays) || (sym in _Special_Functions) ? (return true) : (return false)
+end

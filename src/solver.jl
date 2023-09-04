@@ -2,21 +2,17 @@ function optimize!(model::Dy_Model)
     DOI.Doptimize!(model.optimizer)
 end
 
-function set_meshpoints(model::Dy_Model, meshpoints::Int64)
-    DOI.set_meshpoints(model.optimizer, meshpoints)
+function set_discretization(model::Dy_Model, discretized_points::Int64)
+    DOI.set_discretization(model.optimizer, discretized_points)
 end
 
 function set_initial_guess(var, value)
     DOI.set_initial_guess(var, value)
 end
 
-function set_diff_discretization(var, discretization)
-    DOI.set_diff_discretization(var, discretization)
+function set_discretization(model::Dy_Model, discretized_points)
+    DOI.set_discretization(model.optimizer, discretized_points)
     
-end
-
-function set_alge_discretization(var, discretization)
-    DOI.set_alge_discretization(var, discretization)
 end
 
 function set_parametrization(var, parametrization)
@@ -28,7 +24,7 @@ function set_continuity(var, continuity)
     DOI.set_continuity(var, continuity)
 end
 
-function set_flex_mesh(model, flex_mesh)
+function set_flex_mesh(model::Dy_Model, flex_mesh::Bool)
     DOI.set_flex_mesh(model.optimizer, flex_mesh)
 end
 

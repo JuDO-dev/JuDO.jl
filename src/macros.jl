@@ -64,7 +64,7 @@ macro differential(model,args...)
 end
 
 function macro_return(sym,ref)
-    return quote $(esc(sym)) = $ref end
+    return :($(esc(sym)) = $ref)
 end
 
 """
@@ -158,24 +158,24 @@ macro algebraic(model,args...)
 end
 
 """
-    @parameter(model, args...)
+    @constant(model, args...)
 
-    This macro is used to add a parameter into the model to simplify future macro calls by using the parameter symbol.
+    This macro is used to add a constant into the model to simplify future macro calls by using the constant symbol.
 
     The user is required to put a model in the first argument, an equality equation in the second argument.
 
-    @parameter( model, g = 9.81)
+    @constant( model, g = 9.81)
 
-    @parameter( model, k = 0.0069)
+    @constant( model, k = 0.0069)
 
-    @parameter( model, P = 1.01e5)
+    @constant( model, P = 1.01e5)
 """
 
-macro parameter(model,args...)
+macro constant(model,args...)
 
     c_args = collect(args)
 
-    const_ref = :(new_or_exist_parameter($(esc(model)),$c_args))
+    const_ref = :(new_or_exist_constant($(esc(model)),$c_args))
 
     return macro_return(c_args[1].args[1],const_ref)
 end
@@ -190,7 +190,7 @@ end
     "args..." contains a name (symbol) for the constraint in its first element, the second element is the constraint function.
 
     The equation must use "==", "<=", or ">=" and each terms in the equation must contain either 
-    a registered variable or parameter, or a number.
+    a registered variable or constant, or a number.
 
     In the constraint function, the user is required to add ("name of the independent variable") like ẋ(t), u(t), A(t)
     to indicate the dependency with respected to the independent variable.
@@ -239,10 +239,19 @@ end
     The objective function is considered as a minimization problem, so for maximization problem, 
     the user is required to add a negative sign in front of the expression.
 
-    The objective function can only be added once in the model, it can only contain the registered variables and parameters.
+    The objective function can only be added once in the model, it can only contain the registered variables and constants.
+
+    The second argument is the expression for the objective function, with either ∫() or integral() as the integrand.
+
+    The third and fourth keyword arguments are the customized integration limit, if not provided, 
+    the integral will be performed from the initial point to the final point as registered in @independent.
 
     Pure quadratic problems:
-    1. Scalar function: @objective( model, x(t)^2 + u(t)^2)
+    @objective( model, x(tf)^2)
+
+    @objective( model, x(tf)^2 + ∫(u(t)^2))
+
+    @objective( model, x(tf)^2 + ∫(u(t)^2), initial = t0, final = tf/2)
 """
 macro objective(model,args...)
     c_args = collect(args)

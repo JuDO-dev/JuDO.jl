@@ -360,74 +360,32 @@ function get_set( _type_of_equation, _operator,_vector)
      end
 end
 
-function _doi_add_constraint(_model,_terms,_func_type,DOI_settype,_vectorized)
-
-    diff = []
-    alge = []
-    aff = []
-    lin = []
-    for i in _terms
-
-        if i isa Expr
-            unicode = get_normalized_unicode(string(i.args[1]))
-
-            if i.args[1] in collect_keys(_model.Differential_var_index)
-                push!(diff,true)
-            elseif i.args[1] in collect_keys(_model.Algebraic_var_index)
-                push!(alge,true)
-
-            elseif unicode[end] == 0x307
-                for i in collect_keys(_model.Differential_var_index)
-                    if unicode[1:end-1] == get_normalized_unicode(string(i))
-                        push!(diff,true)
-                    end
-                end
-                for i in collect_keys(_model.Algebraic_var_index)
-                    if unicode[1:end-1] == get_normalized_unicode(string(i))
-                        push!(alge,true)
-                    end
-                end
-            else
-                push!(lin,true)
-            end
-
-        elseif i isa Symbol
-            if (i in collect(keys(_model.Parameter_index))) || (i isa Number)
-                push!(aff,true)
-            else
-                push!(lin,true)
-            end
-            
-        end
-    end
-
-    if _vectorized == false
-        if _func_type == (:linear)
-            (true in diff) && (true in alge) ? (DOI_functype = DOI.ScalarAffineDifferentialAlgebraicFunction) : nothing
-            (true in diff) ? (DOI_functype = DOI.ScalarAffineDifferentialFunction) : nothing
-            (true in alge) ? (DOI_functype = DOI.ScalarAffineAlgebraicFunction) : nothing
-        elseif _func_type == (:nonlinear)
-            (true in diff) && (true in alge) ? (DOI_functype = DOI.ScalarNonlinearDifferentialAlgebraicFunction) : nothing
-            (true in diff) ? (DOI_functype = DOI.ScalarNonlinearDifferentialFunction) : nothing
-            (true in alge) ? (DOI_functype = DOI.ScalarNonlinearAlgebraicFunction) : nothing
+function get_func(_vector,_linearity,_diff,_alge)
+    if _vector == false
+        if _linearity == :affine
+            (_diff == true) && (_alge == true) ? (return DOI.ScalarAffineDifferentialAlgebraicFunction) : nothing
+            (_diff == true) ? (return DOI.ScalarAffineDifferentialFunction) : nothing
+            (_alge == true) ? (return DOI.ScalarAffineAlgebraicFunction) : nothing
+        elseif _linearity == :nonlinear
+            (_diff == true) && (_alge == true) ? (return DOI.ScalarNonlinearDifferentialAlgebraicFunction) : nothing
+            (_diff == true) ? (return DOI.ScalarNonlinearDifferentialFunction) : nothing
+            (_alge == true) ? (return DOI.ScalarNonlinearAlgebraicFunction) : nothing
 
         end
 
     else
-        if _func_type == (:linear)
-
-            (true in diff) && (true in alge) ? (DOI_functype = DOI.VectorAffineDifferentialAlgebraicFunction) : nothing
-            (true in diff) ? (DOI_functype = DOI.VectorAffineDifferentialFunction) : nothing
-            (true in alge) ? (DOI_functype = DOI.VectorAffineAlgebraicFunction) : nothing
-        elseif _func_type == (:nonlinear)
-            (true in diff) && (true in alge) ? (DOI_functype = DOI.VectorNonlinearDifferentialAlgebraicFunction) : nothing
-            (true in diff) ? (DOI_functype = DOI.VectorNonlinearDifferentialFunction) : nothing
-            (true in alge) ? (DOI_functype = DOI.VectorNonlinearAlgebraicFunction) : nothing
+        if _linearity == :affine
+            (_diff == true) && (_alge == true) ? (return DOI.VectorAffineDifferentialAlgebraicFunction) : nothing
+            (_diff == true) ? (return DOI.VectorAffineDifferentialFunction) : nothing
+            (_alge == true) ? (return DOI.VectorAffineAlgebraicFunction) : nothing
+        elseif _linearity == :nonlinear
+            (_diff == true) && (_alge == true) ? (return DOI.VectorNonlinearDifferentialAlgebraicFunction) : nothing
+            (_diff == true) ? (return DOI.VectorNonlinearDifferentialFunction) : nothing
+            (_alge == true) ? (return DOI.VectorNonlinearAlgebraicFunction) : nothing
 
         end
     end
-
-    #DOI.add_constraint(_model.optimizer,DOI_functype,DOI_settype,functions**)
+    
 end
 
 mutable struct ConstraintRef <: AbstractDynamicRef
@@ -447,6 +405,10 @@ function parse_equation(_model,_expr)
     #check the constraint is scalarized or vectorized, as well as the type of the constraint (initial, final, or trajectory)
     vectorized = false
     type = nothing
+    diff = nothing
+    alge = nothing
+    independent_var = nothing
+
     l_terms = check_all_const(expr.args[2],[])
     r_terms = check_all_const(expr.args[3],[])
     [push!(l_terms,r_terms[i]) for i in eachindex(r_terms)]
@@ -454,6 +416,12 @@ function parse_equation(_model,_expr)
         if (vectorized == false) && (check_vector_constraint(_model,i) == true)
             vectorized = true
         end
+
+        if i in collect_keys(_model.Differential_var_index)
+            diff = true
+        elseif i in collect_keys(_model.Algebraic_var_index)
+            alge = true
+        end 
 
         if i in collect(keys(_model.Initial_Independent_var_index))
             (type === nothing) ? (type = :initial) : nothing
@@ -471,6 +439,9 @@ function parse_equation(_model,_expr)
     end
     (type === nothing) ? throw(error("The expression is not a valid equation")) : nothing
 
+    
+    
+
     if head == :call
         #for expressions with one operator
         (operator == :(==) || operator == :(<=) || operator == :(>=)) && length(expr.args) == 3 ? nothing : throw(error("The expression is not a valid equation"))
@@ -478,45 +449,28 @@ function parse_equation(_model,_expr)
         _lhs_terms,typel = parse_and_separate(_model,[],expr.args[2],[])
         _rhs_terms,typer = parse_and_separate(_model,[],expr.args[3],[])
 
-        (typel == :nonlinear || typer == :nonlinear) ? (func_type = :nonlinear) : (func_type = :linear)
+        (typel == :nonlinear || typer == :nonlinear) ? (func_type = :nonlinear) : (func_type = :affine)
 
         # merge the lhs and rhs terms 
         all_terms = Any[]
         [push!(all_terms,element) for element in _lhs_terms]
         [push!(all_terms,element) for element in _rhs_terms]
-
-        doi_set = get_set(type,operator,vectorized)
         println(_expr[1])
-        _doi_add_constraint(_model,unique(all_terms),func_type,doi_set,vectorized) 
+        doi_set = get_set(type,operator,vectorized)
+        doi_func = get_func(vectorized,func_type,diff,alge)
 
         #currently only support one-sided constraints with all terms on the left-hand-side
-        constraint_output = scalar_dynamics(_model,expr.args[2].args[1],independent_var)
-        constraint_func = Expr(:block,
-                                    Expr(:function,
-                                        Expr(:call,_expr[1],:x,:u),
-                                        Expr(:return,constraint_output)
-                                    )
-                                 )
+        constraint_output = scalar_dynamics(_model,expr.args[2],independent_var)
+        if type == :trajectory
+            index = DOI.add_constraint(_model.optimizer.constraints,doi_func,doi_set,constraint_output) 
+        else
+            index = DOI.add_constraint(_model.optimizer.instant_constraints,doi_func,doi_set,constraint_output) 
+        end
+        
 
     elseif head == :comparison
         #for expressions with two operators
-        (operator == :(<=) || operator == :(>=)) && length(expr.args) == 5 ? nothing : throw(error("The expression is not a valid equation"))
         
-        _lhs_terms,typel = parse_and_separate(_model,[],expr.args[1],[])
-        _center_terms,typec = parse_and_separate(_model,[],expr.args[3],[])
-        _rhs_terms,typer = parse_and_separate(_model,[],expr.args[5],[])
-
-        (typel == :nonlinear || typec == :nonlinear || typer == :nonlinear) ? (func_type = :nonlinear) : (func_type = :linear)
- 
-        all_terms = Any[]
-        [push!(all_terms,element) for element in _lhs_terms]
-        [push!(all_terms,element) for element in _center_terms]
-        [push!(all_terms,element) for element in _rhs_terms]
-
-    
-        doi_set = get_set(type,operator,vectorized)
-        println(_expr[1])
-        _doi_add_constraint(_model,unique(all_terms),func_type,doi_set,vectorized)
     else
         throw(error("The expression is not a valid equation"))
     end
@@ -524,8 +478,7 @@ function parse_equation(_model,_expr)
     #filter out the Number type elements from the lhs_terms
     all_terms = filter(x -> !(x isa Number),unique(all_terms))
 
-    constraint_data = Constraint_data(_expr[2])
-    _model.Constraints_index[_expr[1]] = constraint_data
+    _model.Constraints_index[_expr[1]] = _expr[2];
 
-    return all_terms
+    return #all_terms
 end

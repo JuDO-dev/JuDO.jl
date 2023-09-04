@@ -885,13 +885,27 @@ function find_var_place(_model,place::Int64)
     return index, index_in_vector
 end
 
+function set_initial_value(ref::DifferentialRef,val::Real)
+    index, index_in_vector = find_var_place(ref.model,ref.index.value)
+    
+    ref.model.optimizer.diff_variables.init_value[ref.index.value] = val
+    
+
+    sym = collect(keys(ref.model.Differential_var_index))[index]
+    if ref.model.Differential_var_index[sym] isa Array
+        ref.model.Differential_var_index[sym][index_in_vector].Initial_value = val
+    else
+        ref.model.Differential_var_index[sym].Initial_value = val
+    end
+    return nothing
+    
+end
+
 function set_final_value(ref::DifferentialRef,val::Real)
     index, index_in_vector = find_var_place(ref.model,ref.index.value)
-    if length(collect(keys(ref.model.Differential_var_index))) == 1
-        ref.model.optimizer.diff_variables.final_value[index_in_vector] = val
-    else
-        ref.model.optimizer.diff_variables.final_value[index+index_in_vector] = val
-    end
+    
+    ref.model.optimizer.diff_variables.final_value[ref.index.value] = val
+    
 
     sym = collect(keys(ref.model.Differential_var_index))[index]
     if ref.model.Differential_var_index[sym] isa Array
@@ -903,4 +917,37 @@ function set_final_value(ref::DifferentialRef,val::Real)
     
 end
 
-#get all the diagonal elements of a square matrix into a vector 
+function set_final_value(ref::AlgebraicRef,val::Real)
+    index, index_in_vector = find_var_place(ref.model,ref.index.value)
+    
+    ref.model.optimizer.alge_variables.final_value[ref.index.value] = val
+    
+
+    sym = collect(keys(ref.model.Algebraic_var_index))[index]
+    if ref.model.Algebraic_var_index[sym] isa Array
+        ref.model.Algebraic_var_index[sym][index_in_vector].Final_value = val
+    else
+        ref.model.Algebraic_var_index[sym].Final_value = val
+    end
+    return nothing
+    
+end
+
+function set_initial_guess(ref::DifferentialRef,val::Real)
+    index, index_in_vector = find_var_place(ref.model,ref.index.value)
+
+    ref.model.optimizer.diff_variables.init_guess[ref.index.value] = val
+
+    return nothing
+    
+end
+
+function set_initial_guess(ref::AlgebraicRef,val::Real)
+    index, index_in_vector = find_var_place(ref.model,ref.index.value)
+    
+    ref.model.optimizer.alge_variables.init_guess[ref.index.value] = val
+    
+
+    return nothing
+    
+end
