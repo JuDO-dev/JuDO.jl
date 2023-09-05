@@ -10,6 +10,8 @@ import Base.Meta: isexpr
 using Ipopt
 using Unicode
 using OrderedCollections: OrderedDict
+using LinearAlgebra
+using StaticArrays
 
 abstract type variable_data end
 
@@ -61,7 +63,7 @@ end
 """
 mutable struct Constant_data <: variable_data
     Sym::Symbol
-    Value::Union{Number,Array,Expr}
+    Value::Any #to allow types defined from other packages (e.g. StaticArrays)
 end
 
 """
@@ -115,7 +117,7 @@ include("dynamics.jl")
 export @independent, @differential,@algebraic,@constant,@constraint,@objective,@dynamics,full_info,add_initial_bound,add_trajectory_bound,add_final_bound,
 add_initial_guess,add_interpolant,set_initial_bound,set_trajectory_bound,set_final_bound,set_initial_guess,set_interpolant
 
-export optimize!,set_meshpoints,set_initial_guess,set_discretization,set_parametrization,set_continuity,set_flex_mesh,set_residual_quad_order,set_hessian_approx
+export optimize!,set_dyn_optimizer,set_meshpoints,set_initial_guess,set_discretization,set_parametrization,set_continuity,set_flex_mesh,set_residual_quad_order,set_hessian_approx
 
 
 
@@ -175,7 +177,7 @@ function full_info(model::Dy_Model)
     end
 
     for (key, value) in model.Constraints_index
-        println("Constraint $key :$value")
+        println("Constraint $key : $value")
     end    
 
 end

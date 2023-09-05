@@ -864,7 +864,7 @@ function assign_alge_vector(_model,i,args,result,val)
     
 end
 
-function find_var_place(_model,place::Int64)
+function find_diff_var_place(_model,place::Int64)
     allkeys = collect(keys(_model.Differential_var_index))
 
     position = []
@@ -885,8 +885,30 @@ function find_var_place(_model,place::Int64)
     return index, index_in_vector
 end
 
+function find_alge_var_place(_model,place::Int64)
+    allkeys = collect(keys(_model.Algebraic_var_index))
+
+    position = []
+    for i in eachindex(allkeys)
+       ( _model.Algebraic_var_index[allkeys[i]] isa Array) ? (len = length(_model.Algebraic_var_index[allkeys[i]])) : (len = 1)
+        push!(position,len)
+    end
+    position = cumsum(position)
+    if place in position
+        index = findfirst(isequal(place),position)
+        (index == 1) ? (index_in_vector = place) : (index_in_vector = position[index] - position[index-1])
+    
+    else
+        index = findfirst(x -> x >= place,position)
+        (index == 1) ? (index_in_vector = place) : (index_in_vector = place - position[index-1]) 
+        
+    end
+    return index, index_in_vector
+    
+end
+
 function set_initial_value(ref::DifferentialRef,val::Real)
-    index, index_in_vector = find_var_place(ref.model,ref.index.value)
+    index, index_in_vector = find_diff_var_place(ref.model,ref.index.value)
     
     ref.model.optimizer.diff_variables.init_value[ref.index.value] = val
     
@@ -902,7 +924,7 @@ function set_initial_value(ref::DifferentialRef,val::Real)
 end
 
 function set_final_value(ref::DifferentialRef,val::Real)
-    index, index_in_vector = find_var_place(ref.model,ref.index.value)
+    index, index_in_vector = find_diff_var_place(ref.model,ref.index.value)
     
     ref.model.optimizer.diff_variables.final_value[ref.index.value] = val
     
@@ -918,7 +940,7 @@ function set_final_value(ref::DifferentialRef,val::Real)
 end
 
 function set_final_value(ref::AlgebraicRef,val::Real)
-    index, index_in_vector = find_var_place(ref.model,ref.index.value)
+    index, index_in_vector = find_alge_var_place(ref.model,ref.index.value)
     
     ref.model.optimizer.alge_variables.final_value[ref.index.value] = val
     
@@ -934,7 +956,7 @@ function set_final_value(ref::AlgebraicRef,val::Real)
 end
 
 function set_initial_guess(ref::DifferentialRef,val::Real)
-    index, index_in_vector = find_var_place(ref.model,ref.index.value)
+    index, index_in_vector = find_diff_var_place(ref.model,ref.index.value)
 
     ref.model.optimizer.diff_variables.init_guess[ref.index.value] = val
 
@@ -943,7 +965,7 @@ function set_initial_guess(ref::DifferentialRef,val::Real)
 end
 
 function set_initial_guess(ref::AlgebraicRef,val::Real)
-    index, index_in_vector = find_var_place(ref.model,ref.index.value)
+    index, index_in_vector = find_alge_var_place(ref.model,ref.index.value)
     
     ref.model.optimizer.alge_variables.init_guess[ref.index.value] = val
     

@@ -108,20 +108,9 @@ _Linear_algebra = [:/, :Adjoint, :BLAS, :Bidiagonal, :BunchKaufman, :Cholesky, :
 :nullspace, :opnorm, :ordschur, :ordschur!, :pinv, :qr, :qr!, :rank, :rdiv!, :reflect!, :rmul!, :rotate!, :schur, :schur!, :svd, :svd!, 
 :svdvals, :svdvals!, :sylvester, :tr, :transpose, :transpose!, :tril, :tril!, :triu, :triu!, :×, :⋅]
 
-_Statistics = [:Statistics, :cor, :cov, :mean, :mean!, :median, :median!, :middle, :quantile, :quantile!, :std, :stdm, :var, :varm]
-
-_Sparse_Arrays = [:AbstractSparseArray, :AbstractSparseMatrix, :AbstractSparseVector, :SparseArrays, :SparseMatrixCSC, :SparseVector, 
-:blockdiag, :droptol!, :dropzeros, :dropzeros!, :findnz, :issparse, :nnz, :nonzeros, :nzrange, :permute, :rowvals, :sparse, :sparse_hcat, 
-:sparse_hvcat, :sparse_vcat, :sparsevec, :spdiagm, :sprand, :sprandn, :spzeros]
-
-_Special_Functions = [:SpecialFunctions, :airy, :airyai, :airyaiprime, :airyaiprimex, :airyaix, :airybi, :airybiprime, :airybiprimex, 
-:airybix, :airyprime, :airyx, :besselh, :besselhx, :besseli, :besselix, :besselj, :besselj0, :besselj1, :besseljx, :besselk, :besselkx, 
-:bessely, :bessely0, :bessely1, :besselyx, :beta, :beta_inc, :beta_inc_inv, :cosint, :dawson, :digamma, :ellipe, :ellipk, :erf, :erfc, 
-:erfcinv, :erfcx, :erfi, :erfinv, :eta, :expint, :expinti, :expintx, :faddeeva, :gamma, :gamma_inc, :gamma_inc_inv, :hankelh1, :hankelh1x,
-:hankelh2, :hankelh2x, :invdigamma, :jinc, :lbeta, :lbinomial, :lfact, :lfactorial, :lgamma, :lgamma_r, :logabsbeta, :logabsbinomial, 
-:logabsgamma, :logbeta, :logerf, :logerfc, :logerfcx, :logfactorial, :loggamma, :ncF, :ncbeta, :polygamma, :sinint, :sphericalbesselj, 
-:sphericalbessely, :trigamma, :zeta]
+_Static_Arrays = [:FieldArray, :FieldMatrix, :FieldVector, :Length, :MArray, :MMatrix, :MVector, :SA, :SA_F32, :SA_F64, :SArray, :SDiagonal, :SHermitianCompact, :SMatrix, :SOneTo, :SVector, :Scalar, :Size, :SizedArray, :SizedMatrix, :SizedVector, :StaticArray, :StaticArrays, :StaticArraysCore, :StaticMatrix, :StaticScalar, :StaticVector, :deleteat, :enumerate_static, :insert, :pop, 
+:popfirst, :push, :pushfirst, :setindex, :similar_type]
 
 function mathematical_packages_functions(sym)
-    (sym in _Linear_algebra) || (sym in _Statistics) || (sym in _Sparse_Arrays) || (sym in _Special_Functions) ? (return true) : (return false)
+    (sym in _Linear_algebra) || (sym in _Static_Arrays) ? (return true) : (return false)
 end

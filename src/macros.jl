@@ -175,7 +175,7 @@ macro constant(model,args...)
 
     c_args = collect(args)
 
-    const_ref = :(new_or_exist_constant($(esc(model)),$c_args))
+    const_ref = :(new_constant($(esc(model)),$c_args))
 
     return macro_return(c_args[1].args[1],const_ref)
 end

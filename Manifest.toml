@@ -341,7 +341,7 @@ version = "0.6.8"
 
 [[DynOptInterface]]
 deps = ["Altro", "FiniteDiff", "ForwardDiff", "Interesso", "JuDOBase", "LinearAlgebra", "MathOptInterface", "Plots", "RobotDynamics", "RobotZoo", "StaticArrays", "TrajectoryOptimization"]
-git-tree-sha1 = "bcd51956d210eb608f09782c7ab36948c8a5ef5b"
+git-tree-sha1 = "1db74cdc44b71ac53a840c2e21c460ebae3b5723"
 repo-rev = "dev"
 repo-url = "https://github.com/JuDO-dev/DynOptInterface.jl"
 uuid = "80a7045d-d411-400a-b3f5-1501539f8fe7"

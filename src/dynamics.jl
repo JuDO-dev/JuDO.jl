@@ -11,6 +11,19 @@ function check_lhs_scalar(_model,_args)
     end
     throw(error("The left hand side of the scalar dynamics must be a differential variable"))
 end
+#check and store the lhs differential variable with dot(x(t)) notation
+function check_lhs_scalar_dot(_model,_args)
+    if (_args.args[2] == collect(keys(_model.Independent_var_index))[1])
+
+        for i in collect_keys(_model.Differential_var_index)
+            if _args.args[1] == i
+                return findfirst(x->x==i,collect_keys(_model.Differential_var_index))
+            end
+        end
+    end
+    throw(error("The left hand side of the scalar dynamics must be a differential variable"))
+    
+end
 
 #check and store the lhs differential vector
 function check_lhs_vector(_model,_args)
@@ -20,6 +33,21 @@ function check_lhs_vector(_model,_args)
 
         for i in collect_keys(_model.Differential_var_index)
             if unicode[1:end-1] == get_normalized_unicode(string(i))
+                #deal with ẋ(t)[1:3] and ẋ(t)[1] case
+                (_args.args[2] isa Expr) ? (return _args.args[2].args[2]) : (return _args.args[2])
+            end
+        end
+    end
+    throw(error("The left hand side of the vector dynamics must be a differential variable"))
+end
+
+#check and store the lhs differential vector with dot(x(t)) notation
+function check_lhs_vector_dot(_model,_args)
+    if (_args.args[1].args[2] == collect(keys(_model.Independent_var_index))[1])
+        sym = _args.args[1].args[1]
+
+        for i in collect_keys(_model.Differential_var_index)
+            if sym == i
                 #deal with ẋ(t)[1:3] and ẋ(t)[1] case
                 (_args.args[2] isa Expr) ? (return _args.args[2].args[2]) : (return _args.args[2])
             end
@@ -265,29 +293,40 @@ function parse_dynamics(_model,_args)
     #each element in _args is an expression of equation
     type = :scalarized
     for i in eachindex(_args)
+        (_args[i].args[2].args[1] == :dot) ? (lhs = _args[i].args[2].args[2]) : (lhs = _args[i].args[2])
 
-        if _args[i].args[2].head == :ref
-            target_code = get_normalized_unicode(string(_args[i].args[2].args[1].args[1]))
+        if lhs.head == :ref
+            target_code = get_normalized_unicode(string(lhs.args[1].args[1]))
         elseif length(_args[i].args[2].args) == 2
-            target_code = get_normalized_unicode(string(_args[i].args[2].args[1]))
+            target_code = get_normalized_unicode(string(lhs.args[1]))
         else
             throw(error("Incorrect style of the left hand side of the dynamics"))
         end
 
-        (target_code[end] == 0x307) ? nothing : throw(error("Dot operator not recognized"))
+        if (_args[i].args[2].args[1] == :dot)
 
-        diff_var_names = collect_keys(_model.Differential_var_index)
-        diff_var_codes = []
-        #store the unicode of all differential variables in diff_var_codes
-        [push!(diff_var_codes,get_unicode(string(diff_var_names[i]))) for i in eachindex(diff_var_names)]
+            for i in eachindex(collect_keys(_model.Differential_var_index))
+                if target_code == get_normalized_unicode(string(collect_keys(_model.Differential_var_index)[i]))
+                    key = collect(keys(_model.Differential_var_index))[i]
+                    (_model.Differential_var_index[key] isa Vector) ? (type = :vectorized) : nothing
+                end
+            end
+        else
+    
+            (target_code[end] == 0x307) ? nothing : throw(error("Dot operator not recognized"))
 
-        for i in eachindex(diff_var_codes)
-            if target_code[1:end-1] == diff_var_codes[i] 
-                key = collect(keys(_model.Differential_var_index))[i]
-                (_model.Differential_var_index[key] isa Vector) ? (type = :vectorized) : nothing
+            diff_var_names = collect_keys(_model.Differential_var_index)
+            diff_var_codes = []
+            #store the unicode of all differential variables in diff_var_codes
+            [push!(diff_var_codes,get_unicode(string(diff_var_names[i]))) for i in eachindex(diff_var_names)]
+
+            for i in eachindex(diff_var_codes)
+                if target_code[1:end-1] == diff_var_codes[i] 
+                    key = collect(keys(_model.Differential_var_index))[i]
+                    (_model.Differential_var_index[key] isa Vector) ? (type = :vectorized) : nothing
+                end
             end
         end
-
     end
     
     #parse the input mathematical expression into the form of the elements in sub
@@ -295,8 +334,8 @@ function parse_dynamics(_model,_args)
     if type == :scalarized
 
         for i in eachindex(_args)
-            lhs = _args[i].args[2]
-            push!(lhs_terms,check_lhs_scalar(_model,lhs))
+            #lhs = _args[i].args[2]
+            (_args[i].args[2].args[1] == :dot) ? push!(lhs_terms,check_lhs_scalar_dot(_model,_args[i].args[2].args[2])) : push!(lhs_terms,check_lhs_scalar(_model,_args[i].args[2])) 
         end
         
         sub = []
@@ -326,8 +365,8 @@ function parse_dynamics(_model,_args)
     ### vectorized differential variable on the left hand side
     elseif type == :vectorized
         for i in eachindex(_args)
-            lhs = _args[i].args[2]
-            push!(lhs_terms,check_lhs_vector(_model,lhs))
+            #lhs = _args[i].args[2]
+            (_args[i].args[2].args[1] == :dot) ? push!(lhs_terms,check_lhs_vector_dot(_model,_args[i].args[2].args[2])) : push!(lhs_terms,check_lhs_vector(_model,_args[i].args[2]))
         end
 
         sub = []
