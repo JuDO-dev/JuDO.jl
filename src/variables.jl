@@ -465,13 +465,12 @@ end
 
 mutable struct IndependentRef <: AbstractDynamicRef
     model::Abstract_Dynamic_Model
-    type::Symbol
 end
 
 function add_inde_variable(_model,_val,type)
     DOI.add_variable(_model.optimizer.inde_variables,_val)
  
-    variable_ref = IndependentRef(_model,type)
+    variable_ref = IndependentRef(_model)
     return variable_ref
 end
 
@@ -493,26 +492,21 @@ function add_alge_variable(_model,_alge_var_data)
     
 end
 
+function count_var(type)
+    count = 0
+    for i in collect(keys(type))
+        if type[i] isa Array
+            for j in eachindex(type[i])
+                count += 1
+            end
+        else
+            count += 1
+        end
+    end
+    return count
+end
+
 ##############################################################################################################
-
-function add_initial_guess(ref::DifferentialRef,guess::Real)
-    val = collect(values(ref.model.Differential_var_index))[ref.index.value]
-    val.Initial_guess == nothing ? (val.Initial_guess = guess) : throw(error("An initial guess already exists, please use set_initial_guess to change it"))
-    ref.model.optimizer.diff_variables.init_guess[ref.index.value] = guess
-    return 0
-    
-end
-
-## alge var need to be modified in model and optimizer
-function add_initial_guess(ref::AlgebraicRef,guess::Real)
-    val = collect(values(ref.model.Algebraic_var_index))[ref.index.value]
-    check_alge_bound(guess,val.Bound)
-
-    val.Initial_guess == nothing ? (val.Initial_guess = guess) : throw(error("An initial guess already exists, please use set_initial_guess to change it"))
-    ref.model.optimizer.alge_variables.init_guess[ref.index.value] = guess
-    return 0 
-    
-end
 
 function add_initial_bound(ref::DifferentialRef,bound::Vector)
     
@@ -575,23 +569,6 @@ function add_final_bound(ref::DifferentialRef,bound::Vector)
 
 end
 
-
-function add_interpolant(ref::DifferentialRef,interpolant::Symbol)
-    val = collect(values(ref.model.Differential_var_index))[ref.index.value]
-    val.Interpolant == nothing ? (val.Interpolant = interpolant) : throw(error("An interpolant already exists, please use set_interpolant to change it"))
-    ref.model.optimizer.diff_variables.interpolant[ref.index.value] = interpolant
-    return 0
-    
-end
-
-function add_interpolant(ref::AlgebraicRef,interpolant::Symbol)
-    val = collect(values(ref.model.Algebraic_var_index))[ref.index.value]
-    val.Interpolant == nothing ? (val.Interpolant = interpolant) : throw(error("An interpolant already exists, please use set_interpolant to change it"))
-    ref.model.optimizer.alge_variables.interpolant[ref.index.value] = interpolant
-    return 0
-    
-end
-
 ##############################################################################################################
 function delete_default(bounds)
     #if there is [-Inf,Inf] in the final bound, then pop [-Inf,Inf] out of the bound
@@ -603,14 +580,7 @@ function delete_default(bounds)
 end
 
 function delete_independent(ref::IndependentRef)
-    if ref.type == :Initial
-        empty!(ref.model.Initial_Independent_var_index)
-
-    elseif ref.type == :Final
-        empty!(ref.model.Final_Independent_var_index)
-    else
-        empty!(ref.model.Independent_var_index)
-    end
+    empty!(ref.model.Independent_var_index)
 end
 
 function delete_initial_guess(ref::DifferentialRef)
@@ -674,69 +644,18 @@ function delete_final_bound(ref::DifferentialRef,place::Int64)
     return 0
 end
 
-function delete_interpolant(ref::DifferentialRef)
-    val = collect(values(ref.model.Differential_var_index))[ref.index.value]
-    val.Interpolant == nothing ? throw(error("An interpolant does not exist, please use add_interpolant to add it")) : (val.Interpolant = nothing)
-    ref.model.optimizer.diff_variables.interpolant[ref.index.value] = nothing
-    return 0
-    
-end
-
-function delete_interpolant(ref::AlgebraicRef)
-    val = collect(values(ref.model.Algebraic_var_index))[ref.index.value]
-    val.Interpolant == nothing ? throw(error("An interpolant does not exist, please use add_interpolant to add it")) : (val.Interpolant = nothing)
-    ref.model.optimizer.alge_variables.interpolant[ref.index.value] = nothing
-    return 0
-    
-end
-
 ##############################################################################################################
-function set_independent(ref::IndependentRef,info)
+function set_independent(ref::IndependentRef,info::Vector)
     
-    if ref.type == :Initial 
-        collection_i = ref.model.Initial_Independent_var_index
-        i = collect(values(collection_i))
-        length(i) == 0 ? throw(error("The initial independent variable is empty, please use the macro to add the variable")) : nothing
-        collection_i[collection_i.keys[1]] = info
+    bound_lower_upper(info)
 
-    elseif ref.type == :Final
-        collection_f = ref.model.Final_Independent_var_index
-        f = collect(values(collection_f))
-        length(f) == 0 ? throw(error("The final independent variable is empty, please use the macro to add the variable")) : nothing
-        collection_f[collection_f.keys[1]] = info
+    t = collect(values(ref.model.Independent_var_index))
+    length(t) == 0 ? throw(error("The independent variable is empty, please use the macro to add the variable")) : nothing
+    t[1].Bound = info
 
-    else
-        bound_lower_upper(info)
+    ref.model.optimizer.inde_variables.traj_bound = info
 
-        t = collect(values(ref.model.Independent_var_index))
-        length(t) == 0 ? throw(error("The independent variable is empty, please use the macro to add the variable")) : nothing
-        t[1].Bound = info
-
-        ref.model.optimizer.inde_variables.traj_bound = info
-    end
-    return 0
-end
-
-function set_initial_guess(ref::DifferentialRef,guess::Real)
-    val = collect(values(ref.model.Differential_var_index))[ref.index.value]
-    for i in eachindex(val.Initial_bound)
-        guess < val.Initial_bound[i][1] || guess > val.Initial_bound[i][2] ? throw(error("The initial guess is not within the initial bound")) : nothing
-    end
-    
-    val.Initial_guess == nothing ? throw(error("An initial guess does not exist, please use add_initial_guess to add it")) : (val.Initial_guess = guess)
-    ref.model.optimizer.diff_variables.init_guess[ref.index.value] = guess
-    return 0
-    
-end
-
-function set_initial_guess(ref::AlgebraicRef,guess::Real)
-    val = collect(values(ref.model.Algebraic_var_index))[ref.index.value]
-    check_alge_bound(guess,val.Bound)
-
-    val.Initial_guess == nothing ? throw(error("An initial guess does not exist, please use add_initial_guess to add it")) : (val.Initial_guess = guess)
-    ref.model.optimizer.alge_variables.init_guess[ref.index.value] = guess
-    return 0
-    
+    return nothing
 end
 
 function set_initial_bound(ref::DifferentialRef,bound::Vector,place::Int64)
@@ -784,22 +703,6 @@ function set_final_bound(ref::DifferentialRef,bound::Vector,place::Int64)
     
     ref.model.optimizer.diff_variables.final_bound[ref.index.value] = val.Final_bound
     return 0
-end
-
-function set_interpolant(ref::DifferentialRef,interpolant::Symbol)
-    val = collect(values(ref.model.Differential_var_index))[ref.index.value]
-    val.Interpolant == nothing ? throw(error("An interpolant does not exist, please use add_interpolant to add it")) : (val.Interpolant = interpolant)
-    ref.model.optimizer.diff_variables.interpolant[ref.index.value] = interpolant
-    return 0
-    
-end
-
-function set_interpolant(ref::AlgebraicRef,interpolant::Symbol)
-    val = collect(values(ref.model.Algebraic_var_index))[ref.index.value]
-    val.Interpolant == nothing ? throw(error("An interpolant does not exist, please use add_interpolant to add it")) : (val.Interpolant = interpolant)
-    ref.model.optimizer.alge_variables.interpolant[ref.index.value] = interpolant
-    return 0
-    
 end
 
 ##############################################################################################################
@@ -864,6 +767,37 @@ function assign_alge_vector(_model,i,args,result,val)
     
 end
 
+#given the index of the variable vector, return the number of variables before the variable vector
+function find_diff_var_index(_model,index)
+    (index == 1) ? (return 1) : nothing
+    count = 0
+    vars = collect(keys(_model.Differential_var_index))
+    for i in 1:index-1
+        if _model.Differential_var_index[vars[i]] isa Array
+            count += length(_model.Differential_var_index[vars[i]])
+        else
+            count += 1
+        end
+    end
+    return count+1
+end
+
+function find_alge_var_index(_model,index)
+    (index == 1) ? (return 1) : nothing
+    count = 0
+    vars = collect(keys(_model.Algebraic_var_index))
+    for i in 1:index-1
+        if _model.Algebraic_var_index[vars[i]] isa Array
+            count += length(_model.Algebraic_var_index[vars[i]])
+        else
+            count += 1
+        end
+    end
+    return count+1
+    
+end
+
+#given the index of the variable in the variable vector, return the index and the length of the vector that contains the variable
 function find_diff_var_place(_model,place::Int64)
     allkeys = collect(keys(_model.Differential_var_index))
 
@@ -908,11 +842,9 @@ function find_alge_var_place(_model,place::Int64)
 end
 
 function set_initial_value(ref::DifferentialRef,val::Real)
+    DOI.set_initial_value(ref.model.optimizer.diff_variables,ref.index.value,val)
+    
     index, index_in_vector = find_diff_var_place(ref.model,ref.index.value)
-    
-    ref.model.optimizer.diff_variables.init_value[ref.index.value] = val
-    
-
     sym = collect(keys(ref.model.Differential_var_index))[index]
     if ref.model.Differential_var_index[sym] isa Array
         ref.model.Differential_var_index[sym][index_in_vector].Initial_value = val
@@ -924,11 +856,9 @@ function set_initial_value(ref::DifferentialRef,val::Real)
 end
 
 function set_final_value(ref::DifferentialRef,val::Real)
-    index, index_in_vector = find_diff_var_place(ref.model,ref.index.value)
-    
-    ref.model.optimizer.diff_variables.final_value[ref.index.value] = val
-    
+    DOI.set_final_value(ref.model.optimizer.diff_variables,ref.index.value,val)    
 
+    index, index_in_vector = find_diff_var_place(ref.model,ref.index.value)
     sym = collect(keys(ref.model.Differential_var_index))[index]
     if ref.model.Differential_var_index[sym] isa Array
         ref.model.Differential_var_index[sym][index_in_vector].Final_value = val
@@ -940,11 +870,9 @@ function set_final_value(ref::DifferentialRef,val::Real)
 end
 
 function set_final_value(ref::AlgebraicRef,val::Real)
-    index, index_in_vector = find_alge_var_place(ref.model,ref.index.value)
-    
-    ref.model.optimizer.alge_variables.final_value[ref.index.value] = val
-    
+    DOI.set_final_value(ref.model.optimizer.alge_variables,ref.index.value,val)
 
+    index, index_in_vector = find_alge_var_place(ref.model,ref.index.value)
     sym = collect(keys(ref.model.Algebraic_var_index))[index]
     if ref.model.Algebraic_var_index[sym] isa Array
         ref.model.Algebraic_var_index[sym][index_in_vector].Final_value = val
@@ -955,21 +883,44 @@ function set_final_value(ref::AlgebraicRef,val::Real)
     
 end
 
-function set_initial_guess(ref::DifferentialRef,val::Real)
+function add_final_value(ref::DifferentialRef,val::Real) 
+    DOI.add_final_value(ref.model.optimizer.diff_variables,ref.index.value,val)    
+
     index, index_in_vector = find_diff_var_place(ref.model,ref.index.value)
-
-    ref.model.optimizer.diff_variables.init_guess[ref.index.value] = val
-
+    sym = collect(keys(ref.model.Differential_var_index))[index]
+    if ref.model.Differential_var_index[sym] isa Array
+        ref.model.Differential_var_index[sym][index_in_vector].Final_value = val
+    else
+        ref.model.Differential_var_index[sym].Final_value = val
+    end
     return nothing
     
 end
 
-function set_initial_guess(ref::AlgebraicRef,val::Real)
-    index, index_in_vector = find_alge_var_place(ref.model,ref.index.value)
-    
-    ref.model.optimizer.alge_variables.init_guess[ref.index.value] = val
-    
+function add_final_value(ref::AlgebraicRef,val::Real)
+    DOI.add_final_value(ref.model.optimizer.alge_variables,ref.index.value,val)
 
+    index, index_in_vector = find_alge_var_place(ref.model,ref.index.value)
+    sym = collect(keys(ref.model.Algebraic_var_index))[index]
+    if ref.model.Algebraic_var_index[sym] isa Array
+        ref.model.Algebraic_var_index[sym][index_in_vector].Final_value = val
+    else
+        ref.model.Algebraic_var_index[sym].Final_value = val
+    end
+    return nothing
+    
+end
+
+function delete_final_value(ref::DifferentialRef)
+    DOI.delete_final_value(ref.model.optimizer.diff_variables,ref.index.value)    
+
+    index, index_in_vector = find_diff_var_place(ref.model,ref.index.value)
+    sym = collect(keys(ref.model.Differential_var_index))[index]
+    if ref.model.Differential_var_index[sym] isa Array
+        ref.model.Differential_var_index[sym][index_in_vector].Final_value = nothing
+    else
+        ref.model.Differential_var_index[sym].Final_value = nothing
+    end
     return nothing
     
 end

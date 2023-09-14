@@ -15,12 +15,14 @@ function same_var_error(_model,sym)
     diff = collect_keys(_model.Differential_var_index)
     alg = collect_keys(_model.Algebraic_var_index)
     con = collect(keys(_model.Constant_index))
+    par = collect(keys(_model.Parameter_index))
 
     append!(diff,alg)
     append!(diff,t)
     append!(diff,i)
     append!(diff,f)
     append!(diff,con)
+    append!(diff,par)
 
     if sym in diff
         throw(error("The symbol $(sym) is already used in the model"))

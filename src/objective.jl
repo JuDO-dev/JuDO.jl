@@ -2,29 +2,119 @@ integrate_sym = [:integral,:∫]
 quadratic_coeff = Any[0,0,0,0] #Q R Qf Rf
 
 function check_inner_quad_term(_model,_expr,coeff)
-    #check the term is about x(.) or u(.), t or tf, and give the coefficient to DOI
-    (_expr isa Expr) ? nothing : (return false)
     diff_var_names = collect_keys(_model.Differential_var_index)
     alge_var_names = collect_keys(_model.Algebraic_var_index)
-    if (_expr.head == :call) && (length(_expr.args) == 2) && ((_expr.args[1] in diff_var_names)||((_expr.args[1] in alge_var_names)))
+
+    #assign coefficient in the scalar quadratic term 
+    if (_expr isa Expr) 
+        if (_expr.head == :call) && (length(_expr.args) == 2) && ((_expr.args[1] in diff_var_names)||((_expr.args[1] in alge_var_names)))
+            
+            if (_expr.args[1] in diff_var_names)
+                (coeff !== nothing) ? (quadratic_diff = coeff) : (quadratic_diff = zeros(length(_model.Differential_var_index),length(_model.Differential_var_index)))
+                (_expr.args[2] == collect(keys(_model.Independent_var_index))[1]) ? (index = 1) : (index = 3)
+                quadratic_coeff[index] = quadratic_diff
+                #DOI.add_objective(_model.optimizer.Purequadratic_coeff,quadratic_diff,index)
+
+            elseif (_expr.args[1] in alge_var_names) 
+                (coeff !== nothing) ? (quadratic_alge = coeff) : (quadratic_alge = zeros(length(_model.Algebraic_var_index),length(_model.Algebraic_var_index)))
+                (_expr.args[2] == collect(keys(_model.Independent_var_index))[1]) ? (index = 2) : (index = 4)
+                quadratic_coeff[index] = quadratic_alge
+                #DOI.add_objective(_model.optimizer.Purequadratic_coeff,quadratic_alge,index)
+
+            end
         
-        if (_expr.args[1] in diff_var_names)
-            (coeff !== nothing) ? (quadratic_diff = coeff) : (quadratic_diff = 1)
-            (_expr.args[2] == collect(keys(_model.Independent_var_index))[1]) ? (index = 1) : (index = 3)
-            quadratic_coeff[index] = quadratic_diff
-            #DOI.add_objective(_model.optimizer.Purequadratic_coeff,quadratic_diff,index)
-
-        elseif (_expr.args[1] in alge_var_names) 
-            (coeff !== nothing) ? (quadratic_alge = coeff) : (quadratic_alge = 1)
-            (_expr.args[2] == collect(keys(_model.Independent_var_index))[1]) ? (index = 2) : (index = 4)
-            quadratic_coeff[index] = quadratic_alge
-            #DOI.add_objective(_model.optimizer.Purequadratic_coeff,quadratic_alge,index)
-
+            return true
+        else
+            return false
         end
-        
+
+    #assign coefficient in the vector quadratic term
+    elseif _expr isa Vector
+        empty_diff_diag = zeros(count_var(_model.Differential_var_index))
+        empty_alge_diag = zeros(count_var(_model.Algebraic_var_index))
+        #get the diagonal elements of coefficient matrix
+        diag_coeff = LinearAlgebra.diag(coeff)
+
+        for i in eachindex(_expr)
+            if _expr[i].args[1] in diff_var_names
+                var_len = length(_model.Differential_var_index[Expr(:call,_expr[i].args[1],collect(keys(_model.Independent_var_index))[1])])
+                var_coeff = [popfirst!(diag_coeff) for _i in 1:var_len]
+
+                place = find_diff_var_index(_model,findfirst(x->x==_expr[i].args[1], diff_var_names))
+                (var_len != 1) ? (place = place: place  + var_len - 1) : nothing
+                empty_diff_diag[place] .= var_coeff
+                
+                _expr[i].args[2] == collect(keys(_model.Independent_var_index))[1] ? (index = 1) : (index = 3)
+                quadratic_coeff[index] = LinearAlgebra.Diagonal(empty_diff_diag)
+            
+            elseif _expr[i].args[1] in alge_var_names
+                var_len = length(_model.Algebraic_var_index[Expr(:call,_expr[i].args[1],collect(keys(_model.Independent_var_index))[1])])
+                var_coeff = [popfirst!(diag_coeff) for _i in 1:var_len]
+
+                place = find_alge_var_index(_model,findfirst(x->x==_expr[i].args[1], alge_var_names))
+                (var_len != 1) ? (place = place: place  + var_len - 1) : nothing
+                empty_alge_diag[place] .= var_coeff
+
+                _expr[i].args[2] == collect(keys(_model.Independent_var_index))[1] ? (index = 2) : (index = 4)
+                quadratic_coeff[index] = LinearAlgebra.Diagonal(empty_alge_diag)
+            end
+        end
         return true
     else
         return false
+    end
+    
+end
+
+function check_redundant_cost(_model)
+    #= for i in 1:4
+        (quadratic_coeff[i] == 0) && isodd(i) ? (quadratic_coeff[i] = zeros(count_var(_model.Differential_var_index),count_var(_model.Differential_var_index))) : nothing
+
+        (quadratic_coeff[i] == 0) && iseven(i) ? (quadratic_coeff[i] = zeros(count_var(_model.Algebraic_var_index),count_var(_model.Algebraic_var_index))) : nothing
+
+        println(quadratic_coeff[4])
+    end =#
+
+    diff_var_names = collect(keys(_model.Differential_var_index))
+    alge_var_names = collect(keys(_model.Algebraic_var_index))
+    index = 1
+    for var in diff_var_names
+        (quadratic_coeff[3] == 0) ? break : nothing
+        if (_model.Differential_var_index[var] isa Array) 
+            for i in eachindex(_model.Differential_var_index[var])
+                if (_model.Differential_var_index[var][i].Final_value != nothing) && (quadratic_coeff[3][index,index] != 0) 
+                    @warn("The final value constraint of the differential variable $(var) is specified, but the redundant final cost is also added.") 
+                    quadratic_coeff[3][index,index] = 0
+                end
+                index += 1
+            end
+        else
+            if (_model.Differential_var_index[var].Final_value != nothing) && (quadratic_coeff[3][index,index] != 0) 
+                @warn("The final value constraint of the differential variable $(var) is specified, but the redundant final cost is also added.") 
+                quadratic_coeff[3][index,index] = 0
+            end
+            index += 1
+        end
+    end
+
+    index = 1
+    for var in alge_var_names
+        (quadratic_coeff[4] == 0) ? break : nothing
+        if (_model.Algebraic_var_index[var] isa Array) 
+            for i in eachindex(_model.Algebraic_var_index[var])
+                if (_model.Algebraic_var_index[var][i].Final_value != nothing) && (quadratic_coeff[4][index,index] != 0) 
+                    @warn("The final value constraint of the algebraic variable $(var) is specified, but the redundant final cost is also added.") 
+                    quadratic_coeff[4][index,index] = 0
+                end
+                index += 1
+            end
+        else
+            if (_model.Algebraic_var_index[var].Final_value != nothing) && (quadratic_coeff[4][index,index] != 0) 
+                @warn("The final value constraint of the algebraic variable $(var) is specified, but the redundant final cost is also added.") 
+                quadratic_coeff[4][index,index] = 0
+            end
+            index += 1
+        end
     end
     
 end
@@ -42,13 +132,16 @@ function pure_qua_scalar(_model,_expr,coeff)
 
         #check composite scalar quadratic term like 3*x(t)^2
         elseif (_expr.args[1] == :*) && const_Number_array(_model,_expr.args[2])
-            (_expr.args[2] isa Number) ? (coeff = _expr.args[2]) : (coeff = _model.Constant_index[_expr.args[2]].Value)
+            check_const_param(_model,_expr.args[2]) ? throw(error("The quadratic coefficient should not be added by macros.")) : nothing
+            (_expr.args[2] isa Number) ? (coeff = _expr.args[2]) : (coeff = return_constant(_expr.args[2]))
             (pure_qua_scalar(_model,_expr.args[3],coeff) == true) ? (return true) : (return false)
         end
     #check composite scalar quadratic term like 3*x(t)*x(t) 
     elseif (_expr.head == :call) && (length(_expr.args) == 4) && (_expr.args[1] == :*) && const_Number_array(_model,_expr.args[2]) && (_expr.args[3] == _expr.args[4])
-        (_expr.args[2] isa Number) ? (coeff = _expr.args[2]) : (coeff = _model.Constant_index[_expr.args[2]].Value)
+        check_const_param(_model,_expr.args[2]) ? throw(error("The quadratic coefficient should not be added by macros.")) : nothing
+        (_expr.args[2] isa Number) ? (coeff = _expr.args[2]) : (coeff = return_constant(_expr.args[2]))
            (check_inner_quad_term(_model,_expr.args[3],coeff) == true) ? (return true) : (return false)
+        
     end
 
     return false
@@ -67,7 +160,8 @@ function check_quad_term(_model,_expr,container,coeff)
     elseif (_expr isa Expr) && (_expr.head == :call) && (((length(_expr.args) == 2) && (_expr.args[1] in [:∫,:integral])) || (length(_expr.args) >= 3))
         #if there is a explicit coefficient
         (_expr.args[1] == :*) && (_expr.args[2] isa Number) ? (coeff = _expr.args[2]) : nothing 
-        (_expr.args[1] == :*) && (_expr.args[2] in collect(keys(_model.Constant_index))) ? (coeff = _model.Constant_index[_expr.args[2]].Value) : nothing    
+        (_expr.args[1] == :*) && (check_const_param(_model,_expr.args[2])) ? throw(error("The quadratic coefficient should not be added by macros.")) : nothing
+        (_expr.args[1] == :*) && check_constant(_expr.args[2]) ? (coeff = return_constant(_expr.args[2])) : nothing    
 
         for term in _expr.args
             if !(term in [:+,:-,:*,:/,:^,:∫,:integral])
@@ -80,25 +174,43 @@ end
 
 #####################
 function const_and_Number(_model,arg)
-    (arg in collect(keys(_model.Constant_index))) || (arg isa Number) ? (return true) : (return false)
+    check_constant(arg) || (arg isa Number) ? (return true) : (return false)
 end
 
 function const_and_array(_model,arg)
-    (arg in collect(keys(_model.Constant_index))) || ((arg.head == :vcat) && (arg.args isa Array)) ? (return true) : (return false)
+    check_constant(arg) || ((arg.head == :vcat) && (arg.args isa Array)) ? (return true) : (return false)
 end
 
 function const_Number_array(_model,arg)
-    (arg in collect(keys(_model.Constant_index))) || (arg isa Number) || ((arg.head == :vcat) && (arg.args isa Array)) ? (return true) : (return false)
+    check_constant(arg) || (arg isa Number) || ((arg.head == :vcat) && (arg.args isa Array)) ? (return true) : (return false)
+end
+
+function matrix_coefficient(_matrix_expr)
+    len = length(_matrix_expr.args)
+    coeff = zeros(len,len) 
+
+    (len == length(_matrix_expr.args[1].args)) ? nothing : throw(error("The quadratic coefficient should be a square matrix."))
+
+    for i in 1:len
+        for j in 1:len
+            (_matrix_expr.args[i].args[j] isa Number) ? (coeff[i,j] = _matrix_expr.args[i].args[j]) : nothing
+            check_constant(_matrix_expr.args[i].args[j]) ? (coeff[i,j] = return_constant(_matrix_expr.args[i].args[j])) : nothing
+        end
+    end
+    return coeff
 end
 
 function pure_qua_vector(_model,_expr)
     (_expr isa Expr) && (_expr.head == :call) && (length(_expr.args) == 4) && (_expr.args[1] == :*) && (_expr.args[2].head == Symbol("'")) && const_and_array(_model,_expr.args[3]) ? nothing : (return false)
     (_expr.args[2].args[1] == _expr.args[4]) ? nothing : (return false)
+    check_const_param(_model,_expr.args[3]) ? throw(error("The quadratic coefficient should not be added by macros.")) : nothing
+    (_expr.args[3] isa Expr) && ((_expr.args[3].head == :vcat) && (_expr.args[3].args isa Array)) ? (coeff = matrix_coefficient(_expr.args[3])) : (coeff = return_constant(_expr.args[3]))
 
-    (_expr.args[3] isa Expr) && ((_expr.args[3].head == :vcat) && (_expr.args[3].args isa Array)) ? (coeff = _expr.args[3]) : (coeff = _model.Constant_index[_expr.args[3]].Value)
+    (length(coeff[1,:]) == length(coeff[:,1])) ? nothing : throw(error("The quadratic coefficient should be a square matrix."))
+    
     if _expr.args[2].args[1].head == :call
         #check basic vector quadratic term like x(t)'*Q*x(t) 
-        (check_inner_quad_term(_model,_expr.args[4],coeff) == true) ? (return true) : (return false)
+        (check_inner_quad_term(_model,[_expr.args[4]],coeff) == true) ? (return true) : (return false)
 
     #check composite vector quadratic term like [x(t);u(t)]'*Q*[x(t);u(t)] 
     elseif (_expr.args[2].args[1].head == :vcat) 
@@ -106,9 +218,9 @@ function pure_qua_vector(_model,_expr)
         for i in 1:len
             _expr.args[2].args[1].args[i] == _expr.args[4].args[i] ? nothing : (return false)
         end
-        for i in 1:len
-        (check_inner_quad_term(_model,_expr.args[4].args[i],coeff) == true) ? nothing : (return false) ###
-        end
+        
+        (check_inner_quad_term(_model,_expr.args[4].args,coeff) == true) ? nothing : (return false) ###
+        
         return true
     end
 
@@ -120,7 +232,6 @@ end
 
 #parse the expression outside or inside the integral
 function check_mayer_lagrange(_model,_args,sym)
-    
     return scalar_dynamics(_model,_args,sym)
 
 end
@@ -131,6 +242,7 @@ function check_bolza_mayer(_model,_args,_has_integrand,type)
 
     #check mayer function
     elseif (!_has_integrand) && (length(collect(keys(_model.Final_Independent_var_index))) != 0)
+        
         m_func = check_mayer_lagrange(_model,_args,collect(keys(_model.Final_Independent_var_index))[1])
         type[2] = m_func
 
@@ -165,9 +277,9 @@ function check_bolza_mayer(_model,_args,_has_integrand,type)
         type[1] = l_func
 
     elseif (length(_args.args) > 2) && _has_integrand
-        
         if (length(_args.args) > 3) && (length(collect(keys(_model.Final_Independent_var_index))) != 0)
             total = Expr(:call,_args.args[1],_args.args[2:end-1]...)
+            
             type[1] = check_mayer_lagrange(_model,total,collect(keys(_model.Final_Independent_var_index))[1])
         
         elseif length(collect(keys(_model.Final_Independent_var_index))) != 0
@@ -182,15 +294,17 @@ function check_bolza_mayer(_model,_args,_has_integrand,type)
 end
 
 function parse_objective_function(_model,_args)
-    (_model.Objective_index != :()) ? error("The objective function can only be added once in the model") : nothing
+    #(_model.Objective_index != :()) ? error("The objective function can only be added once in the model") : nothing
+    
 
     has_integrand = (:∫ in check_all_const(_args[1],[])) || (:integral in check_all_const(_args[1],[]))
     type = Any[:(),:()]
-
-    lagrange, mayer = check_bolza_mayer(_model,_args[1],has_integrand,type)
+    
+    lagrange, mayer = check_bolza_mayer(_model,_args[1],has_integrand,type) 
+    # lagrange and mayer to be passed in the Interesso as the objective function
     println(lagrange)
     println(mayer)
-
+    
     u_limit = _model.Independent_var_index.vals[1].Bound[2]
     l_limit = _model.Independent_var_index.vals[1].Bound[1]
     #if user has specified the limits of integration 
@@ -204,6 +318,8 @@ function parse_objective_function(_model,_args)
 
     #check pure quadratic term and store the coefficient
     !(false in check_quad_term(_model,_args[1],[],nothing)) ? (pure_quad = true) : (pure_quad = false)
+    check_redundant_cost(_model)
+
     (pure_quad == true) ? (DOI.add_objective(_model.optimizer.Purequadratic_coeff,quadratic_coeff)) : nothing
 
     _model.Objective_index = _args[1];

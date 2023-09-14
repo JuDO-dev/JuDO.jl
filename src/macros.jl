@@ -160,17 +160,17 @@ end
 """
     @constant(model, args...)
 
-    This macro is used to add a constant into the model to simplify future macro calls by using the constant symbol.
+    This macro is used to add a constant into the model.
 
     The user is required to put a model in the first argument, an equality equation in the second argument.
 
-    @constant( model, g = 9.81)
+    @constant(m, r = 1.1e-2)
 
-    @constant( model, k = 0.0069)
+    @constant(m, Alpha = [1,2,3])
+    
+    @constant(m, Beta = Diagonal([1,2,3]))
 
-    @constant( model, P = 1.01e5)
 """
-
 macro constant(model,args...)
 
     c_args = collect(args)
@@ -178,6 +178,23 @@ macro constant(model,args...)
     const_ref = :(new_constant($(esc(model)),$c_args))
 
     return macro_return(c_args[1].args[1],const_ref)
+end
+
+"""
+    @parameter(model, args...)
+
+    This macro is used to add a parameter into the model.
+
+    The user is required to put a model in the first argument, an equality equation in the second argument.
+
+"""
+macro parameter(model,args...)
+
+    c_args = collect(args)
+
+    param_ref = :(new_parameter($(esc(model)),$c_args))
+
+    return macro_return(c_args[1].args[1],param_ref)
 end
 
 """
@@ -239,7 +256,7 @@ end
     The objective function is considered as a minimization problem, so for maximization problem, 
     the user is required to add a negative sign in front of the expression.
 
-    The objective function can only be added once in the model, it can only contain the registered variables and constants.
+    The objective function can only be added once in the model, it can only contain the registered variables or constants.
 
     The second argument is the expression for the objective function, with either ∫() or integral() as the integrand.
 

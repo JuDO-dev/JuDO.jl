@@ -120,10 +120,11 @@ end
 #a function that checks if _args[i] is a number or symbol
 function check_rhs_num(_model,_args)
     if (_args isa Symbol) 
-        (_args in collect(keys(_model.Constant_index))) ? (return _model.Constant_index[_args].Value) : nothing
+        check_const_param(_model,_args) ? (return return_const_param(_model,_args)) : nothing
+        check_constant(_args) ? (return return_constant(_args)) : nothing
         (_args in [:+,:-,:*,:/,:^,:\,:∫]) ? (return _args) : nothing
         (isconst(MathConstants,_args)) ? (return eval(_args)) : nothing
-        (mathematical_packages_functions(_args)) ? (return _args) : nothing
+        (mathematical_packages_functions(_args)) ? (return _args) : nothing #needed?
 
         if (length(collect(keys(_model.Initial_Independent_var_index))) != 0) && (_args == collect(keys(_model.Initial_Independent_var_index))[1])
             return _model.Independent_var_index.vals[1].Bound[1]
@@ -209,7 +210,7 @@ function check_rhs_var(_model,_args,independent)
             return Expr(:ref,:x,index)
         end
     end
-    throw(error("Incorrect style of the right hand side variable"))
+    throw(error("Incorrect style of the expression"))
 end
 
 #iteratively parse the dynamics expression for scalar differential variables
@@ -254,6 +255,7 @@ end
 function scalar_dynamics(_model,_args,sym)
     #lower level: number, symbol, x(t), x(t)[m:n], [1,2,...]
     if (_args isa Symbol) || (_args isa Number)
+        
         sub = check_rhs_num(_model,_args)
 
     elseif (_args.head == :ref) && (length(_args.args) == 2) && (length(_args.args[1].args) == 2)
@@ -270,16 +272,6 @@ function scalar_dynamics(_model,_args,sym)
         else
             sub = vector_dynamics(_model,_args.head,_args,sym)
         end
-
-        #upper level: ...+..., ...*... / -(...), sin(...), log(...)
-#=     elseif (_args.args[1] isa Symbol) && isconst(MathConstants,_args.args[1]) && !(_args.args[1] in [:+,:-,:*,:/,:^,:\,:∫])
-        if length(_args.args) == 2
-            return Expr(:call,_args.args[1],scalar_dynamics(_model,_args.args[2],sym))
-        else
-            subs = []
-            [push!(subs,scalar_dynamics(_model,_args.args[i],sym)) for i in 2:length(_args.args)]
-            return Expr(:call,_args.args[1],subs...)
-        end =#
 
     elseif length(_args.args) >= 2
         return parse_dynamics_expression(_model,_args.args[2:end],_args.args[1],sym)
