@@ -480,5 +480,5 @@ function parse_equation(_model,_expr)
 
     _model.Constraints_index[_expr[1]] = _expr[2];
 
-    return #all_terms
+    return #constraint_output
 end

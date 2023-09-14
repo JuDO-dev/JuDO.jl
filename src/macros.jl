@@ -64,7 +64,7 @@ macro differential(model,args...)
 end
 
 function macro_return(sym,ref)
-    return :($(esc(sym)) = $ref)
+    return :($(esc(sym)) = $ref;)
 end
 
 """
@@ -242,7 +242,7 @@ macro constraint(model,args...)
     
     c_args = collect(args)
 
-    return :(parse_equation($(esc(model)),$c_args))
+    return :(parse_equation($(esc(model)),$c_args));
 
 end 
 
@@ -273,7 +273,7 @@ end
 macro objective(model,args...)
     c_args = collect(args)
 
-    return :(parse_objective_function($(esc(model)),$c_args))
+    return :(parse_objective_function($(esc(model)),$c_args));
 end
 
 """
@@ -292,5 +292,5 @@ end
 macro dynamics(model,args...)
     c_args = collect(args)
 
-    return :(parse_dynamics($(esc(model)),$c_args))
+    return :(parse_dynamics($(esc(model)),$c_args));
 end

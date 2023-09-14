@@ -122,9 +122,9 @@ version = "0.4.2"
 
 [[CPUSummary]]
 deps = ["CpuId", "IfElse", "PrecompileTools", "Static"]
-git-tree-sha1 = "89e0654ed8c7aebad6d5ad235d6242c2d737a928"
+git-tree-sha1 = "601f7e7b3d36f18790e2caf83a882d88e9b71ff1"
 uuid = "2a0fbf3d-bb9c-48f3-b0a9-814d99fd7ab9"
-version = "0.2.3"
+version = "0.2.4"
 
 [[Cairo_jll]]
 deps = ["Artifacts", "Bzip2_jll", "CompilerSupportLibraries_jll", "Fontconfig_jll", "FreeType2_jll", "Glib_jll", "JLLWrappers", "LZO_jll", "Libdl", "Pixman_jll", "Pkg", "Xorg_libXext_jll", "Xorg_libXrender_jll", "Zlib_jll", "libpng_jll"]
@@ -341,7 +341,7 @@ version = "0.6.8"
 
 [[DynOptInterface]]
 deps = ["Altro", "FiniteDiff", "ForwardDiff", "Interesso", "JuDOBase", "LinearAlgebra", "MathOptInterface", "Plots", "RobotDynamics", "RobotZoo", "StaticArrays", "TrajectoryOptimization"]
-git-tree-sha1 = "c8446d10c6ab2d0b6ea60825165618d374ec6685"
+git-tree-sha1 = "6b1a43f320987e747347cbeba12e8f6c864b43e2"
 repo-rev = "dev"
 repo-url = "https://github.com/JuDO-dev/DynOptInterface.jl"
 uuid = "80a7045d-d411-400a-b3f5-1501539f8fe7"

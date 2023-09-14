@@ -302,8 +302,8 @@ function parse_objective_function(_model,_args)
     
     lagrange, mayer = check_bolza_mayer(_model,_args[1],has_integrand,type) 
     # lagrange and mayer to be passed in the Interesso as the objective function
-    println(lagrange)
-    println(mayer)
+    #println(lagrange)
+    #println(mayer)
     
     u_limit = _model.Independent_var_index.vals[1].Bound[2]
     l_limit = _model.Independent_var_index.vals[1].Bound[1]

@@ -125,18 +125,17 @@ include("solver.jl")
 include("dynamics.jl")
 
 export @independent, @differential,@algebraic,@constant,@parameter,@constraint,@objective,@dynamics,full_info,optimize!,
-add_final_value,set_final_value,delete_final_value,
+add_final_value,set_final_value,delete_final_value,add_initial_value,set_initial_value,delete_initial_value,
+add_initial_bound,set_initial_bound,delete_initial_bound,add_trajectory_bound,set_trajectory_bound,delete_trajectory_bound, 
+add_final_bound,set_final_bound,delete_final_bound,
 set_constant,set_parameter,delete_constant,delete_parameter
-#= add_initial_bound,add_trajectory_bound,add_final_bound,
-set_initial_bound,set_trajectory_bound,set_final_bound,
-delete_initial_bound,delete_ =#
 
 export set_dyn_optimizer,set_meshpoints,set_initial_guess,set_discretization,set_parametrization,set_continuity,set_flex_mesh,set_residual_quad_order,set_hessian_approx
 
 
 
 
-Base.show(io::IO, model::Abstract_Dynamic_Model) = print_JuDO(io, model)
+Base.show(io::IO, model::Abstract_Dynamic_Model) = ()->()#_JuDO(io, model)
 
 function print_JuDO(io::IO, model::Abstract_Dynamic_Model)
     println(io, "Dynamic Optimization Model $(model.optimizer)")
