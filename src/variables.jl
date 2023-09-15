@@ -507,21 +507,6 @@ function count_var(type)
 end
 
 ##############################################################################################################
-    
-function add_final_bound(ref::DifferentialRef,bound::Vector)
-        
-    val = collect(values(ref.model.Differential_var_index))[ref.index.value]
-    check_contradict(val.Final_bound,bound)
-    delete_default(val.Final_bound)
-
-    push!(val.Final_bound,bound)
-    
-    ref.model.optimizer.diff_variables.final_bound[ref.index.value] = val.Final_bound
-    
-
-end
-
-##############################################################################################################
 function delete_default(bounds)
     #if there is [-Inf,Inf] in the final bound, then pop [-Inf,Inf] out of the bound
     if [-Inf,Inf] in bounds
@@ -529,18 +514,6 @@ function delete_default(bounds)
         popat!(bounds,index)
     end
 
-end
-
-function delete_final_bound(ref::DifferentialRef,place::Int64)
-    val = collect(values(ref.model.Differential_var_index))[ref.index.value]
-    if length(val.Final_bound) == 1 
-        val.Final_bound = [[-Inf,Inf]] 
-        ref.model.optimizer.diff_variables.final_bound[ref.index.value] = val.Final_bound
-    else
-        deleteat!(val.Final_bound,place)
-        ref.model.optimizer.diff_variables.final_bound[ref.index.value] = val.Final_bound
-    end
-    
 end
 
 ##############################################################################################################
@@ -554,18 +527,6 @@ function set_independent(ref::IndependentRef,info::Vector)
 
     ref.model.optimizer.inde_variables.traj_bound = info
 
-    
-end
-
-function set_final_bound(ref::DifferentialRef,bound::Vector,place::Int64)
-        
-    val = collect(values(ref.model.Differential_var_index))[ref.index.value]
-    check_contradict(val.Final_bound,bound)
-    length(val.Final_bound) == 0 ? throw(error("The final bound is empty")) : nothing
-
-    val.Final_bound[place] = bound
-    
-    ref.model.optimizer.diff_variables.final_bound[ref.index.value] = val.Final_bound
     
 end
 
@@ -705,6 +666,30 @@ function find_alge_var_place(_model,place::Int64)
     
 end
 
+function identify_var_for_bound(_ref::DifferentialRef)
+    index, index_in_vector = find_diff_var_place(_ref.model,_ref.index.value)
+    sym = collect(keys(_ref.model.Differential_var_index))[index]
+    if _ref.model.Differential_var_index[sym] isa Array
+        _val = _ref.model.Differential_var_index[sym][index_in_vector]
+    else
+        _val = _ref.model.Differential_var_index[sym]
+    end
+
+    return _val
+end
+
+function identify_var_for_bound(_ref::AlgebraicRef)
+    index, index_in_vector = find_alge_var_place(_ref.model,_ref.index.value)
+    sym = collect(keys(_ref.model.Algebraic_var_index))[index]
+    if _ref.model.Algebraic_var_index[sym] isa Array
+        _val = _ref.model.Algebraic_var_index[sym][index_in_vector]
+    else
+        _val = _ref.model.Algebraic_var_index[sym]
+    end
+
+    return _val
+end
+
 #variables
 #initial value
 function set_initial_value(ref::DifferentialRef,val::Real)
@@ -718,7 +703,7 @@ function set_initial_value(ref::DifferentialRef,val::Real)
         ref.model.Differential_var_index[sym].Initial_value = val
     end
     
-    
+    return
 end
 
 function set_initial_value(ref::AlgebraicRef,val::Real)
@@ -732,7 +717,7 @@ function set_initial_value(ref::AlgebraicRef,val::Real)
         ref.model.Algebraic_var_index[sym].Initial_value = val
     end
     
-    
+    return
 end
 
 function add_initial_value(ref::DifferentialRef,val::Real) 
@@ -746,7 +731,7 @@ function add_initial_value(ref::DifferentialRef,val::Real)
         ref.model.Differential_var_index[sym].Initial_value = val
     end
     
-    
+    return
 end
 
 function add_initial_value(ref::AlgebraicRef,val::Real)
@@ -760,7 +745,7 @@ function add_initial_value(ref::AlgebraicRef,val::Real)
         ref.model.Algebraic_var_index[sym].Initial_value = val
     end
     
-    
+    return
 end
 
 function delete_initial_value(ref::DifferentialRef)
@@ -774,7 +759,7 @@ function delete_initial_value(ref::DifferentialRef)
         ref.model.Differential_var_index[sym].Initial_value = nothing
     end
     
-    
+    return
 end
 
 function delete_initial_value(ref::DifferentialRef)
@@ -788,7 +773,7 @@ function delete_initial_value(ref::DifferentialRef)
         ref.model.Algebraic_var_index[sym].Initial_value = nothing
     end
     
-    
+    return
 end
 
 #final value
@@ -803,7 +788,7 @@ function set_final_value(ref::DifferentialRef,val::Real)
         ref.model.Differential_var_index[sym].Final_value = val
     end
     
-    
+    return
 end
 
 function set_final_value(ref::AlgebraicRef,val::Real)
@@ -817,7 +802,7 @@ function set_final_value(ref::AlgebraicRef,val::Real)
         ref.model.Algebraic_var_index[sym].Final_value = val
     end
     
-    
+    return
 end
 
 function add_final_value(ref::DifferentialRef,val::Real) 
@@ -831,7 +816,7 @@ function add_final_value(ref::DifferentialRef,val::Real)
         ref.model.Differential_var_index[sym].Final_value = val
     end
     
-    
+    return
 end
 
 function add_final_value(ref::AlgebraicRef,val::Real)
@@ -845,7 +830,7 @@ function add_final_value(ref::AlgebraicRef,val::Real)
         ref.model.Algebraic_var_index[sym].Final_value = val
     end
     
-    
+    return
 end
 
 function delete_final_value(ref::DifferentialRef)
@@ -859,13 +844,13 @@ function delete_final_value(ref::DifferentialRef)
         ref.model.Differential_var_index[sym].Final_value = nothing
     end
     
-    
+    return
 end
 
 function delete_final_value(ref::AlgebraicRef)
     DOI.delete_final_value(ref.model.optimizer.diff_variables,ref.index.value)    
 
-    index, index_in_vector = find_diff_var_place(ref.model,ref.index.value)
+    index, index_in_vector = find_alge_var_place(ref.model,ref.index.value)
     sym = collect(keys(ref.model.Algebraic_var_index))[index]
     if ref.model.Algebraic_var_index[sym] isa Array
         ref.model.Algebraic_var_index[sym][index_in_vector].Final_value = nothing
@@ -873,37 +858,38 @@ function delete_final_value(ref::AlgebraicRef)
         ref.model.Algebraic_var_index[sym].Final_value = nothing
     end
     
-    
+    return
 end
 
 #modifying bounds
 #initial bound
 function set_initial_bound(ref::DifferentialRef,bound::Vector,place::Int64)
 
-    val = collect(values(ref.model.Differential_var_index))[ref.index.value]
+    val = identify_var_for_bound(ref)
+    
     check_contradict(val.Initial_bound,bound)
     place > length(val.Initial_bound) ? throw(error("Index out of range")) : nothing
     val.Initial_bound == [[-Inf,Inf]] ? throw(error("The initial bound is empty")) : nothing
 
     DOI.set_initial_bound(ref.model.optimizer.diff_variables, ref.index.value, bound, place)
     val.Initial_bound[place] = bound
-    
+    return
 end
 
 function add_initial_bound(ref::DifferentialRef,bound::Vector)
     
-    val = collect(values(ref.model.Differential_var_index))[ref.index.value]
+    val = identify_var_for_bound(ref)
     check_contradict(val.Initial_bound,bound)
     delete_default(val.Initial_bound)
-
+    
     DOI.add_initial_bound(ref.model.optimizer.diff_variables, ref.index.value, bound)
-    push!(val.Initial_bound,bound)
-    
-    
+
+
+    return
 end
 
 function delete_initial_bound(ref::DifferentialRef, place::Int64)
-    val = collect(values(ref.model.Differential_var_index))[ref.index.value]
+    val = identify_var_for_bound(ref)
     place > length(val.Initial_bound) ? throw(error("Index out of range")) : nothing
 
     if (length(val.Initial_bound) == 1) && (val.Initial_bound == [-Inf,Inf]) 
@@ -911,39 +897,37 @@ function delete_initial_bound(ref::DifferentialRef, place::Int64)
     elseif (length(val.Initial_bound) == 1)
         set_initial_bound(ref,[-Inf,Inf],1)
     else
-        deleteat!(val.Initial_bound,place)
-        DOI.delete_initial_bound(ref.model.optimizer.diff_variables, ref.index.value)
+        DOI.delete_initial_bound(ref.model.optimizer.diff_variables, ref.index.value,place)
     end
-    
+    return
 end
 
 #final bound
 function set_final_bound(ref::DifferentialRef,bound::Vector,place::Int64)
 
-    val = collect(values(ref.model.Differential_var_index))[ref.index.value]
+    val = identify_var_for_bound(ref)
     check_contradict(val.Final_bound,bound)
     place > length(val.Final_bound) ? throw(error("Index out of range")) : nothing
     val.Final_bound == [[-Inf,Inf]] ? throw(error("The final bound is empty")) : nothing
 
     DOI.set_final_bound(ref.model.optimizer.diff_variables, ref.index.value, bound, place)
     val.Final_bound[place] = bound
-    
+    return
 end
 
 function add_final_bound(ref::DifferentialRef,bound::Vector)
     
-    val = collect(values(ref.model.Differential_var_index))[ref.index.value]
+    val = identify_var_for_bound(ref)
     check_contradict(val.Final_bound,bound)
     delete_default(val.Final_bound)
 
     DOI.add_final_bound(ref.model.optimizer.diff_variables, ref.index.value, bound)
-    push!(val.Final_bound,bound)
-    
+    return
     
 end
 
 function delete_final_bound(ref::DifferentialRef, place::Int64)
-    val = collect(values(ref.model.Differential_var_index))[ref.index.value]
+    val = identify_var_for_bound(ref)
     place > length(val.Final_bound) ? throw(error("Index out of range")) : nothing
 
     if (length(val.Final_bound) == 1) && (val.Final_bound == [-Inf,Inf]) 
@@ -951,60 +935,60 @@ function delete_final_bound(ref::DifferentialRef, place::Int64)
     elseif (length(val.Final_bound) == 1)
         set_final_bound(ref,[-Inf,Inf],1)
     else
-        deleteat!(val.Final_bound,place)
-        DOI.delete_final_bound(ref.model.optimizer.diff_variables, ref.index.value)
+        DOI.delete_final_bound(ref.model.optimizer.diff_variables, ref.index.value, place)
     end
-    
+    return 
 end
 
 # trajectory bound
-function add_trajectory_bound(ref::DifferentialRef,bound::Vector)
+function set_trajectory_bound(ref::DifferentialRef,bound::Vector,place::Int64)
 
-    val = collect(values(ref.model.Differential_var_index))[ref.index.value]
+    val = identify_var_for_bound(ref)
+    check_contradict(val.Trajectory_bound,bound)
+    place > length(val.Trajectory_bound) ? throw(error("Index out of range")) : nothing
+    val.Trajectory_bound == [[-Inf,Inf]] ? throw(error("The trajectory bound is empty")) : nothing
+
+    DOI.set_trajectory_bound(ref.model.optimizer.diff_variables, ref.index.value, bound, place)
+    val.Trajectory_bound[place] = bound
+    return
+end
+
+function set_trajectory_bound(ref::AlgebraicRef,bound::Vector,place::Int64)
+
+    val = identify_var_for_bound(ref)
+    check_contradict(val.Trajectory_bound,bound)
+    place > length(val.Trajectory_bound) ? throw(error("Index out of range")) : nothing
+    val.Trajectory_bound == [[-Inf,Inf]] ? throw(error("The trajectory bound is empty")) : nothing
+
+    DOI.set_trajectory_bound(ref.model.optimizer.alge_variables, ref.index.value, bound, place)
+    val.Trajectory_bound[place] = bound
+    return
+end
+
+function add_trajectory_bound(ref::DifferentialRef,bound::Vector)
+    
+    val = identify_var_for_bound(ref)
     check_contradict(val.Trajectory_bound,bound)
     delete_default(val.Trajectory_bound)
 
     DOI.add_trajectory_bound(ref.model.optimizer.diff_variables, ref.index.value, bound)
-    push!(val.Trajectory_bound,bound)
+    return
+    
 end
 
-    
 function add_trajectory_bound(ref::AlgebraicRef,bound::Vector)
-        
-    val = collect(values(ref.model.Algebraic_var_index))[ref.index.value]
+    
+    val = identify_var_for_bound(ref)
     check_contradict(val.Trajectory_bound,bound)
     delete_default(val.Trajectory_bound)
 
     DOI.add_trajectory_bound(ref.model.optimizer.alge_variables, ref.index.value, bound)
-    push!(val.Trajectory_bound,bound)
-end
-
-function set_trajectory_bound(ref::DifferentialRef,bound::Vector,place::Int64)
-        
-    val = collect(values(ref.model.Differential_var_index))[ref.index.value]
-    check_contradict(val.Trajectory_bound,bound)
-    place > length(val.Trajectory_bound) ? throw(error("Index out of range")) : nothing
-    val.Trajectory_bound == [[-Inf,Inf]] ? throw(error("The final bound is empty")) : nothing
-
-    DOI.set_trajectory_bound(ref.model.optimizer.diff_variables, ref.index.value, bound, place)
-    val.Trajectory_bound[place] = bound
+    return
     
 end
 
-function set_trajectory_bound(ref::AlgebraicRef,bound::Vector,place::Int64)
-   
-    val = collect(values(ref.model.Algebraic_var_index))[ref.index.value]
-    check_contradict(val.Trajectory_bound,bound)
-    place > length(val.Trajectory_bound) ? throw(error("Index out of range")) : nothing
-    val.Trajectory_bound == [[-Inf,Inf]] ? throw(error("The final bound is empty")) : nothing
-
-    DOI.set_trajectory_bound(ref.model.optimizer.alge_variables, ref.index.value, bound, place)
-    val.Trajectory_bound[place] = bound
-    
-end
-
-function delete_trajectory_bound(ref::DifferentialRef,place::Int64)
-    val = collect(values(ref.model.Differential_var_index))[ref.index.value]
+function delete_trajectory_bound(ref::DifferentialRef, place::Int64)
+    val = identify_var_for_bound(ref)
     place > length(val.Trajectory_bound) ? throw(error("Index out of range")) : nothing
 
     if (length(val.Trajectory_bound) == 1) && (val.Trajectory_bound == [-Inf,Inf]) 
@@ -1012,14 +996,13 @@ function delete_trajectory_bound(ref::DifferentialRef,place::Int64)
     elseif (length(val.Trajectory_bound) == 1)
         set_trajectory_bound(ref,[-Inf,Inf],1)
     else
-        deleteat!(val.Trajectory_bound,place)
-        DOI.delete_trajectory_bound(ref.model.optimizer.diff_variables, ref.index.value)
+        DOI.delete_trajectory_bound(ref.model.optimizer.diff_variables, ref.index.value, place)
     end
-    
+    return 
 end
 
-function delete_trajectory_bound(ref::AlgebraicRef,place::Int64)
-    val = collect(values(ref.model.Algebraic_var_index))[ref.index.value]
+function delete_trajectory_bound(ref::AlgebraicRef, place::Int64)
+    val = identify_var_for_bound(ref)
     place > length(val.Trajectory_bound) ? throw(error("Index out of range")) : nothing
 
     if (length(val.Trajectory_bound) == 1) && (val.Trajectory_bound == [-Inf,Inf]) 
@@ -1027,9 +1010,9 @@ function delete_trajectory_bound(ref::AlgebraicRef,place::Int64)
     elseif (length(val.Trajectory_bound) == 1)
         set_trajectory_bound(ref,[-Inf,Inf],1)
     else
-        deleteat!(val.Trajectory_bound,place)
-        DOI.delete_trajectory_bound(ref.model.optimizer.alge_variables, ref.index.value)
-    end   
+        DOI.delete_trajectory_bound(ref.model.optimizer.alge_variables, ref.index.value, place)
+    end
+    return 
 end
 
 Base.show(io::IO,ref::AbstractDynamicRef) = ()->()
