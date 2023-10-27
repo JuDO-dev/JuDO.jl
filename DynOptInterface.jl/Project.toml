@@ -1,0 +1,4 @@
+name = "DynOptInterface"
+uuid = "f3bf8c80-9b7a-4ce7-81b6-d2e65441d684"
+authors = ["Eduardo M. G. Vila <72969764+e-duar-do@users.noreply.github.com>"]
+version = "0.1.0"
