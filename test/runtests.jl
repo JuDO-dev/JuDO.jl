@@ -1,10 +1,11 @@
-using JuDO
 using Test
+using JuMP
+using Interesso
 
 import DynOptInterface as DOI
- 
-#include("test_variables.jl")
-include("test_constants.jl")
-include("test_constraints.jl")
-include("test_variable_mod_del.jl")
-include("test_objective.jl")
+
+# include("test_var.jl")
+# include("test_operation.jl")
+# include("space_shuttle.jl")
+# include("tumor.jl")
+include("cartpole.jl")
