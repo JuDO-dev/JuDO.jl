@@ -148,31 +148,6 @@ function Base.:-(lhs::DynamicVarRef, rhs::DynamicAffExpr{C,V}) where {C,V<:Dynam
 end
 
 
-# function Base.:*(lhs::DynamicAffExpr{C,V}, rhs::DynamicVarRef) where {C,V<:DynamicVarRef}
-#     # If lhs.constant is nonzero, use it to build an initial affine part.
-#     if !iszero(lhs.constant)
-#         # Here, lhs.constant * rhs uses our defined multiplication for (Number * DynamicVarRef)
-#         aff_part = lhs.constant * rhs
-#     else
-#         aff_part = zero(DynamicAffExpr{C,V})
-#     end
-#     # Prepare a new (empty) dictionary for quadratic terms.
-#     quad_terms = OrderedDict{JuMP.UnorderedPair{V}, C}()
-#     # For each term in lhs, multiply the variable by rhs.
-#     for (var, coef) in lhs.terms
-#         # Multiplying two variables yields a quadratic term.
-#         qexpr = var * rhs  # Should return a DynamicQuadExpr with one term.
-#         for (up, qcoef) in qexpr.terms
-#             quad_terms[up] = get(quad_terms, up, zero(C)) + coef * qcoef
-#         end
-#     end
-#     return DynamicQuadExpr(aff_part, quad_terms)
-# end
-
-# For consistency, define the reverse order:
-Base.:*(rhs::DynamicVarRef, lhs::DynamicAffExpr{C,V}) where {C,V<:DynamicVarRef} = lhs * rhs
-
-
 # Now define addition for two DynamicAffExpr's.
 function Base.:+(A::DynamicAffExpr{C, V}, B::DynamicAffExpr{C, V}) where {C, V}
     constant = A.constant + B.constant
@@ -236,10 +211,6 @@ function Base.:-(c::Number, Q::DynamicQuadExpr{C,V}) where {C,V}
     return c + (-Q)
 end
 
-# Base.:+(lhs::DynamicQuadExpr{C,V}, rhs::Number) where {C,V} = (+)(rhs, lhs)
-# Base.:-(lhs::DynamicQuadExpr{C,V}, rhs::Number) where {C,V} = (+)(-rhs, lhs)
-# Base.:*(lhs::DynamicQuadExpr{C,V}, rhs::Number) where {C,V} = (*)(rhs, lhs)
-
 function Base.:-(Q::DynamicQuadExpr{C,V}) where {C,V}
     new_aff = -Q.aff
     new_terms = OrderedDict{JuMP.UnorderedPair{V}, C}()
@@ -248,15 +219,6 @@ function Base.:-(Q::DynamicQuadExpr{C,V}) where {C,V}
     end
     return DynamicQuadExpr(new_aff, new_terms)
 end
-
-
-# Base.show definitions for text/plain.
-# Base.show(io::IO, expr::DynamicAffExpr) =
-#     print(io, JuMP.function_string(MIME("text/plain"), expr))
-# Base.show(io::IO, var::DynamicVarRef) =
-#     print(io, JuMP.function_string(MIME("text/plain"), var))
-# Base.show(io::IO, quad::DynamicQuadExpr) =
-#     print(io, JuMP.function_string(MIME("text/plain"), quad))
 
 
 # (a) Multiplication of two DynamicVarRef's produces a quadratic expression.
@@ -391,8 +353,6 @@ function Base.:*(a::Number, Q::DynamicQuadExpr{C,V}) where {C,V}
     return DynamicQuadExpr(new_aff, new_terms)
 end
 Base.:*(Q::DynamicQuadExpr{C,V}, a::Number) where {C,V} = a * Q
-
-#--------------------------------------------------------------------------
 
 
 

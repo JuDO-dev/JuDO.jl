@@ -6,7 +6,6 @@ import DynOptInterface as DOI
 import JuMP.MOIU.CleverDicts as MOIU_cd
 import Base: +, -, *, /, ^
 
-using Ipopt
 using Unicode
 using OrderedCollections: OrderedDict
 using LinearAlgebra
@@ -27,7 +26,7 @@ include("objective.jl")
 include("optimizer_interface.jl")
 include("solutions.jl")
 
-export @phase
+export @phase, DynModel, initial, final, DefinedOn, derivative, integral, dyn_value, set_interpolant, optimize
 
 
 end

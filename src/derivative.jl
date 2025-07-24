@@ -1,10 +1,3 @@
-#recognize derivative term in a Expr and recognize it as a NonlinearExpr
-#make an identifier where JuDO knows which term is the derivative term
-#in the dispatch of build_constraint() for NonlinearExpr, build DOI.
-
-# in what cases will a NonlinearExpr be assembled?
-
-# DerivativeTerm now carries a coefficient.
 struct DerivativeTerm <: JuMP.AbstractJuMPScalar
     var::DynamicVarRef
     #id::Symbol
@@ -174,9 +167,6 @@ end
 function Base.:/(a::Number, b::DynamicAffExpr)
     return _build_nonlin_expr(:/, a, b)
 end
-function Base.:/(a::DynamicAffExpr, b::Number) #####why
-    return _build_nonlin_expr(:/, a, b)
-end
 
 function Base.:^(a::DynamicAffExpr, b::Number)
     return _build_nonlin_expr(:^, a, b)
@@ -193,8 +183,6 @@ end
 function Base.:^(a::DynamicQuadExpr, b::Number)
     return _build_nonlin_expr(:^, a, b)
 end
-
-
 
 
 #### start with the derivative term
@@ -787,18 +775,6 @@ function toDOINonlinearFunction(obj::Any)
     # If none of the above matched, throw an error.
     error("Unsupported object type in toDOINonlinearFunction: $(typeof(obj))")
 end
-
-# First, add the missing helper function to extract the phase from a
-# PureQuadraticDynamicFunction. This is analogous to the one for LinearDynamicFunction.
-# function phase_index(quad_dyn_fun::PureQuadraticDynamicFunction)
-#     if isempty(quad_dyn_fun.terms)
-#         # This case should ideally be handled based on package conventions,
-#         # but throwing an error is a safe default.
-#         error("Cannot determine phase of an empty PureQuadraticDynamicFunction.")
-#     end
-#     # The constructor ensures all terms share the same phase.
-#     return phase_index(quad_dyn_fun.terms[1].dyn_var_1)
-# end
 
 """
     to_NDF(f::AbstractDynamicFunction)

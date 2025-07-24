@@ -8,15 +8,6 @@ mutable struct PhaseVar <: JuMP.AbstractVariable
     Final::Union{Real, JuMP.VariableRef, Nothing}
 end
 
-# mutable struct PhaseVarData 
-#     variable::PhaseVar
-#     name::String
-# end
-
-# struct PhaseIndex
-#     value::Int64
-# end
-
 struct PhaseVarRef{M<:JuMP.AbstractModel} <: JuMP.AbstractVariableRef
     model::M
     Index::Int64

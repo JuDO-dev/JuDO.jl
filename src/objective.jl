@@ -74,40 +74,6 @@ function JuMP.set_objective_function(model::JuMP.Model, func::DOI.Bolza)::Nothin
     return nothing
 end
 
-# function JuMP.set_objective_function(
-#     model::JuMP.Model,
-#     running_cost::Function,
-#     phase::Int
-# )::Nothing
-#     # Create expression for running cost (user-defined function)
-#     cost_expr = running_cost(model)
-    
-#     # Convert to DOI function
-#     dyn_fun = to_doi_nonlinear_function(cost_expr, model, phase)
-    
-#     # Create zero boundary function
-#     boundary_fun = DOI.NonlinearBoundaryFunction(:constant, [0.0])
-    
-#     # Create integral part
-#     dyn_funs = DOI.NonlinearDynamicFunction[]
-#     for (phase_idx, _) in model.ext[:Phases]
-#         if phase_idx == phase
-#             push!(dyn_funs, dyn_fun)
-#         else
-#             zero_fun = DOI.NonlinearDynamicFunction(:constant, [0.0], DOI.PhaseIndex(phase_idx))
-#             push!(dyn_funs, zero_fun)
-#         end
-#     end
-#     integral_part = DOI.MultiPhaseIntegral(dyn_funs)
-    
-#     # Create Bolza objective
-#     bolza_obj = DOI.Bolza(boundary_fun, integral_part)
-    
-#     # Set using existing method
-#     JuMP.set_objective_function(model, bolza_obj)
-#     return nothing
-# end
-
 function JuMP.set_objective_sense(model::JuMP.Model, sense::MOI.OptimizationSense)::Nothing
     model.ext[:objective_sense] = sense
     MOI.set(model.moi_backend.optimizer.model, MOI.ObjectiveSense(), sense)
