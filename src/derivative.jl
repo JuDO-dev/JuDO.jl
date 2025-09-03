@@ -168,10 +168,6 @@ function Base.:/(a::Number, b::DynamicAffExpr)
     return _build_nonlin_expr(:/, a, b)
 end
 
-function Base.:^(a::DynamicAffExpr, b::Number)
-    return _build_nonlin_expr(:^, a, b)
-end
-
 # 7. Division between a Number and a DynamicQuadExpr (both orders).
 function Base.:/(a::Number, b::DynamicQuadExpr)
     return _build_nonlin_expr(:/, a, b)
@@ -180,8 +176,12 @@ function Base.:/(a::DynamicQuadExpr, b::Number) #####why
     return _build_nonlin_expr(:/, a, b)
 end
 
-function Base.:^(a::DynamicQuadExpr, b::Number)
-    return _build_nonlin_expr(:^, a, b)
+# 8. Multiplication beween a DynamicVarRef and a DynamicQuadExpr
+function Base.:*(a::DynamicVarRef, b::DynamicQuadExpr)
+    return _build_nonlin_expr(:*, a, b)
+end
+function Base.:*(a::DynamicQuadExpr, b::DynamicVarRef)
+    return _build_nonlin_expr(:*, a, b)
 end
 
 
@@ -304,9 +304,6 @@ end
 function Base.:/(a::Number, b::NonlinearExpr)
     return _build_nonlin_expr(:/, a, b)
 end
-function Base.:^(a::NonlinearExpr, b::Number)
-    return _build_nonlin_expr(:^, a, b)
-end
 
 function Base.:+(a::NonlinearExpr, b::DynamicVarRef)
     return _build_nonlin_expr(:+, a, b)
@@ -423,6 +420,7 @@ function Base.:/(a::NonlinearExpr, b::NonlinearExpr)
     return _build_nonlin_expr(:/, a, b)
 end
 
+Base.:^(x::Union{DerivativeTerm, DynamicVarRef, DynamicAffExpr, DynamicQuadExpr, NonlinearExpr}, n::Number) = _build_nonlin_expr(:^, x, n)
 Base.:sin(x::Union{DerivativeTerm, DynamicVarRef, DynamicAffExpr, DynamicQuadExpr, NonlinearExpr}) = _build_nonlin_expr(:sin, x)
 Base.:cos(x::Union{DerivativeTerm, DynamicVarRef, DynamicAffExpr, DynamicQuadExpr, NonlinearExpr}) = _build_nonlin_expr(:cos, x)
 Base.:tan(x::Union{DerivativeTerm, DynamicVarRef, DynamicAffExpr, DynamicQuadExpr, NonlinearExpr}) = _build_nonlin_expr(:tan, x)
@@ -596,7 +594,7 @@ function find_phase(expr::NonlinearExpr)
     if expr.head == :call && !isempty(expr.args)
         # The first argument is the operator, the rest are operands.
         for arg in expr.args[2:end]
-            local p = get_phase(arg)
+            local p = find_phase(arg)
             if p !== nothing
                 return p
             end
@@ -605,6 +603,9 @@ function find_phase(expr::NonlinearExpr)
     # If no phase found, return nothing or a default phase.
     return nothing
 end
+
+find_phase(::Number) = nothing
+find_phase(d::DerivativeTerm) = find_phase(d.var)
 
 # Return the phase of a DOI.DynamicVariableIndex
 function get_phase(x::DOI.DynamicVariableIndex)
@@ -908,7 +909,7 @@ end
 function JuMP.add_constraint(
     model::JuMP.Model,
     con::ExplicitDifferentialConstraint,
-    name::String,
+    ::String,
 )
 
     # Extract the left-hand side and right-hand side of the equality.
@@ -924,14 +925,18 @@ function JuMP.add_constraint(
     
     ndf = to_NDF(f)
 
-    println("head of ndf: ", ndf.head)
-    println("args of ndf: ", ndf.args)
+    # println("head of ndf: ", ndf.head)
+    # println("args of ndf: ", ndf.args)
 
-    explicitfunc =  DOI.ExplicitDifferentialFunction(dyn_var, ndf)
+    # convert to nonlinear expression if RHS is a pure number
+    if ndf isa Number
+        ndf = DOI.NonlinearDynamicFunction(:+, [ndf], get_phase(dyn_var))
+    end
+
+    explicitfunc = DOI.ExplicitDifferentialFunction(dyn_var, ndf)
     set = MOI.EqualTo{Float64}(0)
-
     
-    MOI.add_constraint( model.moi_backend.optimizer.model, explicitfunc, set)
+    MOI.add_constraint(model.moi_backend.optimizer.model, explicitfunc, set)
     
     return con.expr
 end
@@ -939,7 +944,7 @@ end
 function JuMP.add_constraint(
     model::JuMP.Model,
     con::DyNonlinearConstraint,
-    name::String,
+    ::String,
 )
     set = MOI.EqualTo{Float64}(0)
     MOI.add_constraint(model.moi_backend.optimizer.model, toDOINonlinearFunction(con.expr), set)

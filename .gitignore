@@ -1,0 +1,6 @@
+*.jl.cov
+*.jl.*.cov
+*.jl.mem
+/docs/Manifest.toml
+Manifest.toml
+.vscode/

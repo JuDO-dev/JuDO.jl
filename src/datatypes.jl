@@ -2,7 +2,6 @@ struct Phase end
 
 mutable struct PhaseVar <: JuMP.AbstractVariable
     #Jumpinfo::JuMP.VariableInfo{Float64,Float64,Float64,Float64}
-
     
     Initial::Union{Real, JuMP.VariableRef, Nothing}
     Final::Union{Real, JuMP.VariableRef, Nothing}
@@ -168,24 +167,24 @@ function JuMP.name(v::PhaseVarRef)
     return MOI.get(model, MOI.VariableName(), v)::String
 end
 
-function MOI.get(model::JuMP.Model, n::MOI.VariableName, v::PhaseVarRef)
+function MOI.get(model::JuMP.Model, ::MOI.VariableName, v::PhaseVarRef)
     # print("here")
     key = [k for (k, j) in model.ext[:phase_name_to_idx] if j == v.Index]
     return string(key[1])
 end
 
-function get_phase(model)
+function get_phase(model::JuMP.Model)
     return model.ext[:Phases]
 end
 
-function get_phasenum(model)
+function get_phasenum(model::JuMP.Model)
     return model.ext[:Phasenum]
 end
 
-function get_var(model)
+function get_var(model::JuMP.Model)
     return model.ext[:variables]
 end
 
-function get_varnum(model)
+function get_varnum(model::JuMP.Model)
     return model.ext[:varnum]
 end
