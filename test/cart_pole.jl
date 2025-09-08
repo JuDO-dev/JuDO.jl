@@ -1,8 +1,7 @@
 using Interesso
-using JuMP
-using Plots
 using DynOptInterface
 using JuDO
+using Plots
 
 
 const g = 9.81
@@ -53,11 +52,13 @@ end
 
 @objective(dop, Min, integral(u^2))
 
-set_interpolant(dop, LinearInterpolant(0.0, 1.0), r)
-set_interpolant(dop, LinearInterpolant(0.0, pi), θ)
+JuDO.warmstart!(dop, LinearInterpolant(0.0, 1.0), r)
+JuDO.warmstart!(dop, LinearInterpolant(0.0, pi), θ)
 
+JuDO.optimize!(dop, intervals=FlexibleIntervals(4,0.5), points=LGRPoints(8))
 
-optimize(dop, intervals=FlexibleIntervals(4,0.5), points=LGRPoints(8))
+ws = JuDO.get_solutions(dop)
 
-rsol=dyn_value(dop, r)
-plot(t->rsol(t),xlims=(t_0,t_f))
+JuDO.warmstart!(dop, ws)
+JuDO.optimize!(dop, intervals=FlexibleIntervals(4,0.5), points=LGRPoints(8))
+

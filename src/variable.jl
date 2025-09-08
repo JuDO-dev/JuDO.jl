@@ -1,4 +1,3 @@
-
 struct DefinedOn
     Phase::PhaseVarRef
 end
@@ -47,13 +46,17 @@ function JuMP.add_variable(
     #     error("No such phase_id = $phase_id in model.ext[:Phases].")
     # end
 
-    #get the index of the corresponding phase 
+    # get the index of the corresponding phase 
     p_index = DOI.PhaseIndex(dv.Phase)
     
-    index = DOI.add_dynamic_variable(model.moi_backend.optimizer.model,p_index)
+    index = DOI.add_dynamic_variable(model.moi_backend.optimizer.model, p_index)
 
-    #call the add_constraint
-    MOI.add_constraint(model.moi_backend.optimizer.model, index, MOI.Interval(dv.Trajectory_bound[1],dv.Trajectory_bound[2]))
+    # call the add_constraint
+    MOI.add_constraint(
+        model.moi_backend.optimizer.model,
+        index,
+        MOI.Interval(dv.Trajectory_bound[1],dv.Trajectory_bound[2])
+    )
 
     local i = model.ext[:varnum][:var] + 1
     model.ext[:varnum][:var] = i
@@ -83,7 +86,7 @@ function JuMP.name(ref::DynamicVarRef)
     return MOI.get(ref.model, MOI.VariableName(), ref)
 end
 
-function MOI.get(m::JuMP.Model, ::MOI.VariableName, ref::DynamicVarRef)
+function MOI.get(::JuMP.Model, ::MOI.VariableName, ref::DynamicVarRef)
     # The simplest approach: ref.name is a Symbol. Convert to string.
     return string(ref.name)
 end
