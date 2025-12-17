@@ -74,6 +74,17 @@ function JuMP.set_objective_function(model::JuMP.Model, func::DOI.Bolza)::Nothin
     return nothing
 end
 
+function JuMP.set_objective_function(model::JuMP.Model, func::DOI.NonlinearBoundaryFunction)::Nothing
+    
+    # Pass NBF directly to the optimizer. 
+    MOI.set(
+        model.moi_backend.optimizer.model, 
+        MOI.ObjectiveFunction{typeof(func)}(), 
+        func
+    )
+    return nothing
+end
+
 function JuMP.set_objective_sense(model::JuMP.Model, sense::MOI.OptimizationSense)::Nothing
     model.ext[:objective_sense] = sense
     MOI.set(model.moi_backend.optimizer.model, MOI.ObjectiveSense(), sense)
@@ -101,6 +112,35 @@ function JuMP.set_objective(
 
 
     JuMP.set_objective_function(model, bolza_obj)
+    return nothing
+end
+
+#for cost with boundary
+function JuMP.set_objective(
+    model::JuMP.Model,
+    sense::MOI.OptimizationSense,
+    cost::BoundaryOperator
+)::Nothing
+
+    JuMP.set_objective_sense(model, sense)
+
+    # 1. REUSE LOGIC: Convert using the central converter
+    # (Relies on the update to toDOINonlinearFunction we made earlier)
+    doi_term = toDOINonlinearFunction(cost) 
+    
+    # 2. Get Phase Index
+    # We can extract it from the variable inside the BoundaryOperator
+    p_idx = find_phase(cost.arg)
+
+    # 3. CONSTRUCT NBF: Create a NonlinearBoundaryFunction directly
+    # Conceptually: Objective = 0 + term
+    nbf = DOI.NonlinearBoundaryFunction(
+        :+, 
+        [doi_term]
+    )
+
+    # 4. Set as NBF (Not Bolza)
+    JuMP.set_objective_function(model, nbf)
     return nothing
 end
 

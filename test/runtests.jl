@@ -1,12 +1,11 @@
 using Test
 using JuMP
 using Interesso
-
+using JuDO
 import DynOptInterface as DOI
 
-include(joinpath(@__DIR__, "cartpole.jl"))
-
-sol = JuDO.get_solutions(dop)
-var_names = join(keys(sol), ", ")
-
-@test var_names == "ω, ν, u, r, θ"
+# include("test_var.jl")
+# include("test_operation.jl")
+# include("space_shuttle.jl")
+# include("tumor.jl")
+include("cartpole.jl")

@@ -1,8 +1,8 @@
 using Interesso
-using DynOptInterface
-using JuDO
 using JuMP
 # using Plots
+using JuDO  
+using DynOptInterface
 
 
 const g = 9.81
@@ -43,8 +43,6 @@ end
 @constraint(dop, final(ν) == 0)
 @constraint(dop, final(ω) == 0)
 
-#to do:code needed for the warmstart 
-
 @constraint(dop, derivative(r) == ν)
 @constraint(dop, derivative(ν) == (l*m_2*sin(θ)*ω^2 + u + m_2*g*cos(θ)*sin(θ))/(m_1 + m_2*sin(θ)^2))
 
@@ -56,10 +54,29 @@ end
 JuDO.warmstart!(dop, LinearInterpolant(0.0, 1.0), r)
 JuDO.warmstart!(dop, LinearInterpolant(0.0, pi), θ)
 
-JuDO.optimize!(dop) #, intervals=FlexibleIntervals(4,0.5), points=LGRPoints(8)
 
-ws = JuDO.get_solutions(dop)
+JuDO.optimize!(dop) 
+rsol=dyn_value(dop, r)
+thetasol=dyn_value(dop, θ)
+nusol=dyn_value(dop, ν)
+omegasol=dyn_value(dop, ω)
 
-JuDO.warmstart!(dop, ws)
-JuDO.optimize!(dop) #, intervals=FlexibleIntervals(4,0.5), points=LGRPoints(8)
+time_points = collect(range(t_0, t_f, length=100))
+r_values = [omegasol(t) for t in time_points]
+open("rsol_judo.txt", "w") do io
+    println(io, "time,r_value")
+    for (t, r_val) in zip(time_points, r_values)
+        println(io, "$(t),$(r_val)")
+    end
+end
+# plot trajectory with labels, title, no legend
+p = plot(time_points, r_values;
+    xlabel = "Time (s)",
+    ylabel = "Angular Velocity (rad/s)",
+    legend = false,
+    xlims  = (t_0, t_f),
+    lw     = 1,
+    grid   = true)
 
+display(p)
+savefig(p, "cartpole_omega.png")

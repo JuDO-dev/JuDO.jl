@@ -1,11 +1,12 @@
 module JuDO
 
 import JuMP
+import JuMP: derivative
 import MathOptInterface as MOI
 import DynOptInterface as DOI
 import JuMP.MOIU.CleverDicts as MOIU_cd
+import Base: +, -, *, /, ^
 
-using Ipopt
 using Unicode
 using OrderedCollections: OrderedDict
 using LinearAlgebra
@@ -15,16 +16,18 @@ using StaticArrays
 const _Const = Union{Number,LinearAlgebra.UniformScaling}
 
 include("datatypes.jl")
+include("variable.jl")
+
+include("constraints.jl")
+
 include("operator-overload.jl")
-include("new_phase.jl")
-include("macros.jl")
-#include("variables.jl")
-#include("DOI_wrapper.jl")
-include("constraints_new.jl")
+include("derivative.jl")
+include("boundary.jl")
+include("objective.jl")
+include("optimizer_interface.jl")
+include("solutions.jl")
 
-export @phase, @outer_macro
-
-# show the information of the model
+export @phase, DynModel, initial, final, DefinedOn, integral, dyn_value, set_interpolant, optimize
 
 
 end

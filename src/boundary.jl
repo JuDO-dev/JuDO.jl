@@ -60,19 +60,30 @@ struct DyBoundaryConstraint <: JuMP.AbstractConstraint
 end
 
 #now only the initial() == ... is implemented, not sure how <= can be done
-function JuMP.build_constraint(error::Function, bc::BoundaryConditionExpr, set::MOI.EqualTo)
+function JuMP.build_constraint(error::Function, bc::BoundaryConditionExpr, set::Union{MOI.EqualTo, MOI.LessThan, MOI.GreaterThan})
     model = bc.lhs.model
+
+    set_value = (bc.rhs isa Number) ? bc.rhs : 0.0
+
+    if set isa MOI.EqualTo
+        set = MOI.EqualTo(set_value)
+    elseif set isa MOI.LessThan
+        set = MOI.LessThan(set_value)
+    elseif set isa MOI.GreaterThan
+        set = MOI.GreaterThan(set_value)
+    end
+
     if bc.lhs isa DynamicVarRef && !(bc.rhs isa BoundaryOperator)
         # For dynamic variable boundary conditions.
         local p = find_phase(bc.lhs)
         local dyn_idx = DOI.DynamicVariableIndex(bc.lhs.Index, DOI.PhaseIndex(p))
         if bc.op == :initial
             local bound_obj = DOI.Initial(dyn_idx)
-            MOI.add_constraint(model.moi_backend.optimizer.model, bound_obj, MOI.EqualTo(bc.rhs))
+            MOI.add_constraint(model.moi_backend.optimizer.model, bound_obj, set)
 
         elseif bc.op == :final
             local bound_obj = DOI.Final(dyn_idx)
-            MOI.add_constraint(model.moi_backend.optimizer.model, bound_obj, MOI.EqualTo(bc.rhs))
+            MOI.add_constraint(model.moi_backend.optimizer.model, bound_obj, set)
   
         else
             error("Unknown boundary operator: $(bc.op)")
@@ -82,28 +93,71 @@ function JuMP.build_constraint(error::Function, bc::BoundaryConditionExpr, set::
         local phase_num = bc.lhs.Index  # phase number stored in Index.
         if bc.op == :initial
             local bound_obj = DOI.Initial(DOI.PhaseIndex(phase_num))
-            MOI.add_constraint(model.moi_backend.optimizer.model, bound_obj, MOI.EqualTo(bc.rhs))
+            MOI.add_constraint(model.moi_backend.optimizer.model, bound_obj, set)
         elseif bc.op == :final
             local bound_obj = DOI.Final(DOI.PhaseIndex(phase_num))
-            MOI.add_constraint(model.moi_backend.optimizer.model, bound_obj, MOI.EqualTo(bc.rhs))
+            MOI.add_constraint(model.moi_backend.optimizer.model, bound_obj, set)
         else
             error("Unknown boundary operator: $(bc.op)")
         end
-    elseif bc.rhs isa BoundaryOperator
-        # Linkage constraint: we assume the expression was rewritten as:
-        #    final(t1) - initial(t2)
-        # so that bc.op is :final, bc.lhs is t1 (a PhaseVarRef),
-        # and bc.rhs is BoundaryOperator(:initial, t2).
-        # if !(bc.lhs isa PhaseVarRef) || !(bc.rhs.arg isa PhaseVarRef)
-        #     error("Linkage constraints require both arguments to be phase references.")
-        # end
-        local phase1 = bc.lhs.Index
-        local phase2 = bc.rhs.arg.Index
-        local final_obj   = DOI.PhaseIndex(phase1)
-        local initial_obj = DOI.PhaseIndex(phase2)
-        local linkage = DOI.Linkage(final_obj, initial_obj)
-        MOI.add_constraint(model.moi_backend.optimizer.model, DOI.Linkage{DOI.PhaseIndex}, MOI.EqualTo(0.0))
-        #return DyBoundaryConstraint(linkage, nothing, set)
+
+    # linkage between phases becomes boundary conditions
+    elseif bc.lhs isa PhaseVarRef && bc.rhs isa BoundaryOperator
+        # Check that RHS is also a phase
+        if !(bc.rhs.arg isa PhaseVarRef)
+            error("Cannot link a Phase to a Variable.")
+        end
+
+        local phase1_idx = bc.lhs.Index
+        local phase2_idx = bc.rhs.arg.Index
+
+        if bc.op == :final && bc.rhs.op == :initial
+            lhs_term = DOI.Final(DOI.PhaseIndex(phase1_idx))
+            rhs_term = DOI.Initial(DOI.PhaseIndex(phase2_idx))
+        elseif bc.op == :initial && bc.rhs.op == :final
+            lhs_term = DOI.Initial(DOI.PhaseIndex(phase1_idx))
+            rhs_term = DOI.Final(DOI.PhaseIndex(phase2_idx))
+        else
+            error("Unsupported linkage boundary condition operators: $(bc.op), $(bc.rhs.op)")
+        end
+        local boundary_func = DOI.NonlinearBoundaryFunction(:-, [lhs_term, rhs_term])
+        MOI.add_constraint(model.moi_backend.optimizer.model, boundary_func, set)
+
+    # -----------------------------------------------------------
+    # CASE B: Linking two VARIABLES (e.g. final(q1) == initial(q2))
+    # -----------------------------------------------------------
+    elseif bc.lhs isa DynamicVarRef && bc.rhs isa BoundaryOperator
+        # Check that RHS is also a variable
+        if !(bc.rhs.arg isa DynamicVarRef)
+            error("Cannot link a Variable to a Phase.")
+        end
+
+        local var1 = bc.lhs
+        local var2 = bc.rhs.arg
+
+        # Construct DOI.DynamicVariableIndex for both variables
+        # Note: We must look up the correct phase for each variable
+        local idx1 = DOI.DynamicVariableIndex(var1.Index, DOI.PhaseIndex(find_phase(var1)))
+        local idx2 = DOI.DynamicVariableIndex(var2.Index, DOI.PhaseIndex(find_phase(var2)))
+
+        # Construct Linkage with VARIABLE indices
+        local linkage = DOI.Linkage(idx1, idx2)
+        MOI.add_constraint(model.moi_backend.optimizer.model, linkage, set)
+    # elseif bc.rhs isa BoundaryOperator
+    #     # Linkage constraint: we assume the expression was rewritten as:
+    #     #    final(t1) - initial(t2)
+    #     # so that bc.op is :final, bc.lhs is t1 (a PhaseVarRef),
+    #     # and bc.rhs is BoundaryOperator(:initial, t2).
+    #     # if !(bc.lhs isa PhaseVarRef) || !(bc.rhs.arg isa PhaseVarRef)
+    #     #     error("Linkage constraints require both arguments to be phase references.")
+    #     # end
+    #     local phase1 = bc.lhs.Index
+    #     local phase2 = bc.rhs.arg.Index
+    #     local final_obj   = DOI.PhaseIndex(phase1)
+    #     local initial_obj = DOI.PhaseIndex(phase2)
+    #     local linkage = DOI.Linkage(final_obj, initial_obj)
+    #     MOI.add_constraint(model.moi_backend.optimizer.model, linkage, MOI.EqualTo(0.0))
+    #     #return DyBoundaryConstraint(linkage, nothing, set)
     else
         error("Unsupported left-hand side type in BoundaryCondition: $(typeof(bc.lhs))")
     end

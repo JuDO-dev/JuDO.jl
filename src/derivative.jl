@@ -11,7 +11,7 @@ end
 
 
 # The derivative operator returns a DerivativeTerm with coefficient 1.0.
-function derivative(x::DynamicVarRef)
+function JuMP.derivative(x::DynamicVarRef)
     return DerivativeTerm(x, 1.0)
 end
 
@@ -168,6 +168,10 @@ function Base.:/(a::Number, b::DynamicAffExpr)
     return _build_nonlin_expr(:/, a, b)
 end
 
+function Base.:^(a::DynamicAffExpr, b::Number)
+    return _build_nonlin_expr(:^, a, b)
+end
+
 # 7. Division between a Number and a DynamicQuadExpr (both orders).
 function Base.:/(a::Number, b::DynamicQuadExpr)
     return _build_nonlin_expr(:/, a, b)
@@ -176,12 +180,8 @@ function Base.:/(a::DynamicQuadExpr, b::Number) #####why
     return _build_nonlin_expr(:/, a, b)
 end
 
-# 8. Multiplication beween a DynamicVarRef and a DynamicQuadExpr
-function Base.:*(a::DynamicVarRef, b::DynamicQuadExpr)
-    return _build_nonlin_expr(:*, a, b)
-end
-function Base.:*(a::DynamicQuadExpr, b::DynamicVarRef)
-    return _build_nonlin_expr(:*, a, b)
+function Base.:^(a::DynamicQuadExpr, b::Number)
+    return _build_nonlin_expr(:^, a, b)
 end
 
 
@@ -304,6 +304,9 @@ end
 function Base.:/(a::Number, b::NonlinearExpr)
     return _build_nonlin_expr(:/, a, b)
 end
+function Base.:^(a::NonlinearExpr, b::Number)
+    return _build_nonlin_expr(:^, a, b)
+end
 
 function Base.:+(a::NonlinearExpr, b::DynamicVarRef)
     return _build_nonlin_expr(:+, a, b)
@@ -420,7 +423,6 @@ function Base.:/(a::NonlinearExpr, b::NonlinearExpr)
     return _build_nonlin_expr(:/, a, b)
 end
 
-Base.:^(x::Union{DerivativeTerm, DynamicVarRef, DynamicAffExpr, DynamicQuadExpr, NonlinearExpr}, n::Number) = _build_nonlin_expr(:^, x, n)
 Base.:sin(x::Union{DerivativeTerm, DynamicVarRef, DynamicAffExpr, DynamicQuadExpr, NonlinearExpr}) = _build_nonlin_expr(:sin, x)
 Base.:cos(x::Union{DerivativeTerm, DynamicVarRef, DynamicAffExpr, DynamicQuadExpr, NonlinearExpr}) = _build_nonlin_expr(:cos, x)
 Base.:tan(x::Union{DerivativeTerm, DynamicVarRef, DynamicAffExpr, DynamicQuadExpr, NonlinearExpr}) = _build_nonlin_expr(:tan, x)
@@ -594,7 +596,7 @@ function find_phase(expr::NonlinearExpr)
     if expr.head == :call && !isempty(expr.args)
         # The first argument is the operator, the rest are operands.
         for arg in expr.args[2:end]
-            local p = find_phase(arg)
+            local p = get_phase(arg)
             if p !== nothing
                 return p
             end
@@ -603,9 +605,6 @@ function find_phase(expr::NonlinearExpr)
     # If no phase found, return nothing or a default phase.
     return nothing
 end
-
-find_phase(::Number) = nothing
-find_phase(d::DerivativeTerm) = find_phase(d.var)
 
 # Return the phase of a DOI.DynamicVariableIndex
 function get_phase(x::DOI.DynamicVariableIndex)
@@ -773,6 +772,26 @@ function toDOINonlinearFunction(obj::Any)
         end
     end
 
+    if obj isa BoundaryOperator
+        # 1. Get the variable inside (e.g., p2 inside final(p2))
+        local var = obj.arg
+        
+        # 2. Get the phase of that variable
+        local p = find_phase(var)
+        
+        # 3. Create the DOI variable index
+        local dv = DOI.DynamicVariableIndex(var.Index, DOI.PhaseIndex(p))
+        
+        # 4. Return the correct DOI object
+        if obj.op == :initial
+            return DOI.Initial(dv)
+        elseif obj.op == :final
+            return DOI.Final(dv)
+        else
+            error("Unknown boundary operator: $(obj.op)")
+        end
+    end
+
     # If none of the above matched, throw an error.
     error("Unsupported object type in toDOINonlinearFunction: $(typeof(obj))")
 end
@@ -909,7 +928,7 @@ end
 function JuMP.add_constraint(
     model::JuMP.Model,
     con::ExplicitDifferentialConstraint,
-    ::String,
+    name::String,
 )
 
     # Extract the left-hand side and right-hand side of the equality.
@@ -927,16 +946,16 @@ function JuMP.add_constraint(
 
     # println("head of ndf: ", ndf.head)
     # println("args of ndf: ", ndf.args)
-
-    # convert to nonlinear expression if RHS is a pure number
     if ndf isa Number
-        ndf = DOI.NonlinearDynamicFunction(:+, [ndf], get_phase(dyn_var))
+        # Use the phase of the LHS variable for the constant function
+        ndf = DOI.NonlinearDynamicFunction(:+, [ndf], dyn_var.phase)
     end
 
-    explicitfunc = DOI.ExplicitDifferentialFunction(dyn_var, ndf)
+    explicitfunc =  DOI.ExplicitDifferentialFunction(dyn_var, ndf)
     set = MOI.EqualTo{Float64}(0)
+
     
-    MOI.add_constraint(model.moi_backend.optimizer.model, explicitfunc, set)
+    MOI.add_constraint( model.moi_backend.optimizer.model, explicitfunc, set)
     
     return con.expr
 end
@@ -944,7 +963,7 @@ end
 function JuMP.add_constraint(
     model::JuMP.Model,
     con::DyNonlinearConstraint,
-    ::String,
+    name::String,
 )
     set = MOI.EqualTo{Float64}(0)
     MOI.add_constraint(model.moi_backend.optimizer.model, toDOINonlinearFunction(con.expr), set)
