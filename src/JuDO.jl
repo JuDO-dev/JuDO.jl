@@ -27,7 +27,7 @@ include("objective.jl")
 include("optimizer_interface.jl")
 include("solutions.jl")
 
-export @phase, DynModel, initial, final, DefinedOn, integral, dyn_value, set_interpolant, optimize
+export @phase, DynModel, initial, final, DefinedOn, integral, dyn_value, phase_final, phase_initial, set_interpolant, optimize
 
 
 end
