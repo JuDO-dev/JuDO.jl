@@ -1,6 +1,6 @@
 using Interesso
 using JuMP
-# using Plots
+using Plots
 using JuDO  
 using DynOptInterface
 
@@ -76,7 +76,22 @@ p = plot(time_points, r_values;
     legend = false,
     xlims  = (t_0, t_f),
     lw     = 1,
-    grid   = true)
+    grid   = true,
+    lc    = :black)
 
 display(p)
 savefig(p, "cartpole_omega.png")
+
+
+thetasol_values = [thetasol(t) for t in time_points]
+q = plot(time_points, thetasol_values;
+    xlabel = "Time (s)",
+    ylabel = "Theta (rad)",
+    legend = false,
+    xlims  = (t_0, t_f),
+    lw     = 1,
+    grid   = true,
+    lc    = :black)
+
+display(q)
+savefig(q, "cartpole_theta.png")

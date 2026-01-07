@@ -104,7 +104,8 @@ traj = plot(
     legend = nothing,
     xlabel = "Longitude (deg)",
     ylabel = "Latitude (deg)",
-    zlabel = "Altitude (km)"
+    zlabel = "Altitude (km)",
+    lc = :black
 )
 
 savefig(traj,"3-d-trajectory.png")
@@ -116,11 +117,25 @@ for (sol, title_text, ylab, scale_fn, fname) in plot_configs
              ylabel = ylab,
              xlabel = "Time (s)",
              lw     = 1,
+             lc     = :black
     )
     
     # Save the figure
     savefig(p, fname)
 end
 
+open("latitude.txt", "w") do io
+    println(io, "time,r_value")
+    for (t, theta_val) in zip(ts, rad2deg.(θ_sol.(ts)))
+        println(io, "$(t),$(theta_val)")
+    end
+end
+
+open("longitude.txt", "w") do io
+    println(io, "time,r_value")
+    for (t, phi_val) in zip(ts, rad2deg.(Φ_sol.(ts)))
+        println(io, "$(t),$(phi_val)")
+    end
+end
 
 println("finished")
