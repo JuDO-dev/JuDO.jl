@@ -28,7 +28,7 @@ makedocs(;
     sitename="JuDO.jl",
     format=Documenter.HTML(;
         prettyurls=get(ENV, "CI", "false") == "true",
-        canonical="https://JuDO-dev.github.io/JuDO.jl",
+        canonical="https://judo.dev/JuDO.jl",
         edit_link="dev",
         assets=String[],
     ),
