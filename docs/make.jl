@@ -3,6 +3,24 @@ using Documenter
 
 DocMeta.setdocmeta!(JuDO, :DocTestSetup, :(using JuDO); recursive=true)
 
+const _PAGES = [
+        "Home" => "index.md",
+        
+        # Section for your Examples
+        "Tutorials" => [
+            "Getting Started" => "tutorials/getting_started.md",
+            "Cart-Pole Swing-Up" => "tutorials/cartpole.md",
+            "Space Shuttle Reentry" => "tutorials/shuttle.md",
+        ],
+        
+        # Section for your Types and Functions
+        "API Reference" => [
+            "Public Interface" => "reference/public.md",
+            "Types" => "reference/types.md",
+            "Internals" => "reference/internals.md",
+        ],
+    ]
+
 makedocs(;
     modules=[JuDO],
     authors="Haochen Tao <54142141+shawn-tao01@users.noreply.github.com> and contributors",
@@ -14,9 +32,7 @@ makedocs(;
         edit_link="dev",
         assets=String[],
     ),
-    pages=[
-        "Home" => "index.md",
-    ],
+    pages=_PAGES,
 )
 
 deploydocs(;
