@@ -2,13 +2,14 @@
 CurrentModule = JuDO
 ```
 
-# JuDO
+# JuDO.jl
 
-Documentation for [JuDO](https://github.com/JuDO-dev/JuDO.jl).
+*Julia for Dynamic Optimization*
 
-```@index
-```
+JuDO is a domain-specific modeling language for dynamic optimization. It extends the syntax of [JuMP.jl](https://jump.dev/) to support infinite-dimensional optimization variables and differential equations.
 
-```@autodocs
-Modules = [JuDO]
-```
+## Installation
+
+```julia
+import Pkg
+Pkg.add("JuDO")
