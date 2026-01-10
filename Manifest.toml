@@ -303,7 +303,9 @@ version = "1.7.0"
 
 [[DynOptInterface]]
 deps = ["MathOptInterface"]
-path = "C:/prog-software/github_repos/my_forked_repos/DynOptInterface.jl"
+git-tree-sha1 = "77ba046d4ab14f542e5f174fdd81e4763d4e59b3"
+repo-rev = "dev"
+repo-url = "https://github.com/shawn-tao01/DynOptInterface.jl"
 uuid = "6c38235a-427b-4736-80fa-cf75909744ec"
 version = "0.3.0"
 
@@ -355,9 +357,9 @@ version = "6.1.2+0"
 
 [[FastGaussQuadrature]]
 deps = ["LinearAlgebra", "SpecialFunctions", "StaticArrays"]
-git-tree-sha1 = "fd923962364b645f3719855c88f7074413a6ad92"
+git-tree-sha1 = "0044e9f5e49a57e88205e8f30ab73928b05fe5b6"
 uuid = "442a2c76-b920-505d-bb47-c5924d526838"
-version = "1.0.2"
+version = "1.1.0"
 
 [[FileWatching]]
 uuid = "7b1f6079-737a-58dc-b8bc-7a2ca5c1b5ee"
@@ -536,7 +538,9 @@ version = "1.11.0"
 
 [[Interesso]]
 deps = ["DynOptInterface", "FastGaussQuadrature", "Ipopt", "MathOptInterface", "OrderedCollections"]
-path = "C:/prog-software/github_repos/my_forked_repos/Interesso.jl"
+git-tree-sha1 = "970f8e9ad12627742159dc10bbfbfe83858341df"
+repo-rev = "dev"
+repo-url = "https://github.com/Kailai-Shi/Interesso.jl"
 uuid = "6fc4ee9f-0a6c-4ef5-81c0-9afe0a8161a6"
 version = "0.1.0"
 
@@ -610,7 +614,7 @@ uuid = "aacddb02-875f-59d6-b918-886e6ef4fbf8"
 version = "3.1.3+0"
 
 [[JuDO]]
-deps = ["DynOptInterface", "Interesso", "Ipopt", "JuDOBase", "JuMP", "LinearAlgebra", "MathOptInterface", "MutableArithmetics", "OrderedCollections", "Revise", "StaticArrays", "Unicode"]
+deps = ["DynOptInterface", "Ipopt", "JuDOBase", "JuMP", "LinearAlgebra", "MathOptInterface", "MutableArithmetics", "OrderedCollections", "Plots", "Revise", "StaticArrays", "Unicode"]
 path = "."
 uuid = "3ecbce6f-598f-4154-83ab-9a3a807c6d0a"
 version = "0.1.0"
