@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Solving a DOP · JuDO.jl</title><meta name="title" content="Solving a DOP · JuDO.jl"/><meta property="og:title" content="Solving a DOP · JuDO.jl"/><meta property="twitter:title" content="Solving a DOP · JuDO.jl"/><meta name="description" content="Documentation for JuDO.jl."/><meta property="og:description" content="Documentation for JuDO.jl."/><meta property="twitter:description" content="Documentation for JuDO.jl."/><meta property="og:url" content="https://JuDO-dev.github.io/JuDO.jl/Tutorials/solving_a_dop/"/><meta property="twitter:url" content="https://JuDO-dev.github.io/JuDO.jl/Tutorials/solving_a_dop/"/><link rel="canonical" href="https://JuDO-dev.github.io/JuDO.jl/Tutorials/solving_a_dop/"/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">JuDO.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><span class="tocitem">Tutorials</span><ul><li class="is-active"><a class="tocitem" href>Solving a DOP</a><ul class="internal"><li class="toplevel"><a class="tocitem" href="#States"><span>States</span></a></li><li class="toplevel"><a class="tocitem" href="#Controls"><span>Controls</span></a></li><li class="toplevel"><a class="tocitem" href="#Boundary-conditions"><span>Boundary conditions</span></a></li><li class="toplevel"><a class="tocitem" href="#Expressions"><span>Expressions</span></a></li><li class="toplevel"><a class="tocitem" href="#Differential-equations"><span>Differential equations</span></a></li><li class="toplevel"><a class="tocitem" href="#Objective"><span>Objective</span></a></li><li class="toplevel"><a class="tocitem" href="#–-2.-Extract-Final-Time-and-Time-Grid-–"><span>–- 2. Extract Final Time &amp; Time Grid –-</span></a></li><li class="toplevel"><a class="tocitem" href="#–-3.-Define-Plotting-Configuration-–"><span>–- 3. Define Plotting Configuration –-</span></a></li><li class="toplevel"><a class="tocitem" href="#Format:-(SolutionObject,-Title,-Y-Label,-ScalingFunction,-Filename)"><span>Format: (SolutionObject, Title, Y-Label, ScalingFunction, Filename)</span></a></li><li class="toplevel"><a class="tocitem" href="#–-4.-Loop,-Plot,-and-Save-–"><span>–- 4. Loop, Plot, and Save –-</span></a></li></ul></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Tutorials</a></li><li class="is-active"><a href>Solving a DOP</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Solving a DOP</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/JuDO-dev/JuDO.jl/blob/dev/docs/src/Tutorials/solving_a_dop.md#" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><pre><code class="language-julia hljs">using Interesso
+using JuMP
+using Plots
+using JuDO  
+using DynOptInterface
+
+
+const g = 9.81
+const l = 0.5
+const m_1 = 1.0
+const m_2 = 0.3
+const t_0 = 0.0
+const t_f = 2.0
+const u_max = 20.0
+const r_max = 2.0
+
+dop = DynModel(Interesso.Optimizer)
+
+struct LinearInterpolant &lt;: DynOptInterface.AbstractDynamicSolution
+    y_a::Float64
+    y_b::Float64
+end
+(li::LinearInterpolant)(t::Real) = li.y_a + (t - t_0) * (li.y_b - li.y_a) / (t_f - t_0)
+
+@phase(dop, t)
+@constraint(dop, initial(t) == 0)
+@constraint(dop, final(t) == 2)
+
+@variable(dop, -u_max &lt;= u &lt;= u_max, DefinedOn(t))
+@variable(dop, 0 &lt;= r &lt;= r_max, DefinedOn(t))
+
+@variable(dop, θ, DefinedOn(t))  
+@variable(dop, ν, DefinedOn(t))
+@variable(dop, ω, DefinedOn(t))
+
+@constraint(dop, initial(r) == 0)
+@constraint(dop, initial(θ) == 0)
+@constraint(dop, initial(ν) == 0)
+@constraint(dop, initial(ω) == 0)
+
+@constraint(dop, final(r) == 1)
+@constraint(dop, final(θ) == pi)
+@constraint(dop, final(ν) == 0)
+@constraint(dop, final(ω) == 0)
+
+@constraint(dop, derivative(r) == ν)
+@constraint(dop, derivative(ν) == (l*m_2*sin(θ)*ω^2 + u + m_2*g*cos(θ)*sin(θ))/(m_1 + m_2*sin(θ)^2))
+
+@constraint(dop, derivative(θ) == ω)
+@constraint(dop, derivative(ω) == (-l*m_2*cos(θ)*sin(θ)*ω^2 - u*cos(θ) - (m_1 + m_2)*g*sin(θ))/(l*(m_1 + m_2*sin(θ)^2)))
+
+@objective(dop, Min, integral(u^2))
+
+JuDO.warmstart!(dop, LinearInterpolant(0.0, 1.0), r)
+JuDO.warmstart!(dop, LinearInterpolant(0.0, pi), θ)
+
+
+JuDO.optimize!(dop) 
+rsol=dyn_value(dop, r)
+thetasol=dyn_value(dop, θ)
+nusol=dyn_value(dop, ν)
+omegasol=dyn_value(dop, ω)
+
+time_points = collect(range(t_0, t_f, length=100))
+r_values = [omegasol(t) for t in time_points]
+open(&quot;rsol_judo.txt&quot;, &quot;w&quot;) do io
+    println(io, &quot;time,r_value&quot;)
+    for (t, r_val) in zip(time_points, r_values)
+        println(io, &quot;$(t),$(r_val)&quot;)
+    end
+end
+# plot trajectory with labels, title, no legend
+p = plot(time_points, r_values;
+    xlabel = &quot;Time (s)&quot;,
+    ylabel = &quot;Angular Velocity (rad/s)&quot;,
+    legend = false,
+    xlims  = (t_0, t_f),
+    lw     = 1,
+    grid   = true,
+    lc    = :black)
+
+display(p)
+savefig(p, &quot;cartpole_omega.png&quot;)
+
+
+thetasol_values = [thetasol(t) for t in time_points]
+q = plot(time_points, thetasol_values;
+    xlabel = &quot;Time (s)&quot;,
+    ylabel = &quot;Theta (rad)&quot;,
+    legend = false,
+    xlims  = (t_0, t_f),
+    lw     = 1,
+    grid   = true,
+    lc    = :black)
+
+display(q)
+savefig(q, &quot;cartpole_theta.png&quot;)</code></pre><p>&quot;&quot;&quot;julia using Interesso, JuMP, JuDO, DynOptInterface using Plots dop = DynModel(Interesso.Optimizer)</p><p>const m = 203000 / 32.174 const ρ<em>0, h</em>r, R<em>e = 0.002378, 23800.0, 20902900.0 const μ = 0.14076539e17 const a</em>0, a<em>1 = -0.20704, 0.029244 const b</em>0, b<em>1, b</em>2 = 0.07854, -0.61592e-2, 0.621408e-3 const S = 2690</p><p>struct LinearInterpolant &lt;: DynOptInterface.AbstractDynamicSolution     y<em>a::Float64     y</em>b::Float64 end (li::LinearInterpolant)(t::Real) = li.y<em>a + (t - 0) * (li.y</em>b - li.y_a) / (2500 - 0)</p><h1 id="Phase"><a class="docs-heading-anchor" href="#Phase">Phase</a><a id="Phase-1"></a><a class="docs-heading-anchor-permalink" href="#Phase" title="Permalink"></a></h1><p>@phase(dop, t) @constraint(dop, initial(t) == 0) @constraint(dop,   final(t) ≤  2500)</p><h1 id="States"><a class="docs-heading-anchor" href="#States">States</a><a id="States-1"></a><a class="docs-heading-anchor-permalink" href="#States" title="Permalink"></a></h1><p>@variable(dop,            0 ≤ h,               DefinedOn(t)) @variable(dop, deg2rad(-89) ≤ θ ≤ deg2rad(89), DefinedOn(t)) @variable(dop,             Φ,               DefinedOn(t)) @variable(dop,            1e-4 ≤ v,               DefinedOn(t)) @variable(dop, deg2rad(-89) ≤ γ ≤ deg2rad(89), DefinedOn(t)) @variable(dop,                ψ,               DefinedOn(t))</p><h1 id="Controls"><a class="docs-heading-anchor" href="#Controls">Controls</a><a id="Controls-1"></a><a class="docs-heading-anchor-permalink" href="#Controls" title="Permalink"></a></h1><p>@variable(dop, deg2rad(-90) ≤ α ≤ deg2rad(90), DefinedOn(t)) @variable(dop, deg2rad(-90) ≤ β ≤ deg2rad(1),  DefinedOn(t))</p><h1 id="Boundary-conditions"><a class="docs-heading-anchor" href="#Boundary-conditions">Boundary conditions</a><a id="Boundary-conditions-1"></a><a class="docs-heading-anchor-permalink" href="#Boundary-conditions" title="Permalink"></a></h1><p>@constraint(dop, initial(h) == 2.6e5) @constraint(dop,   final(h) == 0.8e5) @constraint(dop, initial(θ) == 0) @constraint(dop, initial(Φ) == 0) @constraint(dop, initial(v) == 25600) @constraint(dop,   final(v) == 2500) @constraint(dop, initial(γ) == deg2rad(1)) @constraint(dop,   final(γ) == deg2rad(-5)) @constraint(dop, initial(ψ) == deg2rad(90))</p><h1 id="Expressions"><a class="docs-heading-anchor" href="#Expressions">Expressions</a><a id="Expressions-1"></a><a class="docs-heading-anchor-permalink" href="#Expressions" title="Permalink"></a></h1><p>@expression(dop, r, R<em>e + h) @expression(dop, g, μ / r^2) @expression(dop, ρ, ρ</em>0 * exp(-h / h<em>r)) @expression(dop, α</em>deg, (180 / pi) * α)  @expression(dop, L, 0.5 * S * ρ * v^2 * (a<em>0 + a</em>1 * α<em>deg)) @expression(dop, D, 0.5 * S * ρ * v^2 * (b</em>0 + b<em>1 * α</em>deg + b<em>2 * α</em>deg))</p><h1 id="Differential-equations"><a class="docs-heading-anchor" href="#Differential-equations">Differential equations</a><a id="Differential-equations-1"></a><a class="docs-heading-anchor-permalink" href="#Differential-equations" title="Permalink"></a></h1><p>@constraint(dop, derivative(h) == v * sin(γ)) @constraint(dop, derivative(θ) == v * cos(γ) * cos(ψ) / r) @constraint(dop, derivative(Φ) == v * cos(γ) * sin(ψ) / (r * cos(θ))) @constraint(dop, derivative(v) == -D / m - g * sin(γ)) @constraint(dop, derivative(γ) == L * cos(β) / (m * v) + cos(γ) * (v / r - g / v)) @constraint(dop, derivative(ψ) == L * sin(β) / (m * v * cos(γ)) + v * cos(γ) * sin(ψ) * sin(θ) / (r * cos(θ)))</p><p>JuDO.warmstart!(dop, LinearInterpolant(2.6e5, 0.8e5), h) JuDO.warmstart!(dop, LinearInterpolant(0.0, deg2rad(90)), θ) JuDO.warmstart!(dop, LinearInterpolant(0.0, deg2rad(50)), Φ) JuDO.warmstart!(dop, LinearInterpolant(25600.0, 2500.0), v) JuDO.warmstart!(dop, LinearInterpolant(deg2rad(1), deg2rad(-5)), γ) JuDO.warmstart!(dop, LinearInterpolant(deg2rad(90),deg2rad(20) ), ψ)</p><h1 id="Objective"><a class="docs-heading-anchor" href="#Objective">Objective</a><a id="Objective-1"></a><a class="docs-heading-anchor-permalink" href="#Objective" title="Permalink"></a></h1><p>@objective(dop, Max, final(θ))</p><p>JuDO.optimize!(dop)</p><p>h<em>sol = dyn</em>value(dop, h) θ<em>sol = dyn</em>value(dop, θ) Φ<em>sol = dyn</em>value(dop, Φ) v<em>sol = dyn</em>value(dop, v) γ<em>sol = dyn</em>value(dop, γ) ψ<em>sol = dyn</em>value(dop, ψ) α<em>sol = dyn</em>value(dop, α) β<em>sol = dyn</em>value(dop, β)</p><h1 id="–-2.-Extract-Final-Time-and-Time-Grid-–"><a class="docs-heading-anchor" href="#–-2.-Extract-Final-Time-and-Time-Grid-–">–- 2. Extract Final Time &amp; Time Grid –-</a><a id="–-2.-Extract-Final-Time-and-Time-Grid-–-1"></a><a class="docs-heading-anchor-permalink" href="#–-2.-Extract-Final-Time-and-Time-Grid-–" title="Permalink"></a></h1><p>tf = phase_final(t) ts = collect(range(0, tf, length=500))</p><h1 id="–-3.-Define-Plotting-Configuration-–"><a class="docs-heading-anchor" href="#–-3.-Define-Plotting-Configuration-–">–- 3. Define Plotting Configuration –-</a><a id="–-3.-Define-Plotting-Configuration-–-1"></a><a class="docs-heading-anchor-permalink" href="#–-3.-Define-Plotting-Configuration-–" title="Permalink"></a></h1><h1 id="Format:-(SolutionObject,-Title,-Y-Label,-ScalingFunction,-Filename)"><a class="docs-heading-anchor" href="#Format:-(SolutionObject,-Title,-Y-Label,-ScalingFunction,-Filename)">Format: (SolutionObject, Title, Y-Label, ScalingFunction, Filename)</a><a id="Format:-(SolutionObject,-Title,-Y-Label,-ScalingFunction,-Filename)-1"></a><a class="docs-heading-anchor-permalink" href="#Format:-(SolutionObject,-Title,-Y-Label,-ScalingFunction,-Filename)" title="Permalink"></a></h1><p>plot<em>configs = [     (h</em>sol, &quot;Altitude&quot;, &quot;Altitude (km)&quot;, y -&gt; y/1000, &quot;altitude.png&quot;),     (θ<em>sol, &quot;Latitude&quot;, &quot;Latitude (deg)&quot;, y -&gt; rad2deg(y), &quot;latitude.png&quot;),     (Φ</em>sol, &quot;Longitude&quot;, &quot;Longitude (deg)&quot;, y -&gt; rad2deg(y), &quot;longitude.png&quot;),     (v<em>sol, &quot;Velocity&quot;, &quot;Velocity (km/s)&quot;, y -&gt; y/1000, &quot;velocity.png&quot;),     (γ</em>sol, &quot;Flight Path Angle&quot;, &quot;Flight Path Angle (deg)&quot;, y -&gt; rad2deg(y), &quot;flight<em>path.png&quot;),     (ψ</em>sol, &quot;Azimuth&quot;, &quot;Azimuth (deg)&quot;, y -&gt; rad2deg(y), &quot;Azimuth.png&quot;),     (α<em>sol, &quot;Angle of Attack&quot;, &quot;Angle of Attack (deg)&quot;, y -&gt; rad2deg(y), &quot;alpha.png&quot;),     (β</em>sol, &quot;Bank Angle&quot;, &quot;Bank Angle (deg)&quot;, y -&gt; rad2deg(y), &quot;beta.png&quot;) ] traj = plot(     rad2deg.(Φ<em>sol.(ts)),     rad2deg.(θ</em>sol.(ts)),     h_sol.(ts)./1000;     linewidth = 1,     legend = nothing,     xlabel = &quot;Longitude (deg)&quot;,     ylabel = &quot;Latitude (deg)&quot;,     zlabel = &quot;Altitude (km)&quot;,     lc = :black )</p><p>savefig(traj,&quot;3-d-trajectory.png&quot;)</p><h1 id="–-4.-Loop,-Plot,-and-Save-–"><a class="docs-heading-anchor" href="#–-4.-Loop,-Plot,-and-Save-–">–- 4. Loop, Plot, and Save –-</a><a id="–-4.-Loop,-Plot,-and-Save-–-1"></a><a class="docs-heading-anchor-permalink" href="#–-4.-Loop,-Plot,-and-Save-–" title="Permalink"></a></h1><p>for (sol, title<em>text, ylab, scale</em>fn, fname) in plot<em>configs     # Create the plot     p = plot(ts, t -&gt; scale</em>fn(sol(t)),               legend = false,              ylabel = ylab,              xlabel = &quot;Time (s)&quot;,              lw     = 1,              lc     = :black     )</p><pre><code class="nohighlight hljs"># Save the figure
+savefig(p, fname)</code></pre><p>end &quot;&quot;&quot;</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../">« Home</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.16.1 on <span class="colophon-date" title="Saturday 10 January 2026 16:56">Saturday 10 January 2026</span>. Using Julia version 1.12.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
