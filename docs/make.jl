@@ -16,6 +16,10 @@ makedocs(;
     ),
     pages=[
         "Home" => "index.md",
+        "Tutorials" => [
+        "Solving a DOP" => "Tutorials/solving_a_dop.md",
+        ]
+    
     ],
 )
 
