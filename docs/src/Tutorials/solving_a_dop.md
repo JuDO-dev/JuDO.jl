@@ -102,7 +102,7 @@ display(q)
 savefig(q, "cartpole_theta.png")
 ```
 
-"""julia
+```julia
 using Interesso, JuMP, JuDO, DynOptInterface
 using Plots
 dop = DynModel(Interesso.Optimizer)
@@ -228,4 +228,4 @@ for (sol, title_text, ylab, scale_fn, fname) in plot_configs
     # Save the figure
     savefig(p, fname)
 end
-"""
+```
