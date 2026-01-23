@@ -1,6 +1,13 @@
 ```@meta
 CurrentModule = JuDO
 ```
+# Solving Dynamic Optimization Problems
+
+This tutorial demonstrates how to solve dynamic optimization problems using JuDO through two classic examples: the cart-pole swing-up problem and the space shuttle reentry trajectory poblem.
+
+## Cart-Pole Swing-Up Problem
+
+The cart-pole swing-up is a classic control problem where a pendulum attached to a cart must be swung to an upright position by moving the cart horizontally, while minimizing the control effort.
 
 ```julia
 using Interesso
@@ -101,6 +108,9 @@ q = plot(time_points, thetasol_values;
 display(q)
 savefig(q, "cartpole_theta.png")
 ```
+## Space Shuttle Reentry Problem
+
+This example optimizes the reentry trajectory of a space shuttle to maximize the crossrange (latitude) while satisfying path constraints and terminal conditions.
 
 ```julia
 using Interesso, JuMP, JuDO, DynOptInterface
