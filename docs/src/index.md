@@ -22,9 +22,3 @@ using Pkg
 Pkg.add("JuDO")
 ```
 
-
-
-<!-- ## API Reference
-```@autodocs
-Modules = [JuDO]
-``` -->

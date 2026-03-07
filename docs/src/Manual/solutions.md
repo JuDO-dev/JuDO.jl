@@ -9,7 +9,7 @@ You solve the model using the `optimize!` function. JuDO extends this function s
 
 ```julia
 # Solve the model with specific options
-JuDO.optimize!(dop, solver=Ipopt.Optimizer, intervals=50)
+JuDO.optimize!(model)
 ```
 
 You can pass several options like solver, intervals, points, method, and bounds to control how the problem is discretized and solved.
