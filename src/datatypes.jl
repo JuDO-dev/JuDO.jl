@@ -49,13 +49,6 @@ function DynModel(args...; kwargs...)
     return model
 end
 
-# macro phase(model, name, start, stop)
-#     esc_model = esc(model)
-#     quote
-#         $esc_model.ext[:phases][$(Meta.quot(name))] = ($start, $stop)
-#     end
-# end
-
 macro phase(model, name, kwargs...)
     esc_model = esc(model)
     phase_sym = esc(Meta.quot(name))  # the symbol used as the key
@@ -79,11 +72,7 @@ macro phase(model, name, kwargs...)
 
             DOI.add_phase($esc_model.moi_backend.optimizer.model)
 
-            # local init = DOI.Initial(DOI.PhaseIndex(i))
-            # MOI.add_constraint($esc_model.moi_backend.optimizer.model, init, MOI.EqualTo(-Inf)) #need to change if no bound is specified
-            # local final = DOI.Final(DOI.PhaseIndex(i))
-            # MOI.add_constraint($esc_model.moi_backend.optimizer.model, final, MOI.EqualTo(Inf))
-
+            
             local ref = PhaseVarRef($esc_model, i, $phase_sym)
             $(name_assingment) = ref
             return ref
@@ -138,12 +127,7 @@ macro phase(model, name, kwargs...)
 
             DOI.add_phase($esc_model.moi_backend.optimizer.model)
 
-            #how to do, is there a bound in moi that combines less than and greater than 
-            # local init = DOI.Initial(DOI.PhaseIndex(i))
-            # MOI.add_constraint($esc_model.moi_backend.optimizer.model, init, MOI.Interval(_start[1],_start[2]))
-            # local final = DOI.Final(DOI.PhaseIndex(i))
-            # MOI.add_constraint($esc_model.moi_backend.optimizer.model, final, MOI.Interval(_stop[1],_stop[2]))
-
+            
             local ref = PhaseVarRef($esc_model, i, $phase_sym)
             $(name_assingment) = ref
             return ref

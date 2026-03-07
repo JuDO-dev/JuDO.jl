@@ -18,8 +18,16 @@ makedocs(;
         "Home" => "index.md",
         "Tutorials" => [
         "Solving a DOP" => "Tutorials/solving_a_dop.md",
-        ]
-    
+        ],
+        "Manual" => [
+            "Dynamic Optimization Model" => "Manual/model.md",
+            "Phase" => "Manual/phase.md",
+            "Dynamic Variable" => "Manual/variable.md",
+            "Constraints" => "Manual/constraints.md",
+            "Derivatives" => "Manual/derivative.md",
+            "Objective" => "Manual/objective.md",
+            "Solutions" => "Manual/solutions.md",
+        ],
     ],
 )
 
