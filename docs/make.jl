@@ -28,6 +28,7 @@ makedocs(;
             "Objective" => "Manual/objective.md",
             "Solutions" => "Manual/solutions.md",
         ],
+        "API Reference" => ["API.md"],
     ],
 )
 
