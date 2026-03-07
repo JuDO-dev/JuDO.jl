@@ -718,8 +718,6 @@ function toDOINonlinearFunction(obj::Any)
             else
                 local ldf = construct_LinDyFunc(DynamicAffExpr(zero(obj.constant), copy(obj.terms)))
                 local p = get_phase(ldf)
-                # println(ldf)
-                # println(p)
 
                 return DOI.NonlinearDynamicFunction(
                     :+,
@@ -865,54 +863,6 @@ function to_NDF(d::Number)
     return d
 end
 
-# convert doi quantities to DOI.NonlinearDynamicFunction
-
-# function to_doi_variable_ref(vref::DynamicVarRef, model::JuMP.Model)
-#     phase = model.ext[:variables][vref.Index].Phase
-#     return DOI.NonlinearDynamicFunction(
-#         :+,
-#         [DOI.DynamicVariableIndex(vref.Index, DOI.PhaseIndex(phase))],
-#         DOI.PhaseIndex(phase)
-#     )
-# end
-# #DynamicVariableIndex(vref.Index, DOI.PhaseIndex(phase))
-
-# function to_doi_nonlinear_function(expr::JuMP.AbstractJuMPScalar, model::JuMP.Model, phase::Int)
-#     # Base case: numbers
-#     expr isa Number && return expr
-    
-#     # Base case: variables
-#     if expr isa DynamicVarRef
-#         return to_doi_variable_ref(expr, model)
-#     end
-    
-#     # Derivative terms
-#     if expr isa DerivativeTerm
-#         var_ref = to_doi_variable_ref(expr.var, model)
-#         deriv = DOI.Derivative(var_ref)
-#         return expr.coef == 1 ? deriv : DOI.NonlinearDynamicFunction(:*, [expr.coef, deriv], DOI.PhaseIndex(phase))
-#     end
-    
-#     # Nonlinear expressions
-#     if expr isa NonlinearExpr
-#         #iteratively convert each argument to a DOI Objective
-#         head = expr.head
-#         args = expr.args
-        
-#         converted_args = [to_doi_nonlinear_function(arg, model, phase) for arg in args[2:end]]
-#         return DOI.NonlinearDynamicFunction(head, converted_args, DOI.PhaseIndex(phase))
-#     end
-    
-#     # Dynamic expressions
-#     if expr isa Union{DynamicAffExpr, DynamicQuadExpr}
-#         # Convert to NonlinearDynamicFunction recursively
-#         # (Implement based on your expression structure - placeholder)
-#         return DOI.NonlinearDynamicFunction(:custom, [expr], DOI.PhaseIndex(phase))
-#     end
-    
-#     error("Unsupported expression type: $(typeof(expr))")
-# end
-
 function JuMP.build_constraint(error::Function, expr::NonlinearExpr, set::MOI.EqualTo)
 
 
@@ -944,8 +894,6 @@ function JuMP.add_constraint(
     
     ndf = to_NDF(f)
 
-    # println("head of ndf: ", ndf.head)
-    # println("args of ndf: ", ndf.args)
     if ndf isa Number
         # Use the phase of the LHS variable for the constant function
         ndf = DOI.NonlinearDynamicFunction(:+, [ndf], dyn_var.phase)

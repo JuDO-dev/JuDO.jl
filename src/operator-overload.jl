@@ -3,6 +3,16 @@ const_type(::Type{<:DynamicVarRef}) = Float64
 
 convert_type(::Type{T},x) where {T} = convert(T,x)
 
+mutable struct DynamicAffExpr{Ctype,Vtype} <: JuMP.AbstractJuMPScalar
+    constant::Ctype
+    terms::OrderedDict{Vtype,Ctype}
+end
+
+mutable struct DynamicQuadExpr{Ctype,Vtype} <: JuMP.AbstractJuMPScalar
+    aff::DynamicAffExpr{Ctype,Vtype}
+    terms::OrderedDict{JuMP.UnorderedPair{Vtype}, Ctype}
+end
+
 function _build_aff_expr(constant::C,coeff::C,var::V) where {C,V}
     terms = OrderedDict{V,C}()
     terms[var] = coeff
@@ -168,14 +178,13 @@ function Base.:-(A::DynamicAffExpr{C, V}, B::DynamicAffExpr{C, V}) where {C, V}
     return DynamicAffExpr{C, V}(constant, new_terms)
 end
 
-###########################
+
 # Print a DynamicQuadExpr by printing its affine part and quadratic terms.
 function JuMP.function_string(mode::MIME, quad::DynamicQuadExpr{C,V}) where {C,V}
     aff_str = JuMP.function_string(mode, quad.aff)
     parts = String[]
     for (up, coef) in quad.terms
-        # up is an UnorderedPair. Print as "a^2" if both variables are equal,
-        # else as "a*b".
+        
         a_str = JuMP.function_string(mode, up.a)
         b_str = JuMP.function_string(mode, up.b)
         term_str = (a_str == b_str) ? string(a_str, "^2") : string(a_str, "*", b_str)

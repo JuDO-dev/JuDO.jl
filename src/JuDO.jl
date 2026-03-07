@@ -17,9 +17,6 @@ const _Const = Union{Number,LinearAlgebra.UniformScaling}
 
 include("datatypes.jl")
 include("variable.jl")
-
-include("constraints.jl")
-
 include("operator-overload.jl")
 include("derivative.jl")
 include("boundary.jl")

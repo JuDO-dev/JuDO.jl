@@ -1,6 +1,3 @@
-***
-
-```markdown
 # Phase
 
 In dynamic optimization, a **Phase** represents the continuous, independent variable domain over which the dynamic variables evolve. In most physical problems, this represents "Time" ($t$), but it could also represent space or another continuous dimension.
