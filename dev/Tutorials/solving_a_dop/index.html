@@ -1,39 +1,43 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Solving a DOP · JuDO.jl</title><meta name="title" content="Solving a DOP · JuDO.jl"/><meta property="og:title" content="Solving a DOP · JuDO.jl"/><meta property="twitter:title" content="Solving a DOP · JuDO.jl"/><meta name="description" content="Documentation for JuDO.jl."/><meta property="og:description" content="Documentation for JuDO.jl."/><meta property="twitter:description" content="Documentation for JuDO.jl."/><meta property="og:url" content="https://JuDO-dev.github.io/JuDO.jl/Tutorials/solving_a_dop/"/><meta property="twitter:url" content="https://JuDO-dev.github.io/JuDO.jl/Tutorials/solving_a_dop/"/><link rel="canonical" href="https://JuDO-dev.github.io/JuDO.jl/Tutorials/solving_a_dop/"/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">JuDO.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><span class="tocitem">Tutorials</span><ul><li class="is-active"><a class="tocitem" href>Solving a DOP</a><ul class="internal"><li><a class="tocitem" href="#Cart-Pole-Swing-Up-Problem"><span>Cart-Pole Swing-Up Problem</span></a></li><li><a class="tocitem" href="#Space-Shuttle-Reentry-Problem"><span>Space Shuttle Reentry Problem</span></a></li></ul></li></ul></li><li><span class="tocitem">Manual</span><ul><li><a class="tocitem" href="../../Manual/model/">Dynamic Optimization Model</a></li><li><a class="tocitem" href="../../Manual/phase/">Phase</a></li><li><a class="tocitem" href="../../Manual/variable/">Dynamic Variable</a></li><li><a class="tocitem" href="../../Manual/constraints/">Constraints</a></li><li><a class="tocitem" href="../../Manual/derivative/">Derivatives</a></li><li><a class="tocitem" href="../../Manual/objective/">Objective</a></li><li><a class="tocitem" href="../../Manual/solutions/">Solutions</a></li></ul></li><li><a class="tocitem" href="../../API/">API Reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Tutorials</a></li><li class="is-active"><a href>Solving a DOP</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Solving a DOP</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/JuDO-dev/JuDO.jl/blob/dev/docs/src/Tutorials/solving_a_dop.md#" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Solving-Dynamic-Optimization-Problems"><a class="docs-heading-anchor" href="#Solving-Dynamic-Optimization-Problems">Solving Dynamic Optimization Problems</a><a id="Solving-Dynamic-Optimization-Problems-1"></a><a class="docs-heading-anchor-permalink" href="#Solving-Dynamic-Optimization-Problems" title="Permalink"></a></h1><p>This tutorial demonstrates how to solve dynamic optimization problems using JuDO through two classic examples: the cart-pole swing-up problem and the space shuttle reentry trajectory poblem.</p><h2 id="Cart-Pole-Swing-Up-Problem"><a class="docs-heading-anchor" href="#Cart-Pole-Swing-Up-Problem">Cart-Pole Swing-Up Problem</a><a id="Cart-Pole-Swing-Up-Problem-1"></a><a class="docs-heading-anchor-permalink" href="#Cart-Pole-Swing-Up-Problem" title="Permalink"></a></h2><p>The cart-pole swing-up is a classic control problem where a pendulum attached to a cart must be swung to an upright position by moving the cart horizontally, while minimizing the control effort.</p><pre><code class="language-julia hljs">using Interesso
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Solving a DOP · JuDO.jl</title><meta name="title" content="Solving a DOP · JuDO.jl"/><meta property="og:title" content="Solving a DOP · JuDO.jl"/><meta property="twitter:title" content="Solving a DOP · JuDO.jl"/><meta name="description" content="Documentation for JuDO.jl."/><meta property="og:description" content="Documentation for JuDO.jl."/><meta property="twitter:description" content="Documentation for JuDO.jl."/><meta property="og:url" content="https://JuDO-dev.github.io/JuDO.jl/Tutorials/solving_a_dop/"/><meta property="twitter:url" content="https://JuDO-dev.github.io/JuDO.jl/Tutorials/solving_a_dop/"/><link rel="canonical" href="https://JuDO-dev.github.io/JuDO.jl/Tutorials/solving_a_dop/"/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">JuDO.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><span class="tocitem">Tutorials</span><ul><li class="is-active"><a class="tocitem" href>Solving a DOP</a><ul class="internal"><li><a class="tocitem" href="#Cart-Pole-Swing-Up-Problem"><span>Cart-Pole Swing-Up Problem</span></a></li><li><a class="tocitem" href="#Space-Shuttle-Reentry-Problem"><span>Space Shuttle Reentry Problem</span></a></li></ul></li></ul></li><li><span class="tocitem">Manual</span><ul><li><a class="tocitem" href="../../Manual/model/">Dynamic Optimization Model</a></li><li><a class="tocitem" href="../../Manual/phase/">Phase</a></li><li><a class="tocitem" href="../../Manual/variable/">Dynamic Variable</a></li><li><a class="tocitem" href="../../Manual/constraints/">Constraints</a></li><li><a class="tocitem" href="../../Manual/derivative/">Derivatives</a></li><li><a class="tocitem" href="../../Manual/objective/">Objective</a></li><li><a class="tocitem" href="../../Manual/solutions/">Solutions</a></li></ul></li><li><a class="tocitem" href="../../API/">API Reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Tutorials</a></li><li class="is-active"><a href>Solving a DOP</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Solving a DOP</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/JuDO-dev/JuDO.jl/blob/dev/docs/src/Tutorials/solving_a_dop.md#" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Solving-Dynamic-Optimization-Problems"><a class="docs-heading-anchor" href="#Solving-Dynamic-Optimization-Problems">Solving Dynamic Optimization Problems</a><a id="Solving-Dynamic-Optimization-Problems-1"></a><a class="docs-heading-anchor-permalink" href="#Solving-Dynamic-Optimization-Problems" title="Permalink"></a></h1><p>This tutorial demonstrates how to solve dynamic optimization problems using JuDO through two classic examples: the cart-pole swing-up problem and the space shuttle reentry trajectory problem.</p><hr/><h2 id="Cart-Pole-Swing-Up-Problem"><a class="docs-heading-anchor" href="#Cart-Pole-Swing-Up-Problem">Cart-Pole Swing-Up Problem</a><a id="Cart-Pole-Swing-Up-Problem-1"></a><a class="docs-heading-anchor-permalink" href="#Cart-Pole-Swing-Up-Problem" title="Permalink"></a></h2><p>The cart-pole swing-up is a classic control problem where a pendulum attached to a cart must be swung from a hanging position to an upright position by applying a horizontal force to the cart, while minimising the total control effort.</p><h3 id="Problem-Formulation"><a class="docs-heading-anchor" href="#Problem-Formulation">Problem Formulation</a><a id="Problem-Formulation-1"></a><a class="docs-heading-anchor-permalink" href="#Problem-Formulation" title="Permalink"></a></h3><p><strong>Parameters</strong></p><table><tr><th style="text-align: right">Symbol</th><th style="text-align: right">Value</th><th style="text-align: right">Description</th></tr><tr><td style="text-align: right"><span>$m_1$</span></td><td style="text-align: right">1.0 kg</td><td style="text-align: right">Cart mass</td></tr><tr><td style="text-align: right"><span>$m_2$</span></td><td style="text-align: right">0.3 kg</td><td style="text-align: right">Pole mass</td></tr><tr><td style="text-align: right"><span>$l$</span></td><td style="text-align: right">0.5 m</td><td style="text-align: right">Pole half-length</td></tr><tr><td style="text-align: right"><span>$g$</span></td><td style="text-align: right">9.81 m/s²</td><td style="text-align: right">Gravitational acceleration</td></tr><tr><td style="text-align: right"><span>$u_{\max}$</span></td><td style="text-align: right">20 N</td><td style="text-align: right">Maximum control force</td></tr><tr><td style="text-align: right"><span>$r_{\max}$</span></td><td style="text-align: right">2 m</td><td style="text-align: right">Maximum cart displacement</td></tr></table><p><strong>States and controls</strong></p><table><tr><th style="text-align: right">Variable</th><th style="text-align: right">Description</th></tr><tr><td style="text-align: right"><span>$r(t)$</span></td><td style="text-align: right">Cart position (m)</td></tr><tr><td style="text-align: right"><span>$\nu(t)$</span></td><td style="text-align: right">Cart velocity (m/s)</td></tr><tr><td style="text-align: right"><span>$\theta(t)$</span></td><td style="text-align: right">Pole angle from downward vertical (rad)</td></tr><tr><td style="text-align: right"><span>$\omega(t)$</span></td><td style="text-align: right">Pole angular velocity (rad/s)</td></tr><tr><td style="text-align: right"><span>$u(t)$</span></td><td style="text-align: right">Horizontal force applied to cart (N) — <em>control</em></td></tr></table><p><strong>Optimal control problem</strong></p><p class="math-container">\[\min_{u(\cdot)} \quad \int_0^{t_f} u(t)^2 \, \mathrm{d}t\]</p><p>subject to the equations of motion (derived via the Lagrangian):</p><p class="math-container">\[\dot{r} = \nu\]</p><p class="math-container">\[\dot{\nu} = \frac{l \, m_2 \sin\theta \cdot \omega^2 + u + m_2 g \cos\theta \sin\theta}{m_1 + m_2 \sin^2\theta}\]</p><p class="math-container">\[\dot{\theta} = \omega\]</p><p class="math-container">\[\dot{\omega} = \frac{-l \, m_2 \cos\theta \sin\theta \cdot \omega^2 - u \cos\theta - (m_1 + m_2) g \sin\theta}{l \left(m_1 + m_2 \sin^2\theta\right)}\]</p><p>with boundary conditions:</p><p class="math-container">\[r(0) = 0, \quad \nu(0) = 0, \quad \theta(0) = 0, \quad \omega(0) = 0\]</p><p class="math-container">\[r(t_f) = 1, \quad \nu(t_f) = 0, \quad \theta(t_f) = \pi, \quad \omega(t_f) = 0\]</p><p>and path constraints:</p><p class="math-container">\[-u_{\max} \leq u(t) \leq u_{\max}, \qquad 0 \leq r(t) \leq r_{\max}, \qquad t \in [0,\, t_f]\]</p><p>where <span>$t_f = 2$</span> s is the fixed final time.</p><p>The terminal condition <span>$\theta(t_f) = \pi$</span> corresponds to the pole pointing straight up.</p><h3 id="JuDO-Implementation"><a class="docs-heading-anchor" href="#JuDO-Implementation">JuDO Implementation</a><a id="JuDO-Implementation-1"></a><a class="docs-heading-anchor-permalink" href="#JuDO-Implementation" title="Permalink"></a></h3><pre><code class="language-julia hljs">using Interesso
 using JuMP
 using Plots
 using JuDO  
 using DynOptInterface
 
-
-const g = 9.81
-const l = 0.5
-const m_1 = 1.0
-const m_2 = 0.3
-const t_0 = 0.0
-const t_f = 2.0
+const g     = 9.81
+const l     = 0.5
+const m_1   = 1.0
+const m_2   = 0.3
+const t_0   = 0.0
+const t_f   = 2.0
 const u_max = 20.0
 const r_max = 2.0
 
 dop = DynModel(Interesso.Optimizer)
 
+# Warm-start interpolant (linear guess between two endpoint values)
 struct LinearInterpolant &lt;: DynOptInterface.AbstractDynamicSolution
     y_a::Float64
     y_b::Float64
 end
 (li::LinearInterpolant)(t::Real) = li.y_a + (t - t_0) * (li.y_b - li.y_a) / (t_f - t_0)
 
+# Independent variable (time)
 @phase(dop, t)
 @constraint(dop, initial(t) == 0)
-@constraint(dop, final(t) == 2)
+@constraint(dop, final(t)   == 2)
 
+# Control
 @variable(dop, -u_max &lt;= u &lt;= u_max, DefinedOn(t))
-@variable(dop, 0 &lt;= r &lt;= r_max, DefinedOn(t))
 
+# States
+@variable(dop, 0 &lt;= r &lt;= r_max, DefinedOn(t))
 @variable(dop, θ, DefinedOn(t))  
 @variable(dop, ν, DefinedOn(t))
 @variable(dop, ω, DefinedOn(t))
 
+# Boundary conditions
 @constraint(dop, initial(r) == 0)
 @constraint(dop, initial(θ) == 0)
 @constraint(dop, initial(ν) == 0)
@@ -44,91 +48,82 @@ end
 @constraint(dop, final(ν) == 0)
 @constraint(dop, final(ω) == 0)
 
+# Equations of motion
 @constraint(dop, derivative(r) == ν)
 @constraint(dop, derivative(ν) == (l*m_2*sin(θ)*ω^2 + u + m_2*g*cos(θ)*sin(θ))/(m_1 + m_2*sin(θ)^2))
-
 @constraint(dop, derivative(θ) == ω)
 @constraint(dop, derivative(ω) == (-l*m_2*cos(θ)*sin(θ)*ω^2 - u*cos(θ) - (m_1 + m_2)*g*sin(θ))/(l*(m_1 + m_2*sin(θ)^2)))
 
+# Objective: minimise control effort
 @objective(dop, Min, integral(u^2))
 
+# Warm-start with linear guesses
 JuDO.warmstart!(dop, LinearInterpolant(0.0, 1.0), r)
-JuDO.warmstart!(dop, LinearInterpolant(0.0, pi), θ)
+JuDO.warmstart!(dop, LinearInterpolant(0.0, pi),  θ)
 
+JuDO.optimize!(dop)
 
-JuDO.optimize!(dop) 
-rsol=dyn_value(dop, r)
-thetasol=dyn_value(dop, θ)
-nusol=dyn_value(dop, ν)
-omegasol=dyn_value(dop, ω)
+# Extract solutions
+rsol     = dyn_value(dop, r)
+thetasol = dyn_value(dop, θ)
+nusol    = dyn_value(dop, ν)
+omegasol = dyn_value(dop, ω)
 
 time_points = collect(range(t_0, t_f, length=100))
-r_values = [omegasol(t) for t in time_points]
-open(&quot;rsol_judo.txt&quot;, &quot;w&quot;) do io
-    println(io, &quot;time,r_value&quot;)
-    for (t, r_val) in zip(time_points, r_values)
-        println(io, &quot;$(t),$(r_val)&quot;)
-    end
-end
-# plot trajectory with labels, title, no legend
-p = plot(time_points, r_values;
+
+# Plot angular velocity
+p = plot(time_points, [omegasol(t) for t in time_points];
     xlabel = &quot;Time (s)&quot;,
     ylabel = &quot;Angular Velocity (rad/s)&quot;,
     legend = false,
     xlims  = (t_0, t_f),
-    lw     = 1,
-    grid   = true,
-    lc    = :black)
-
+    lw = 1, grid = true, lc = :black)
 display(p)
-savefig(p, &quot;cartpole_omega.png&quot;)
 
-
-thetasol_values = [thetasol(t) for t in time_points]
-q = plot(time_points, thetasol_values;
+# Plot pole angle
+q = plot(time_points, [thetasol(t) for t in time_points];
     xlabel = &quot;Time (s)&quot;,
-    ylabel = &quot;Theta (rad)&quot;,
+    ylabel = &quot;θ (rad)&quot;,
     legend = false,
     xlims  = (t_0, t_f),
-    lw     = 1,
-    grid   = true,
-    lc    = :black)
-
-display(q)
-savefig(q, &quot;cartpole_theta.png&quot;)</code></pre><h2 id="Space-Shuttle-Reentry-Problem"><a class="docs-heading-anchor" href="#Space-Shuttle-Reentry-Problem">Space Shuttle Reentry Problem</a><a id="Space-Shuttle-Reentry-Problem-1"></a><a class="docs-heading-anchor-permalink" href="#Space-Shuttle-Reentry-Problem" title="Permalink"></a></h2><p>This example optimizes the reentry trajectory of a space shuttle to maximize the crossrange (latitude) while satisfying path constraints and terminal conditions.</p><pre><code class="language-julia hljs">using Interesso, JuMP, JuDO, DynOptInterface
+    lw = 1, grid = true, lc = :black)
+display(q)</code></pre><hr/><h2 id="Space-Shuttle-Reentry-Problem"><a class="docs-heading-anchor" href="#Space-Shuttle-Reentry-Problem">Space Shuttle Reentry Problem</a><a id="Space-Shuttle-Reentry-Problem-1"></a><a class="docs-heading-anchor-permalink" href="#Space-Shuttle-Reentry-Problem" title="Permalink"></a></h2><p>This benchmark problem, due to Betts (2010), optimises the reentry trajectory of a space shuttle to <strong>maximise the crossrange</strong> (final latitude <span>$\theta(t_f)$</span>), subject to the full six-state atmospheric flight dynamics and terminal boundary conditions.</p><h3 id="Problem-Formulation-2"><a class="docs-heading-anchor" href="#Problem-Formulation-2">Problem Formulation</a><a class="docs-heading-anchor-permalink" href="#Problem-Formulation-2" title="Permalink"></a></h3><p><strong>Physical constants</strong></p><table><tr><th style="text-align: right">Symbol</th><th style="text-align: right">Value</th><th style="text-align: right">Description</th></tr><tr><td style="text-align: right"><span>$m$</span></td><td style="text-align: right">203000/32.174 slug</td><td style="text-align: right">Shuttle mass</td></tr><tr><td style="text-align: right"><span>$S$</span></td><td style="text-align: right">2690 ft²</td><td style="text-align: right">Reference area</td></tr><tr><td style="text-align: right"><span>$R_e$</span></td><td style="text-align: right">20902900 ft</td><td style="text-align: right">Earth radius</td></tr><tr><td style="text-align: right"><span>$\mu$</span></td><td style="text-align: right">0.14076539 × 10¹⁷ ft³/s²</td><td style="text-align: right">Gravitational parameter</td></tr><tr><td style="text-align: right"><span>$\rho_0$</span></td><td style="text-align: right">0.002378 slug/ft³</td><td style="text-align: right">Sea-level atmospheric density</td></tr><tr><td style="text-align: right"><span>$h_r$</span></td><td style="text-align: right">23800 ft</td><td style="text-align: right">Density scale height</td></tr></table><p><strong>Aerodynamic coefficients</strong></p><p class="math-container">\[C_L(\alpha) = a_0 + a_1 \alpha_{\deg}, \qquad C_D(\alpha) = b_0 + b_1 \alpha_{\deg} + b_2 \alpha_{\deg}^2\]</p><p>where <span>$\alpha_{\deg} = (180/\pi)\,\alpha$</span> and <span>$(a_0, a_1) = (-0.20704,\, 0.029244)$</span>, <span>$(b_0, b_1, b_2) = (0.07854,\, -0.61592\times10^{-2},\, 0.621408\times10^{-3})$</span>.</p><p><strong>States and controls</strong></p><table><tr><th style="text-align: right">Variable</th><th style="text-align: right">Description</th></tr><tr><td style="text-align: right"><span>$h(t)$</span></td><td style="text-align: right">Altitude (ft)</td></tr><tr><td style="text-align: right"><span>$\theta(t)$</span></td><td style="text-align: right">Latitude (rad)</td></tr><tr><td style="text-align: right"><span>$\Phi(t)$</span></td><td style="text-align: right">Longitude (rad)</td></tr><tr><td style="text-align: right"><span>$v(t)$</span></td><td style="text-align: right">Velocity (ft/s)</td></tr><tr><td style="text-align: right"><span>$\gamma(t)$</span></td><td style="text-align: right">Flight path angle (rad)</td></tr><tr><td style="text-align: right"><span>$\psi(t)$</span></td><td style="text-align: right">Azimuth angle (rad)</td></tr><tr><td style="text-align: right"><span>$\alpha(t)$</span></td><td style="text-align: right">Angle of attack (rad) — <em>control</em></td></tr><tr><td style="text-align: right"><span>$\beta(t)$</span></td><td style="text-align: right">Bank angle (rad) — <em>control</em></td></tr></table><p><strong>Optimal control problem</strong></p><p class="math-container">\[\max_{\alpha(\cdot),\,\beta(\cdot)} \quad \theta(t_f)\]</p><p>subject to the three-degree-of-freedom flight dynamics over a spherical Earth:</p><p class="math-container">\[\dot{h} = v \sin\gamma\]</p><p class="math-container">\[\dot{\theta} = \frac{v \cos\gamma \cos\psi}{r}\]</p><p class="math-container">\[\dot{\Phi} = \frac{v \cos\gamma \sin\psi}{r \cos\theta}\]</p><p class="math-container">\[\dot{v} = -\frac{D}{m} - g\sin\gamma\]</p><p class="math-container">\[\dot{\gamma} = \frac{L\cos\beta}{mv} + \cos\gamma\!\left(\frac{v}{r} - \frac{g}{v}\right)\]</p><p class="math-container">\[\dot{\psi} = \frac{L\sin\beta}{mv\cos\gamma} + \frac{v\cos\gamma\sin\psi\tan\theta}{r}\]</p><p>where <span>$r = R_e + h$</span>, <span>$g = \mu/r^2$</span>, <span>$\rho = \rho_0 e^{-h/h_r}$</span>, and:</p><p class="math-container">\[L = \tfrac{1}{2} S \rho v^2 C_L(\alpha), \qquad D = \tfrac{1}{2} S \rho v^2 C_D(\alpha)\]</p><p><strong>Boundary conditions</strong></p><p class="math-container">\[t_0 = 0\text{ s}, \quad t_f \leq 2500\text{ s}\]</p><p class="math-container">\[h(0) = 2.6\times10^5\text{ ft}, \quad \theta(0) = 0, \quad \Phi(0) = 0, \quad v(0) = 25600\text{ ft/s}\]</p><p class="math-container">\[\gamma(0) = -1°, \quad \psi(0) = 90°\]</p><p class="math-container">\[h(t_f) = 0.8\times10^5\text{ ft}, \quad v(t_f) = 2500\text{ ft/s}, \quad \gamma(t_f) = -5°\]</p><p><strong>Path constraints</strong></p><p class="math-container">\[-89° \leq \theta(t) \leq 89°, \quad -89° \leq \gamma(t) \leq 89°\]</p><p class="math-container">\[-90° \leq \alpha(t) \leq 90°, \quad -90° \leq \beta(t) \leq 1°\]</p><p>The reference solution (Betts, 2010) achieves a maximum crossrange of approximately <strong>34.14°</strong>.</p><h3 id="JuDO-Implementation-2"><a class="docs-heading-anchor" href="#JuDO-Implementation-2">JuDO Implementation</a><a class="docs-heading-anchor-permalink" href="#JuDO-Implementation-2" title="Permalink"></a></h3><pre><code class="language-julia hljs">using Interesso, JuMP, JuDO, DynOptInterface
 using Plots
+
 dop = DynModel(Interesso.Optimizer)
- 
-const m = 203000 / 32.174
-const ρ_0, h_r, R_e = 0.002378, 23800.0, 20902900.0
-const μ = 0.14076539e17
-const a_0, a_1 = -0.20704, 0.029244
-const b_0, b_1, b_2 = 0.07854, -0.61592e-2, 0.621408e-3
-const S = 2690
- 
+
+# Physical constants
+const m               = 203000 / 32.174
+const ρ_0, h_r, R_e  = 0.002378, 23800.0, 20902900.0
+const μ               = 0.14076539e17
+const a_0, a_1        = -0.20704, 0.029244
+const b_0, b_1, b_2   = 0.07854, -0.61592e-2, 0.621408e-3
+const S               = 2690
+
+# Warm-start interpolant
 struct LinearInterpolant &lt;: DynOptInterface.AbstractDynamicSolution
     y_a::Float64
     y_b::Float64
 end
-(li::LinearInterpolant)(t::Real) = li.y_a + (t - 0) * (li.y_b - li.y_a) / (2500 - 0)
+(li::LinearInterpolant)(t::Real) = li.y_a + t * (li.y_b - li.y_a) / 2500
 
-# Phase
+# Independent variable (time)
 @phase(dop, t)
 @constraint(dop, initial(t) == 0)
-@constraint(dop,   final(t) ≤  2500)
- 
+@constraint(dop,   final(t) ≤ 2500)
+
 # States
 @variable(dop,            0 ≤ h,               DefinedOn(t))
 @variable(dop, deg2rad(-89) ≤ θ ≤ deg2rad(89), DefinedOn(t))
-@variable(dop,             Φ,               DefinedOn(t))
-@variable(dop,            1e-4 ≤ v,               DefinedOn(t))
+@variable(dop,             Φ,                  DefinedOn(t))
+@variable(dop,          1e-4 ≤ v,              DefinedOn(t))
 @variable(dop, deg2rad(-89) ≤ γ ≤ deg2rad(89), DefinedOn(t))
-@variable(dop,                ψ,               DefinedOn(t))
- 
+@variable(dop,             ψ,                  DefinedOn(t))
+
 # Controls
 @variable(dop, deg2rad(-90) ≤ α ≤ deg2rad(90), DefinedOn(t))
 @variable(dop, deg2rad(-90) ≤ β ≤ deg2rad(1),  DefinedOn(t))
- 
+
 # Boundary conditions
 @constraint(dop, initial(h) == 2.6e5)
 @constraint(dop,   final(h) == 0.8e5)
@@ -136,38 +131,40 @@ end
 @constraint(dop, initial(Φ) == 0)
 @constraint(dop, initial(v) == 25600)
 @constraint(dop,   final(v) == 2500)
-@constraint(dop, initial(γ) == deg2rad(1))
+@constraint(dop, initial(γ) == deg2rad(-1))
 @constraint(dop,   final(γ) == deg2rad(-5))
 @constraint(dop, initial(ψ) == deg2rad(90))
- 
-# Expressions
-@expression(dop, r, R_e + h)
-@expression(dop, g, μ / r^2)
-@expression(dop, ρ, ρ_0 * exp(-h / h_r))
-@expression(dop, α_deg, (180 / pi) * α) 
-@expression(dop, L, 0.5 * S * ρ * v^2 * (a_0 + a_1 * α_deg))
-@expression(dop, D, 0.5 * S * ρ * v^2 * (b_0 + b_1 * α_deg + b_2 * α_deg))
- 
-# Differential equations
+
+# Intermediate expressions
+@expression(dop, r,     R_e + h)
+@expression(dop, g,     μ / r^2)
+@expression(dop, ρ,     ρ_0 * exp(-h / h_r))
+@expression(dop, α_deg, (180 / pi) * α)
+@expression(dop, L,     0.5 * S * ρ * v^2 * (a_0 + a_1 * α_deg))
+@expression(dop, D,     0.5 * S * ρ * v^2 * (b_0 + b_1 * α_deg + b_2 * α_deg^2))
+
+# Equations of motion
 @constraint(dop, derivative(h) == v * sin(γ))
 @constraint(dop, derivative(θ) == v * cos(γ) * cos(ψ) / r)
 @constraint(dop, derivative(Φ) == v * cos(γ) * sin(ψ) / (r * cos(θ)))
 @constraint(dop, derivative(v) == -D / m - g * sin(γ))
 @constraint(dop, derivative(γ) == L * cos(β) / (m * v) + cos(γ) * (v / r - g / v))
 @constraint(dop, derivative(ψ) == L * sin(β) / (m * v * cos(γ)) + v * cos(γ) * sin(ψ) * sin(θ) / (r * cos(θ)))
- 
-JuDO.warmstart!(dop, LinearInterpolant(2.6e5, 0.8e5), h)
-JuDO.warmstart!(dop, LinearInterpolant(0.0, deg2rad(90)), θ)
-JuDO.warmstart!(dop, LinearInterpolant(0.0, deg2rad(50)), Φ)
-JuDO.warmstart!(dop, LinearInterpolant(25600.0, 2500.0), v)
-JuDO.warmstart!(dop, LinearInterpolant(deg2rad(1), deg2rad(-5)), γ)
-JuDO.warmstart!(dop, LinearInterpolant(deg2rad(90),deg2rad(20) ), ψ)
 
-# Objective
+# Warm-start with linear guesses
+JuDO.warmstart!(dop, LinearInterpolant(2.6e5,      0.8e5),          h)
+JuDO.warmstart!(dop, LinearInterpolant(0.0,        deg2rad(45)),    θ)
+JuDO.warmstart!(dop, LinearInterpolant(0.0,        deg2rad(50)),    Φ)
+JuDO.warmstart!(dop, LinearInterpolant(25600.0,    2500.0),         v)
+JuDO.warmstart!(dop, LinearInterpolant(deg2rad(-1),deg2rad(-5)),    γ)
+JuDO.warmstart!(dop, LinearInterpolant(deg2rad(90),deg2rad(-20)),   ψ)
+
+# Objective: maximise crossrange (final latitude)
 @objective(dop, Max, final(θ))
 
 JuDO.optimize!(dop)
 
+# Extract solutions
 h_sol = dyn_value(dop, h)
 θ_sol = dyn_value(dop, θ)
 Φ_sol = dyn_value(dop, Φ)
@@ -177,46 +174,38 @@ v_sol = dyn_value(dop, v)
 α_sol = dyn_value(dop, α)
 β_sol = dyn_value(dop, β)
 
-# --- 2. Extract Final Time &amp; Time Grid ---
 tf = phase_final(t)
 ts = collect(range(0, tf, length=500))
 
-# --- 3. Define Plotting Configuration ---
-# Format: (SolutionObject, Title, Y-Label, ScalingFunction, Filename)
-plot_configs = [
-    (h_sol, &quot;Altitude&quot;, &quot;Altitude (km)&quot;, y -&gt; y/1000, &quot;altitude.png&quot;),
-    (θ_sol, &quot;Latitude&quot;, &quot;Latitude (deg)&quot;, y -&gt; rad2deg(y), &quot;latitude.png&quot;),
-    (Φ_sol, &quot;Longitude&quot;, &quot;Longitude (deg)&quot;, y -&gt; rad2deg(y), &quot;longitude.png&quot;),
-    (v_sol, &quot;Velocity&quot;, &quot;Velocity (km/s)&quot;, y -&gt; y/1000, &quot;velocity.png&quot;),
-    (γ_sol, &quot;Flight Path Angle&quot;, &quot;Flight Path Angle (deg)&quot;, y -&gt; rad2deg(y), &quot;flight_path.png&quot;),
-    (ψ_sol, &quot;Azimuth&quot;, &quot;Azimuth (deg)&quot;, y -&gt; rad2deg(y), &quot;Azimuth.png&quot;),
-    (α_sol, &quot;Angle of Attack&quot;, &quot;Angle of Attack (deg)&quot;, y -&gt; rad2deg(y), &quot;alpha.png&quot;),
-    (β_sol, &quot;Bank Angle&quot;, &quot;Bank Angle (deg)&quot;, y -&gt; rad2deg(y), &quot;beta.png&quot;)
-]
+# 3-D trajectory plot
 traj = plot(
     rad2deg.(Φ_sol.(ts)),
     rad2deg.(θ_sol.(ts)),
-    h_sol.(ts)./1000;
+    h_sol.(ts) ./ 1000;
     linewidth = 1,
-    legend = nothing,
-    xlabel = &quot;Longitude (deg)&quot;,
-    ylabel = &quot;Latitude (deg)&quot;,
-    zlabel = &quot;Altitude (km)&quot;,
-    lc = :black
+    legend    = nothing,
+    xlabel    = &quot;Longitude (deg)&quot;,
+    ylabel    = &quot;Latitude (deg)&quot;,
+    zlabel    = &quot;Altitude (km)&quot;,
+    lc        = :black,
 )
+display(traj)
 
-savefig(traj,&quot;3-d-trajectory.png&quot;)
-# --- 4. Loop, Plot, and Save ---
-for (sol, title_text, ylab, scale_fn, fname) in plot_configs
-    # Create the plot
-    p = plot(ts, t -&gt; scale_fn(sol(t)), 
-             legend = false,
-             ylabel = ylab,
-             xlabel = &quot;Time (s)&quot;,
-             lw     = 1,
-             lc     = :black
-    )
-    
-    # Save the figure
-    savefig(p, fname)
-end</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../">« Home</a><a class="docs-footer-nextpage" href="../../Manual/model/">Dynamic Optimization Model »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Saturday 7 March 2026 15:08">Saturday 7 March 2026</span>. Using Julia version 1.12.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+# Individual state/control plots
+plot_configs = [
+    (h_sol, &quot;Altitude (km)&quot;,            y -&gt; y/1000),
+    (θ_sol, &quot;Latitude (deg)&quot;,           y -&gt; rad2deg(y)),
+    (Φ_sol, &quot;Longitude (deg)&quot;,          y -&gt; rad2deg(y)),
+    (v_sol, &quot;Velocity (km/s)&quot;,          y -&gt; y/1000),
+    (γ_sol, &quot;Flight Path Angle (deg)&quot;,  y -&gt; rad2deg(y)),
+    (ψ_sol, &quot;Azimuth (deg)&quot;,            y -&gt; rad2deg(y)),
+    (α_sol, &quot;Angle of Attack (deg)&quot;,    y -&gt; rad2deg(y)),
+    (β_sol, &quot;Bank Angle (deg)&quot;,         y -&gt; rad2deg(y)),
+]
+
+for (sol, ylab, scale_fn) in plot_configs
+    p = plot(ts, t -&gt; scale_fn(sol(t));
+             legend = false, ylabel = ylab, xlabel = &quot;Time (s)&quot;,
+             lw = 1, lc = :black)
+    display(p)
+end</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../">« Home</a><a class="docs-footer-nextpage" href="../../Manual/model/">Dynamic Optimization Model »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Wednesday 8 April 2026 11:19">Wednesday 8 April 2026</span>. Using Julia version 1.12.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
