@@ -35,3 +35,13 @@ You can define bounds directly in the macro.
 # Creates a variable 'u' with both lower and upper bounds
 @variable(model, -10 <= u <= 10, DefinedOn(t))
 ```
+
+## API Reference
+
+```@docs
+JuDO.DefinedOn
+JuDO.DynamicVar
+JuDO.DynamicVarRef
+JuDO.DynamicAffExpr
+JuDO.DynamicQuadExpr
+```

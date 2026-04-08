@@ -27,11 +27,11 @@ function JuMP.build_variable(
     # (This will effectively ignore them at the normal JuMP/MathOptInterface level,
     #  and store them in your custom data structure instead.)
     dv = DynamicVar(
-        jumpinfo, 
-        dy_var.Phase.Index, # The integer index from the PhaseVarRef
+        jumpinfo,
+        dy_var.Phase,       # The full PhaseVarRef (carries model + index)
         nothing,            # Initial_value
         nothing,             # Final_value
-        [lb, ub],         # Trajectory_bound 
+        [lb, ub],         # Trajectory_bound
     )
 
     return dv                                                                                   
@@ -42,13 +42,16 @@ function JuMP.add_variable(
     dv::DynamicVar,
     name::String = ""
 )
-    # phase_id = dv.Phase
-    # if !haskey(model.ext[:Phases], phase_id)
-    #     error("No such phase_id = $phase_id in model.ext[:Phases].")
-    # end
 
-    #get the index of the corresponding phase 
-    p_index = DOI.PhaseIndex(dv.Phase)
+    if dv.Phase.model !== model
+        error(
+            "Phase '$(dv.Phase.name)' belongs to a different model. " *
+            "Use a phase that was created on the same model."
+        )
+    end
+
+    #get the index of the corresponding phase
+    p_index = DOI.PhaseIndex(dv.Phase.Index)
     
     index = DOI.add_dynamic_variable(model.moi_backend.optimizer.model,p_index)
 

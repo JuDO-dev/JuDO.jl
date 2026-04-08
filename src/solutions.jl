@@ -77,7 +77,7 @@ function get_solutions(m::JuMP.Model)
     solutions = Dict{String, DOI.AbstractDynamicSolution}()
     for (name_sym, idx) in m.ext[:var_name_to_idx]
         dv = m.ext[:variables][idx]
-        var_index = DOI.DynamicVariableIndex(idx, DOI.PhaseIndex(dv.Phase))
+        var_index = DOI.DynamicVariableIndex(idx, DOI.PhaseIndex(dv.Phase.Index))
         solutions[string(name_sym)] = MOI.get(
             m.moi_backend.optimizer.model,
             DOI.DynamicVariableSolution(),

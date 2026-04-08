@@ -19,3 +19,14 @@ JuDO provides functions to get the continuous trajectories and the phase boundar
 
 ## Warmstarting
 You can provide an initial guess to the solver to speed up the optimization. This is called warmstarting, realized using the `warmstart!` function.
+
+## API Reference
+
+```@docs
+JuDO.optimize!
+JuDO.dyn_value
+JuDO.get_solutions
+JuDO.phase_initial
+JuDO.phase_final
+JuDO.warmstart!
+```

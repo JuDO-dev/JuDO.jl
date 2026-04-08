@@ -28,3 +28,12 @@ If your phase has a fixed duration, you can pass the start and stop limits direc
 # Creates a phase 't' that goes strictly from 0 to 10
 @phase(model, t, 0, 10)
 ```
+
+## API Reference
+
+```@docs
+JuDO.Phase
+JuDO.PhaseVar
+JuDO.PhaseVarRef
+JuDO.@phase
+```

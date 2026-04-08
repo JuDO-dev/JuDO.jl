@@ -1,16 +1,48 @@
+"""
+    DerivativeTerm <: JuMP.AbstractJuMPScalar
+
+Represents the time-derivative of a `DynamicVarRef`, optionally scaled by a
+coefficient. Created by calling `derivative(x)` on a dynamic variable.
+
+# Fields
+- `var`: the `DynamicVarRef` being differentiated.
+- `coef`: scalar multiplier (default `1.0`).
+"""
 struct DerivativeTerm <: JuMP.AbstractJuMPScalar
     var::DynamicVarRef
     #id::Symbol
     coef::Float64
 end
 
+"""
+    NonlinearExpr <: JuMP.AbstractJuMPScalar
+
+An expression tree node used to represent nonlinear dynamic expressions that
+cannot be captured by `DynamicAffExpr` or `DynamicQuadExpr`. Mirrors the
+structure of Julia's `Expr` type.
+
+# Fields
+- `head`: node type, typically `:call`.
+- `args`: vector whose first element is the operator `Symbol` (e.g. `:sin`,
+  `:*`) and whose remaining elements are sub-expressions or numbers.
+"""
 struct NonlinearExpr <: JuMP.AbstractJuMPScalar
     head::Symbol
     args::Vector{Any}
 end
 
 
-# The derivative operator returns a DerivativeTerm with coefficient 1.0.
+"""
+    derivative(x::DynamicVarRef) -> DerivativeTerm
+
+Return a `DerivativeTerm` representing the derivative of the dynamic variable
+`x` with respect to its phase domain (e.g. time). Use this inside a
+`@constraint` to specify differential equations:
+
+```julia
+@constraint(model, derivative(x) == -x + u)
+```
+"""
 function JuMP.derivative(x::DynamicVarRef)
     return DerivativeTerm(x, 1.0)
 end
@@ -442,38 +474,23 @@ function JuMP.function_string(mode::MIME, expr::NonlinearExpr)
         # In a :call expression, the first element of args is the operator.
         op = expr.args[1]
         operands = expr.args[2:end]
-        if op in (:+, :-, :*, :/)
+        _arg_str(x) = (x isa Number || x isa Symbol) ? string(x) : string(JuMP.function_string(mode, x))
+        if op in (:+, :-, :*, :/, :^)
             if length(operands) == 1
                 # Unary operator: print like "- x"
-                local arg = (operands[1] isa Number || operands[1] isa Symbol) ?
-                            string(operands[1]) :
-                            JuMP.function_string(mode, operands[1])
-                return string(op, " ", arg)
+                return string(op, " ", _arg_str(operands[1]))
             elseif length(operands) == 2
                 # Binary operator: infix notation, e.g. "(a + b)"
-                local arg1 = (operands[1] isa Number || operands[1] isa Symbol) ?
-                             string(operands[1]) :
-                             JuMP.function_string(mode, operands[1])
-                local arg2 = (operands[2] isa Number || operands[2] isa Symbol) ?
-                             string(operands[2]) :
-                             JuMP.function_string(mode, operands[2])
-                return "" * arg1 * " " * string(op) * " " * arg2 * ""
+                return "(" * _arg_str(operands[1]) * " " * string(op) * " " * _arg_str(operands[2]) * ")"
             else
                 # More than two operands: print as op(arg1, arg2, …)
-                local args_str = join(map(x -> (x isa Number || x isa Symbol) ?
-                                             string(x) :
-                                             JuMP.function_string(mode, x),
-                                             operands), ", ")
-                return string(op, "", args_str, "")
+                return string(op, "(", join(_arg_str.(operands), ", "), ")")
             end
-        elseif op in [:sin,:cos,:tan,:sinh,:cosh,:tanh, :log,:log2,:log10,:exp,:sqrt]
-
-            # Otherwise, treat op as a function name: print like "sin(arg1, arg2, …)"
-            local args_str = join(map(x -> (x isa Number || x isa Symbol) ?
-                                         string(x) :
-                                         JuMP.function_string(mode, x),
-                                         operands), ", ")
-            return string(op, "(", args_str, ")")
+        elseif op in (:sin, :cos, :tan, :sinh, :cosh, :tanh, :log, :log2, :log10, :exp, :sqrt)
+            return string(op, "(", join(_arg_str.(operands), ", "), ")")
+        else
+            # Fallback for any other operator (prevents returning nothing)
+            return string(op, "(", join(_arg_str.(operands), ", "), ")")
         end
     elseif expr.head == :(=)
         error("Invalid operation =")
@@ -507,7 +524,7 @@ function find_phase(ref::DynamicVarRef)
     m = ref.model
     # Look up the associated DynamicVar in the model’s extension dictionary.
     dv = m.ext[:variables][ref.Index]
-    return dv.Phase
+    return dv.Phase.Index
 end
 
 #if const = 0 in the DynamicAffExpr, construct a DOI LinearDynamicFunction

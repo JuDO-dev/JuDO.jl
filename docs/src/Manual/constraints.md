@@ -24,3 +24,13 @@ You define dynamic constraints using the standard JuMP `@constraint` macro. JuDO
 # An implicit differential equation
 @constraint(model, derivative(x)^2 + x == 0)
 ```
+
+## API Reference
+
+```@docs
+JuDO.BoundaryOperator
+JuDO.BoundaryConditionExpr
+JuDO.DyBoundaryConstraint
+JuDO.initial
+JuDO.final
+```

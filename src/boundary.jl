@@ -1,14 +1,43 @@
-# A lightweight wrapper representing a boundary operator.
+"""
+    BoundaryOperator()
+A boundary operator representing either the initial or final value of a variable or phase.
+
+"""
 struct BoundaryOperator <: JuMP.AbstractJuMPScalar
     op::Symbol      # should be :initial or :final
     arg::Union{PhaseVarRef,DynamicVarRef}        # a DynamicVarRef or PhaseVarRef
 end
 
+"""
+    initial(x) -> BoundaryOperator
+
+Return a `BoundaryOperator` that evaluates `x` at the **start** of its phase.
+Use inside `@constraint` or `@objective`:
+
+```julia
+@constraint(model, initial(x) == 0.0)
+@objective(model, Min, initial(fuel))
+```
+"""
 initial(x) = BoundaryOperator(:initial, x)
+
+"""
+    final(x) -> BoundaryOperator
+
+Return a `BoundaryOperator` that evaluates `x` at the **end** of its phase.
+Use inside `@constraint` or `@objective`:
+
+```julia
+@constraint(model, final(x) == 1.0)
+@objective(model, Max, final(altitude))
+```
+"""
 final(x)   = BoundaryOperator(:final, x)
 
-# For a dynamic variable, rhs must be a Number.
-# For a phase, rhs may be a Number or (potentially) another boundary operator.
+""" 
+    BoundaryConditionExpr{L,R} <: JuMP.AbstractJuMPScalar
+A boundary condition expression representing conditions on the initial or final values of variables or phases.
+"""
 struct BoundaryConditionExpr{L,R} <: JuMP.AbstractJuMPScalar
     op::Symbol      # :initial or :final, from the LHS operator
     lhs::L          # either a DynamicVarRef or PhaseVarRef
@@ -54,6 +83,17 @@ end
 
 
 
+"""
+    DyBoundaryConstraint <: JuMP.AbstractConstraint
+
+Internal constraint object produced by `JuMP.build_constraint` when a
+`BoundaryConditionExpr` is constrained with `==`, `<=`, or `>=`. Holds the
+parsed boundary expression and the MOI set encoding the right-hand side.
+
+# Fields
+- `expr`: the `BoundaryConditionExpr` representing the boundary condition.
+- `set`: an MOI scalar set (`EqualTo`, `LessThan`, or `GreaterThan`).
+"""
 struct DyBoundaryConstraint <: JuMP.AbstractConstraint
     expr::BoundaryConditionExpr
     set::MOI.AbstractScalarSet

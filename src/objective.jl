@@ -1,3 +1,14 @@
+"""
+    Integral <: JuMP.AbstractJuMPScalar
+
+Represents a definite integral of a dynamic expression over a phase, used to
+express Lagrange (running-cost) objectives. Created via the `integral()`
+function.
+
+# Fields
+- `expr`: the integrand as a JuMP scalar expression.
+- `phase`: integer index of the phase over which the integral is taken.
+"""
 struct Integral <: JuMP.AbstractJuMPScalar
     expr::JuMP.AbstractJuMPScalar  # The expression being integrated
     phase::Int                     # Phase index for the integral

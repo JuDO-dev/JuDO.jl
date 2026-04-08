@@ -25,3 +25,12 @@ You can minimize or maximize the accumulated value of an expression over the ent
 # Minimize the total control effort over the phase
 @objective(model, Min, integral(u^2))
 ```
+
+## API Reference
+
+```@docs
+JuDO.Integral
+JuDO.integral
+JuDO.initial
+JuDO.final
+```

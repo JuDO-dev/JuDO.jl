@@ -3,11 +3,38 @@ const_type(::Type{<:DynamicVarRef}) = Float64
 
 convert_type(::Type{T},x) where {T} = convert(T,x)
 
+"""
+    DynamicAffExpr{Ctype, Vtype} <: JuMP.AbstractJuMPScalar
+
+An affine expression over dynamic variables of the form
+
+    constant + Σ coeff_i * var_i
+
+where each `var_i` is a `DynamicVarRef`. Produced automatically by arithmetic
+operations such as `x + 2.0` or `3*x - y`.
+
+# Fields
+- `constant`: scalar offset of type `Ctype` (typically `Float64`).
+- `terms`: ordered mapping from each `DynamicVarRef` to its coefficient.
+"""
 mutable struct DynamicAffExpr{Ctype,Vtype} <: JuMP.AbstractJuMPScalar
     constant::Ctype
     terms::OrderedDict{Vtype,Ctype}
 end
 
+"""
+    DynamicQuadExpr{Ctype, Vtype} <: JuMP.AbstractJuMPScalar
+
+A quadratic expression over dynamic variables of the form
+
+    affine_part + Σ coeff_ij * var_i * var_j
+
+Produced automatically by operations such as `x * y` or `x^2`.
+
+# Fields
+- `aff`: the affine part as a `DynamicAffExpr`.
+- `terms`: ordered mapping from `JuMP.UnorderedPair{Vtype}` to its coefficient.
+"""
 mutable struct DynamicQuadExpr{Ctype,Vtype} <: JuMP.AbstractJuMPScalar
     aff::DynamicAffExpr{Ctype,Vtype}
     terms::OrderedDict{JuMP.UnorderedPair{Vtype}, Ctype}

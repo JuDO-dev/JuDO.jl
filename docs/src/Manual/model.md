@@ -28,3 +28,13 @@ using JuDO
 using Interesso
 model = DynModel(Interesso.Optimizer)
 ```
+
+## API Reference
+
+```@docs
+DynModel
+get_phase
+get_phasenum
+get_var
+get_varnum
+```

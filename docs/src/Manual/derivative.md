@@ -14,3 +14,11 @@ You can specify the derivative of a dynamic variable using the `derivative()` fu
 # Represents the derivative of x with respect to its phase
 dx = derivative(x)
 ```
+
+## API Reference
+
+```@docs
+JuDO.DerivativeTerm
+JuDO.NonlinearExpr
+JuMP.derivative(::JuDO.DynamicVarRef)
+```
