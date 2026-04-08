@@ -31,10 +31,5 @@ model = DynModel(Interesso.Optimizer)
 
 ## API Reference
 
-```@docs
-DynModel
-get_phase
-get_phasenum
-get_var
-get_varnum
-```
+See [`DynModel`](@ref), [`get_phase`](@ref), [`get_phasenum`](@ref),
+[`get_var`](@ref), [`get_varnum`](@ref).

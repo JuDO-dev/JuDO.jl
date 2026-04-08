@@ -28,9 +28,5 @@ You can minimize or maximize the accumulated value of an expression over the ent
 
 ## API Reference
 
-```@docs
-JuDO.Integral
-JuDO.integral
-JuDO.initial
-JuDO.final
-```
+See [`Integral`](@ref JuDO.Integral), [`integral`](@ref JuDO.integral),
+[`initial`](@ref JuDO.initial), [`final`](@ref JuDO.final).

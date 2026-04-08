@@ -27,10 +27,7 @@ You define dynamic constraints using the standard JuMP `@constraint` macro. JuDO
 
 ## API Reference
 
-```@docs
-JuDO.BoundaryOperator
-JuDO.BoundaryConditionExpr
-JuDO.DyBoundaryConstraint
-JuDO.initial
-JuDO.final
-```
+See [`BoundaryOperator`](@ref JuDO.BoundaryOperator),
+[`BoundaryConditionExpr`](@ref JuDO.BoundaryConditionExpr),
+[`DyBoundaryConstraint`](@ref JuDO.DyBoundaryConstraint),
+[`initial`](@ref JuDO.initial), [`final`](@ref JuDO.final).

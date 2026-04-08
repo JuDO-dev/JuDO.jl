@@ -38,10 +38,6 @@ You can define bounds directly in the macro.
 
 ## API Reference
 
-```@docs
-JuDO.DefinedOn
-JuDO.DynamicVar
-JuDO.DynamicVarRef
-JuDO.DynamicAffExpr
-JuDO.DynamicQuadExpr
-```
+See [`DefinedOn`](@ref JuDO.DefinedOn), [`DynamicVar`](@ref JuDO.DynamicVar),
+[`DynamicVarRef`](@ref JuDO.DynamicVarRef), [`DynamicAffExpr`](@ref JuDO.DynamicAffExpr),
+[`DynamicQuadExpr`](@ref JuDO.DynamicQuadExpr).

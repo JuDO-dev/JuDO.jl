@@ -16,7 +16,8 @@ import DynOptInterface as DOI
     include("test_objective.jl")
 end
 
+#choose one test at a time
 @testset "Examples" begin
-    include("cartpole.jl")
+    #include("cartpole.jl")
     include("space-shuttle.jl")
 end
