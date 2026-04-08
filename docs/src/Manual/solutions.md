@@ -22,6 +22,5 @@ You can provide an initial guess to the solver to speed up the optimization. Thi
 
 ## API Reference
 
-See [`optimize!`](@ref JuDO.optimize!), [`dyn_value`](@ref JuDO.dyn_value),
-[`get_solutions`](@ref JuDO.get_solutions), [`phase_initial`](@ref JuDO.phase_initial),
-[`phase_final`](@ref JuDO.phase_final), [`warmstart!`](@ref JuDO.warmstart!).
+See [`dyn_value`](@ref), [`phase_initial`](@ref), [`phase_final`](@ref),
+`optimize!`. Also available: `get_solutions`, `warmstart!`.

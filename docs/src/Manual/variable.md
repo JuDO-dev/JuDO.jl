@@ -38,6 +38,5 @@ You can define bounds directly in the macro.
 
 ## API Reference
 
-See [`DefinedOn`](@ref JuDO.DefinedOn), [`DynamicVar`](@ref JuDO.DynamicVar),
-[`DynamicVarRef`](@ref JuDO.DynamicVarRef), [`DynamicAffExpr`](@ref JuDO.DynamicAffExpr),
-[`DynamicQuadExpr`](@ref JuDO.DynamicQuadExpr).
+Use `DefinedOn(t)` to associate a variable with a phase. Internal types:
+`DynamicVar`, `DynamicVarRef`, `DynamicAffExpr`, `DynamicQuadExpr`.

@@ -17,5 +17,5 @@ dx = derivative(x)
 
 ## API Reference
 
-See [`DerivativeTerm`](@ref JuDO.DerivativeTerm), [`NonlinearExpr`](@ref JuDO.NonlinearExpr),
-[`derivative`](@ref JuMP.derivative).
+Internal types: `DerivativeTerm`, `NonlinearExpr`. Use `derivative(x)` to
+create a `DerivativeTerm` for a dynamic variable.

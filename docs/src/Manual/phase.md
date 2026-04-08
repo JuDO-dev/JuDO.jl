@@ -31,5 +31,4 @@ If your phase has a fixed duration, you can pass the start and stop limits direc
 
 ## API Reference
 
-See [`Phase`](@ref JuDO.Phase), [`PhaseVar`](@ref JuDO.PhaseVar),
-[`PhaseVarRef`](@ref JuDO.PhaseVarRef), [`@phase`](@ref JuDO.@phase).
+See [`@phase`](@ref). Internal types: `Phase`, `PhaseVar`, `PhaseVarRef`.
