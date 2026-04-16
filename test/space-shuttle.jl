@@ -83,12 +83,10 @@ v_sol = dyn_value(dop, scaled_v)
 α_sol = dyn_value(dop, α)
 β_sol = dyn_value(dop, β)
 
-# --- 2. Extract Final Time & Time Grid ---
+
 tf = phase_final(t)
 ts = collect(range(0, tf, length=500))
 
-# --- 3. Define Plotting Configuration ---
-# Format: (SolutionObject, Title, Y-Label, ScalingFunction, Filename)
 plot_configs = [
     (h_sol, "Altitude", "Altitude (10^5m)", y -> y, "test/betts-space-shuttle-config-test/altitude.png"),
     (θ_sol, "Latitude", "Latitude (deg)", y -> rad2deg(y), "test/betts-space-shuttle-config-test/latitude.png"),
@@ -112,7 +110,6 @@ traj = plot(
 )
 
 savefig(traj,"test/betts-space-shuttle-config-test/3-d-trajectory.png")
-# --- 4. Loop, Plot, and Save ---
 for (sol, title_text, ylab, scale_fn, fname) in plot_configs
     # Create the plot
     p = plot(ts, t -> scale_fn(sol(t)), 
