@@ -47,6 +47,14 @@ function JuMP.derivative(x::DynamicVarRef)
     return DerivativeTerm(x, 1.0)
 end
 
+function JuMP.derivative(expr::DynamicAffExpr)
+    if expr.constant != 0 || length(expr.terms) != 1
+        error("derivative() on a DynamicAffExpr is only supported for a single scaled variable (e.g. derivative(a*x)).")
+    end
+    var, coef = first(expr.terms)
+    return DerivativeTerm(var, coef)
+end
+
 # Custom printing for DerivativeTerm.
 function JuMP.function_string(mode::MIME, d::DerivativeTerm)
     base = JuMP.function_string(mode, d.var)
@@ -82,6 +90,9 @@ end
 
 # 2. Division between a DynamicVarRef and a DynamicAffExpr (both orders).
 function Base.:/(a::DynamicVarRef, b::DynamicAffExpr)
+    return _build_nonlin_expr(:/, a, b)
+end
+function Base.:/(a::DynamicAffExpr, b::DynamicAffExpr)
     return _build_nonlin_expr(:/, a, b)
 end
 function Base.:/(num::DynamicAffExpr{C,V}, den::DynamicVarRef) where {C,V}
@@ -902,17 +913,24 @@ function JuMP.add_constraint(
     lhs = con.expr.args[2]   # expected to be a DerivativeTerm
     rhs = con.expr.args[3]
 
-    # Convert lhs into a DOI.Derivative.
-    d = toDOINonlinearFunction(lhs)   # should return a DOI.Derivative
-    # Convert rhs into a DOI.NonlinearDynamicFunction.
-    f = toDOINonlinearFunction(rhs)   #to_doi_nonlinear_function(rhs, model, find_phase(lhs.var))
+    # Extract DynamicVariableIndex directly from the DerivativeTerm on the LHS.
+    # This is robust regardless of the coefficient (scaled or not).
+    local p = find_phase(lhs.var)
+    dyn_var = DOI.DynamicVariableIndex(lhs.var.Index, DOI.PhaseIndex(p))
 
-    dyn_var = d.dyn_fun
-    
+    # If the coefficient != 1, move it to the RHS: d(a*x)/dt = f  =>  dx/dt = f/a
+    local rhs_scaled = if lhs.coef == 1.0
+        rhs
+    else
+        NonlinearExpr(:call, [:/, rhs, lhs.coef])
+    end
+
+    # Convert rhs into a DOI.NonlinearDynamicFunction.
+    f = toDOINonlinearFunction(rhs_scaled)
+
     ndf = to_NDF(f)
 
     if ndf isa Number
-        # Use the phase of the LHS variable for the constant function
         ndf = DOI.NonlinearDynamicFunction(:+, [ndf], dyn_var.phase)
     end
 

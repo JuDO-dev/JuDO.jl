@@ -21,10 +21,10 @@ end
 @constraint(dop,   final(t) ≤  2500)
  
 # States
-@variable(dop,            0 ≤ h,               DefinedOn(t))
+@variable(dop,            0 ≤ scaled_h,               DefinedOn(t))
 @variable(dop, deg2rad(-89) ≤ θ ≤ deg2rad(89), DefinedOn(t))
 @variable(dop,             Φ,               DefinedOn(t))
-@variable(dop,            1e-4 ≤ v,               DefinedOn(t))
+@variable(dop,            1e-4 ≤ scaled_v,               DefinedOn(t)) ## 1e-4 to 1
 @variable(dop, deg2rad(-89) ≤ γ ≤ deg2rad(89), DefinedOn(t))
 @variable(dop,                ψ,               DefinedOn(t))
  
@@ -33,23 +33,26 @@ end
 @variable(dop, deg2rad(-90) ≤ β ≤ deg2rad(1),  DefinedOn(t))
  
 # Boundary conditions
-@constraint(dop, initial(h) == 2.6e5)
-@constraint(dop,   final(h) == 0.8e5)
+@constraint(dop, initial(scaled_h) == 2.6) # scaled by/1e5
+@constraint(dop,   final(scaled_h) == 0.8) # scaled by/1e5
 @constraint(dop, initial(θ) == 0)
 @constraint(dop, initial(Φ) == 0)
-@constraint(dop, initial(v) == 25600)
-@constraint(dop,   final(v) == 2500)
-@constraint(dop, initial(γ) == deg2rad(1))
+@constraint(dop, initial(scaled_v) == 2.56) # scaled by/1e4
+@constraint(dop,   final(scaled_v) == 0.25) # scaled by/1e4
+@constraint(dop, initial(γ) == deg2rad(-1)) ##1 to -1
 @constraint(dop,   final(γ) == deg2rad(-5))
 @constraint(dop, initial(ψ) == deg2rad(90))
  
 # Expressions
+@expression(dop, h, scaled_h * 1e5)
+@expression(dop, v, scaled_v * 1e4)
+
 @expression(dop, r, R_e + h)
 @expression(dop, g, μ / r^2)
 @expression(dop, ρ, ρ_0 * exp(-h / h_r))
 @expression(dop, α_deg, (180 / pi) * α) 
 @expression(dop, L, 0.5 * S * ρ * v^2 * (a_0 + a_1 * α_deg))
-@expression(dop, D, 0.5 * S * ρ * v^2 * (b_0 + b_1 * α_deg + b_2 * α_deg))
+@expression(dop, D, 0.5 * S * ρ * v^2 * (b_0 + b_1 * α_deg + b_2 * α_deg^2))
  
 # Differential equations
 @constraint(dop, derivative(h) == v * sin(γ))
@@ -59,22 +62,22 @@ end
 @constraint(dop, derivative(γ) == L * cos(β) / (m * v) + cos(γ) * (v / r - g / v))
 @constraint(dop, derivative(ψ) == L * sin(β) / (m * v * cos(γ)) + v * cos(γ) * sin(ψ) * sin(θ) / (r * cos(θ)))
  
-JuDO.warmstart!(dop, LinearInterpolant(2.6e5, 0.8e5), h)
-JuDO.warmstart!(dop, LinearInterpolant(0.0, deg2rad(90)), θ)
+JuDO.warmstart!(dop, LinearInterpolant(2.6, 0.8), scaled_h) # scaled by/1e5
+JuDO.warmstart!(dop, LinearInterpolant(0.0, deg2rad(45)), θ)
 JuDO.warmstart!(dop, LinearInterpolant(0.0, deg2rad(50)), Φ)
-JuDO.warmstart!(dop, LinearInterpolant(25600.0, 2500.0), v)
-JuDO.warmstart!(dop, LinearInterpolant(deg2rad(1), deg2rad(-5)), γ)
-JuDO.warmstart!(dop, LinearInterpolant(deg2rad(90),deg2rad(20) ), ψ)
+JuDO.warmstart!(dop, LinearInterpolant(2.56, 0.25), scaled_v)
+JuDO.warmstart!(dop, LinearInterpolant(deg2rad(-1), deg2rad(-5)), γ)
+JuDO.warmstart!(dop, LinearInterpolant(deg2rad(90),deg2rad(-20) ), ψ)
 
 # Objective
 @objective(dop, Max, final(θ))
 
-JuDO.optimize!(dop)
+JuDO.optimize!(dop, intervals=FixedIntervals(20))
 
-h_sol = dyn_value(dop, h)
+h_sol = dyn_value(dop, scaled_h)
 θ_sol = dyn_value(dop, θ)
 Φ_sol = dyn_value(dop, Φ)
-v_sol = dyn_value(dop, v)
+v_sol = dyn_value(dop, scaled_v)
 γ_sol = dyn_value(dop, γ)
 ψ_sol = dyn_value(dop, ψ)
 α_sol = dyn_value(dop, α)
@@ -87,14 +90,14 @@ ts = collect(range(0, tf, length=500))
 # --- 3. Define Plotting Configuration ---
 # Format: (SolutionObject, Title, Y-Label, ScalingFunction, Filename)
 plot_configs = [
-    (h_sol, "Altitude", "Altitude (km)", y -> y/1000, "altitude.png"),
-    (θ_sol, "Latitude", "Latitude (deg)", y -> rad2deg(y), "latitude.png"),
-    (Φ_sol, "Longitude", "Longitude (deg)", y -> rad2deg(y), "longitude.png"),
-    (v_sol, "Velocity", "Velocity (km/s)", y -> y/1000, "velocity.png"),
-    (γ_sol, "Flight Path Angle", "Flight Path Angle (deg)", y -> rad2deg(y), "flight_path.png"),
-    (ψ_sol, "Azimuth", "Azimuth (deg)", y -> rad2deg(y), "Azimuth.png"),
-    (α_sol, "Angle of Attack", "Angle of Attack (deg)", y -> rad2deg(y), "alpha.png"),
-    (β_sol, "Bank Angle", "Bank Angle (deg)", y -> rad2deg(y), "beta.png")
+    (h_sol, "Altitude", "Altitude (10^5m)", y -> y, "test/betts-space-shuttle-config-test/altitude.png"),
+    (θ_sol, "Latitude", "Latitude (deg)", y -> rad2deg(y), "test/betts-space-shuttle-config-test/latitude.png"),
+    (Φ_sol, "Longitude", "Longitude (deg)", y -> rad2deg(y), "test/betts-space-shuttle-config-test/longitude.png"),
+    (v_sol, "Velocity", "Velocity (km/s)", y -> y, "test/betts-space-shuttle-config-test/velocity.png"),
+    (γ_sol, "Flight Path Angle", "Flight Path Angle (deg)", y -> rad2deg(y), "test/betts-space-shuttle-config-test/flight_path.png"),
+    (ψ_sol, "Azimuth", "Azimuth (deg)", y -> rad2deg(y), "test/betts-space-shuttle-config-test/Azimuth.png"),
+    (α_sol, "Angle of Attack", "Angle of Attack (deg)", y -> rad2deg(y), "test/betts-space-shuttle-config-test/alpha.png"),
+    (β_sol, "Bank Angle", "Bank Angle (deg)", y -> rad2deg(y), "test/betts-space-shuttle-config-test/beta.png")
 ]
 traj = plot(
     rad2deg.(Φ_sol.(ts)),
@@ -108,7 +111,7 @@ traj = plot(
     lc = :black
 )
 
-savefig(traj,"3-d-trajectory.png")
+savefig(traj,"test/betts-space-shuttle-config-test/3-d-trajectory.png")
 # --- 4. Loop, Plot, and Save ---
 for (sol, title_text, ylab, scale_fn, fname) in plot_configs
     # Create the plot
@@ -139,3 +142,11 @@ open("longitude.txt", "w") do io
 end
 
 println("finished")
+
+using Test
+@testset "Space Shuttle Final Time" begin
+    @test 2005 ≤ tf ≤ 2015
+    if !(2005 ≤ tf ≤ 2015)
+        @error "Final time tf = $(round(tf, digits=2))s is outside expected range [2005, 2015]. The final time should be around 2009 seconds."
+    end
+end

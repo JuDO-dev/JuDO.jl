@@ -1,7 +1,7 @@
 module JuDO
 
 import JuMP
-import JuMP: derivative
+import JuMP: derivative, set_attribute
 import MathOptInterface as MOI
 import DynOptInterface as DOI
 import JuMP.MOIU.CleverDicts as MOIU_cd
@@ -24,7 +24,8 @@ include("objective.jl")
 include("optimizer_interface.jl")
 include("solutions.jl")
 
-export @phase, DynModel, initial, final, DefinedOn, integral, dyn_value, phase_final, phase_initial, set_interpolant, optimize
+export @phase, DynModel, initial, final, DefinedOn, integral, dyn_value, phase_final, phase_initial,
+       warmstart!, set_attribute, optimize!
 
 
 end
