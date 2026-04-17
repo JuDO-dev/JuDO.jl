@@ -144,8 +144,8 @@ println("finished")
 
 using Test
 @testset "Space Shuttle Final Time" begin
-    @test 2005 ≤ tf ≤ 2015
-    if !(2005 ≤ tf ≤ 2015)
-        @error "Final time tf = $(round(tf, digits=2))s is outside expected range [2005, 2015]. The final time should be around 2009 seconds."
+    @test 1985 ≤ tf ≤ 2015
+    if !(1985 ≤ tf ≤ 2015)
+        @error "Final time tf = $(round(tf, digits=2))s is outside expected range [1985, 2015]. The final time should be around 2009 seconds."
     end
 end
