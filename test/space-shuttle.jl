@@ -87,15 +87,17 @@ v_sol = dyn_value(dop, scaled_v)
 tf = phase_final(t)
 ts = collect(range(0, tf, length=500))
 
+const _shuttle_outdir = joinpath(@__DIR__, "betts-space-shuttle-config-test")
+mkpath(_shuttle_outdir)
 plot_configs = [
-    (h_sol, "Altitude", "Altitude (10^5m)", y -> y, "test/betts-space-shuttle-config-test/altitude.png"),
-    (θ_sol, "Latitude", "Latitude (deg)", y -> rad2deg(y), "test/betts-space-shuttle-config-test/latitude.png"),
-    (Φ_sol, "Longitude", "Longitude (deg)", y -> rad2deg(y), "test/betts-space-shuttle-config-test/longitude.png"),
-    (v_sol, "Velocity", "Velocity (km/s)", y -> y, "test/betts-space-shuttle-config-test/velocity.png"),
-    (γ_sol, "Flight Path Angle", "Flight Path Angle (deg)", y -> rad2deg(y), "test/betts-space-shuttle-config-test/flight_path.png"),
-    (ψ_sol, "Azimuth", "Azimuth (deg)", y -> rad2deg(y), "test/betts-space-shuttle-config-test/Azimuth.png"),
-    (α_sol, "Angle of Attack", "Angle of Attack (deg)", y -> rad2deg(y), "test/betts-space-shuttle-config-test/alpha.png"),
-    (β_sol, "Bank Angle", "Bank Angle (deg)", y -> rad2deg(y), "test/betts-space-shuttle-config-test/beta.png")
+    (h_sol, "Altitude", "Altitude (10^5m)", y -> y, joinpath(_shuttle_outdir, "altitude.png")),
+    (θ_sol, "Latitude", "Latitude (deg)", y -> rad2deg(y), joinpath(_shuttle_outdir, "latitude.png")),
+    (Φ_sol, "Longitude", "Longitude (deg)", y -> rad2deg(y), joinpath(_shuttle_outdir, "longitude.png")),
+    (v_sol, "Velocity", "Velocity (km/s)", y -> y, joinpath(_shuttle_outdir, "velocity.png")),
+    (γ_sol, "Flight Path Angle", "Flight Path Angle (deg)", y -> rad2deg(y), joinpath(_shuttle_outdir, "flight_path.png")),
+    (ψ_sol, "Azimuth", "Azimuth (deg)", y -> rad2deg(y), joinpath(_shuttle_outdir, "Azimuth.png")),
+    (α_sol, "Angle of Attack", "Angle of Attack (deg)", y -> rad2deg(y), joinpath(_shuttle_outdir, "alpha.png")),
+    (β_sol, "Bank Angle", "Bank Angle (deg)", y -> rad2deg(y), joinpath(_shuttle_outdir, "beta.png"))
 ]
 traj = plot(
     rad2deg.(Φ_sol.(ts)),
@@ -109,7 +111,7 @@ traj = plot(
     lc = :black
 )
 
-savefig(traj,"test/betts-space-shuttle-config-test/3-d-trajectory.png")
+savefig(traj, joinpath(_shuttle_outdir, "3-d-trajectory.png"))
 for (sol, title_text, ylab, scale_fn, fname) in plot_configs
     # Create the plot
     p = plot(ts, t -> scale_fn(sol(t)), 
