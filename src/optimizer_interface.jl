@@ -88,6 +88,18 @@ function JuMP.set_attribute(m::JuMP.Model, attr::DOI.GeneralBounds, value)
     return nothing
 end
 
+"""
+    JuMP.set_attribute(m::JuMP.Model, attr::MOI.AbstractOptimizerAttribute, value)
+
+Generic fallback for any backend-specific `MOI.AbstractOptimizerAttribute` not covered
+by a more specific overload (e.g. `CTDirectDOI.GridSize`, `CTDirectDOI.DiscMethod`).
+"""
+function JuMP.set_attribute(m::JuMP.Model, attr::MOI.AbstractOptimizerAttribute, value)
+    MOI.set(m.moi_backend.optimizer.model, attr, value)
+    return nothing
+end
+
+
 
 """
     optimize!(m::JuMP.Model)

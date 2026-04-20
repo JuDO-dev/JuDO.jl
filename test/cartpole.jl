@@ -55,21 +55,18 @@ JuDO.warmstart!(dop, LinearInterpolant(0.0, 1.0), r)
 JuDO.warmstart!(dop, LinearInterpolant(0.0, pi), θ)
 
 
-JuDO.optimize!(dop) 
+JuDO.optimize!(dop,intervals=FixedIntervals(10))
+
 rsol=dyn_value(dop, r)
 thetasol=dyn_value(dop, θ)
 nusol=dyn_value(dop, ν)
 omegasol=dyn_value(dop, ω)
+usol=dyn_value(dop, u)
 
 time_points = collect(range(t_0, t_f, length=100))
-r_values = [omegasol(t) for t in time_points]
-open("rsol_judo.txt", "w") do io
-    println(io, "time,r_value")
-    for (t, r_val) in zip(time_points, r_values)
-        println(io, "$(t),$(r_val)")
-    end
-end
-# plot trajectory with labels, title, no legend
+const _cartpole_outdir = joinpath(@__DIR__, "cartpole-test")
+
+r_values = [rsol(t) for t in time_points]
 p = plot(time_points, r_values;
     xlabel = "Time (s)",
     ylabel = "Angular Velocity (rad/s)",
@@ -80,7 +77,7 @@ p = plot(time_points, r_values;
     lc    = :black)
 
 display(p)
-savefig(p, "cartpole_omega.png")
+savefig(p, joinpath(_cartpole_outdir, "cartpole_r.png"))
 
 
 thetasol_values = [thetasol(t) for t in time_points]
@@ -94,4 +91,17 @@ q = plot(time_points, thetasol_values;
     lc    = :black)
 
 display(q)
-savefig(q, "cartpole_theta.png")
+savefig(q, joinpath(_cartpole_outdir, "cartpole_theta.png"))
+
+u_values = [usol(t) for t in time_points]
+s = plot(time_points, u_values;
+    xlabel = "Time (s)",
+    ylabel = "Control Force (N)",
+    legend = false,
+    xlims  = (t_0, t_f),
+    lw     = 1,
+    grid   = true,
+    lc    = :black)
+
+display(s)
+savefig(s, joinpath(_cartpole_outdir, "cartpole_u.png"))
