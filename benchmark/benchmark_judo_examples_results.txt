@@ -1,0 +1,138 @@
+==============================================================================
+  JuDO Example Benchmark  (direct include of test scripts)
+  Each iteration runs the full script in a fresh anonymous module.
+  run 1 = first-run (includes JIT compilation)
+  runs 2-N = steady-state
+  'JuDO+plot overhead' = total - Ipopt  (build + transcription + plot I/O)
+==============================================================================
+
+  -- Space shuttle  (FixedIntervals(10), LGRPoints(3)) ---------------
+
+  Space shuttle
+    Total wall time                 first-run:   4.2512 s   mean:   4.3755 s   std:   0.1370 s
+      Ipopt reported time           first-run:   2.9590 s   mean:   3.1967 s   std:   0.1114 s
+      JuDO+plot overhead            first-run:   1.2922 s   mean:   1.1788 s   std:   0.0469 s
+
+==============================================================================
+
+
+==============================================================================
+  JuDO Example Benchmark  (direct include of test scripts)
+  Each iteration runs the full script in a fresh anonymous module.
+  run 1 = first-run (includes JIT compilation)
+  runs 2-N = steady-state
+  'JuDO+plot overhead' = total - Ipopt  (build + transcription + plot I/O)
+==============================================================================
+
+  -- Space shuttle  (FixedIntervals(10), LGRPoints(5)) ---------------
+
+  Space shuttle
+    Total wall time                 first-run:   6.7182 s   mean:   7.8602 s   std:   0.3714 s
+      Ipopt reported time           first-run:   5.6670 s   mean:   6.6551 s   std:   0.3133 s
+      JuDO+plot overhead            first-run:   1.0512 s   mean:   1.2051 s   std:   0.0709 s
+
+==============================================================================
+
+==============================================================================
+  JuDO Example Benchmark  (direct include of test scripts)
+  Each iteration runs the full script in a fresh anonymous module.
+  run 1 = first-run (includes JIT compilation)
+  runs 2-N = steady-state
+  'JuDO+plot overhead' = total - Ipopt  (build + transcription + plot I/O)
+==============================================================================
+
+  -- Space shuttle  (FixedIntervals(20), LGRPoints(5)) ---------------
+
+  Space shuttle
+    Total wall time                 first-run:  19.9722 s   mean:  22.3394 s   std:   2.3642 s
+      Ipopt reported time           first-run:  17.6150 s   mean:  20.7360 s   std:   2.0732 s
+      JuDO+plot overhead            first-run:   2.3572 s   mean:   1.6034 s   std:   0.3189 s
+
+==============================================================================
+
+
+==============================================================================
+  JuDO Example Benchmark  (direct include of test scripts)
+  Each iteration runs the full script in a fresh anonymous module.
+  run 1 = first-run (includes JIT compilation)
+  runs 2-N = steady-state
+  'JuDO+plot overhead' = total - Ipopt  (build + transcription + plot I/O)
+==============================================================================
+
+  -- Space shuttle  (FixedIntervals(20), LGRPoints(3)) ---------------
+
+  Space shuttle
+    Total wall time                 first-run:   6.4656 s   mean:   8.7429 s   std:   2.6780 s
+      Ipopt reported time           first-run:   5.3850 s   mean:   7.2771 s   std:   2.3981 s
+      JuDO+plot overhead            first-run:   1.0806 s   mean:   1.4657 s   std:   0.3038 s
+
+==============================================================================
+
+==============================================================================
+  JuDO Example Benchmark  (direct include of test scripts)
+  Each iteration runs the full script in a fresh anonymous module.
+  run 1 = first-run (includes JIT compilation)
+  runs 2-N = steady-state
+  'JuDO+plot overhead' = total - Ipopt  (build + transcription + plot I/O)
+==============================================================================
+
+  -- Cart-pole  (FixedIntervals(10), LGRPoints(3)) -------------------
+
+  Cart-pole
+    Total wall time                 first-run:   0.3684 s   mean:   0.3478 s   std:   0.0244 s
+      Ipopt reported time           first-run:   0.0690 s   mean:   0.0730 s   std:   0.0082 s
+      JuDO+plot overhead            first-run:   0.2994 s   mean:   0.2748 s   std:   0.0167 s
+
+==============================================================================
+
+
+==============================================================================
+  JuDO Example Benchmark  (direct include of test scripts)
+  Each iteration runs the full script in a fresh anonymous module.
+  run 1 = first-run (includes JIT compilation)
+  runs 2-N = steady-state
+  'JuDO+plot overhead' = total - Ipopt  (build + transcription + plot I/O)
+==============================================================================
+
+  -- Cart-pole  (FixedIntervals(10), LGRPoints(5)) -------------------
+
+  Cart-pole
+    Total wall time                 first-run:   0.4353 s   mean:   0.4144 s   std:   0.0254 s
+      Ipopt reported time           first-run:   0.1400 s   mean:   0.1296 s   std:   0.0145 s
+      JuDO+plot overhead            first-run:   0.2953 s   mean:   0.2849 s   std:   0.0117 s
+
+==============================================================================
+
+==============================================================================
+  JuDO Example Benchmark  (direct include of test scripts)
+  Each iteration runs the full script in a fresh anonymous module.
+  run 1 = first-run (includes JIT compilation)
+  runs 2-N = steady-state
+  'JuDO+plot overhead' = total - Ipopt  (build + transcription + plot I/O)
+==============================================================================
+
+  -- Cart-pole  (FixedIntervals(20), LGRPoints(3)) -------------------
+
+  Cart-pole
+    Total wall time                 first-run:   0.3672 s   mean:   0.3756 s   std:   0.0074 s
+      Ipopt reported time           first-run:   0.0950 s   mean:   0.0987 s   std:   0.0029 s
+      JuDO+plot overhead            first-run:   0.2722 s   mean:   0.2769 s   std:   0.0065 s
+
+==============================================================================
+
+==============================================================================
+  JuDO Example Benchmark  (direct include of test scripts)
+  Each iteration runs the full script in a fresh anonymous module.
+  run 1 = first-run (includes JIT compilation)
+  runs 2-N = steady-state
+  'JuDO+plot overhead' = total - Ipopt  (build + transcription + plot I/O)
+==============================================================================
+
+  -- Cart-pole  (FixedIntervals(20), LGRPoints(5)) -------------------
+
+  Cart-pole
+    Total wall time                 first-run:   0.4864 s   mean:   0.5285 s   std:   0.0871 s
+      Ipopt reported time           first-run:   0.2150 s   mean:   0.2423 s   std:   0.0780 s
+      JuDO+plot overhead            first-run:   0.2714 s   mean:   0.2863 s   std:   0.0174 s
+
+==============================================================================

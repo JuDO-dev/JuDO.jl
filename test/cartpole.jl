@@ -55,7 +55,7 @@ JuDO.warmstart!(dop, LinearInterpolant(0.0, 1.0), r)
 JuDO.warmstart!(dop, LinearInterpolant(0.0, pi), θ)
 
 
-JuDO.optimize!(dop,intervals=FixedIntervals(10))
+JuDO.optimize!(dop,intervals=FixedIntervals(20), points=LGRPoints(5))
 
 rsol=dyn_value(dop, r)
 thetasol=dyn_value(dop, θ)
@@ -76,7 +76,6 @@ p = plot(time_points, r_values;
     grid   = true,
     lc    = :black)
 
-display(p)
 savefig(p, joinpath(_cartpole_outdir, "cartpole_r.png"))
 
 
@@ -90,7 +89,6 @@ q = plot(time_points, thetasol_values;
     grid   = true,
     lc    = :black)
 
-display(q)
 savefig(q, joinpath(_cartpole_outdir, "cartpole_theta.png"))
 
 u_values = [usol(t) for t in time_points]
@@ -103,5 +101,4 @@ s = plot(time_points, u_values;
     grid   = true,
     lc    = :black)
 
-display(s)
 savefig(s, joinpath(_cartpole_outdir, "cartpole_u.png"))

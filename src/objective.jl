@@ -63,7 +63,7 @@ function JuMP.set_objective_function(model::JuMP.Model, func::Real)::Nothing
     # Store and set
     model.ext[:objective_function] = bolza_obj
     MOI.set(
-        model.moi_backend.optimizer.model, 
+        model.moi_backend.optimizer, 
         MOI.ObjectiveFunction{typeof(bolza_obj)}(), 
         bolza_obj
     )
@@ -76,7 +76,7 @@ function JuMP.set_objective_function(model::JuMP.Model, func::DOI.Bolza)::Nothin
    
     # Set in MOI
     MOI.set(
-        model.moi_backend.optimizer.model, 
+        model.moi_backend.optimizer, 
         MOI.ObjectiveFunction{typeof(func)}(), 
         func
     )
@@ -89,7 +89,7 @@ function JuMP.set_objective_function(model::JuMP.Model, func::DOI.NonlinearBound
     
     # Pass NBF directly to the optimizer. 
     MOI.set(
-        model.moi_backend.optimizer.model, 
+        model.moi_backend.optimizer, 
         MOI.ObjectiveFunction{typeof(func)}(), 
         func
     )
@@ -98,7 +98,7 @@ end
 
 function JuMP.set_objective_sense(model::JuMP.Model, sense::MOI.OptimizationSense)::Nothing
     model.ext[:objective_sense] = sense
-    MOI.set(model.moi_backend.optimizer.model, MOI.ObjectiveSense(), sense)
+    MOI.set(model.moi_backend.optimizer, MOI.ObjectiveSense(), sense)
     set_transformation_backend_ready(model, false)
     return nothing
 end

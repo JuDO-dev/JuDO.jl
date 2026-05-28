@@ -8,11 +8,32 @@ After you define your dynamic optimization model, you must solve it and extract 
 You solve the model using the `optimize!` function. JuDO extends this function so you can pass specific options directly to the dynamic backend solver.
 
 ```julia
-# Solve the model with specific options
 JuDO.optimize!(model)
 ```
 
-You can pass several options like solver, intervals, points, method, and bounds to control how the problem is discretized and solved.
+Options controlling discretisation (intervals, collocation points, method, bounds) and the inner NLP solver can be set in two ways.
+
+### Option 1: Via `set_attribute`
+
+Options can be updated after model construction using the solver-agnostic attribute types from `DynOptInterface`.
+
+```julia
+set_attribute(model, DOI.GeneralIntervals(), FlexibleIntervals(20, 0.5))
+set_attribute(model, DOI.GeneralPoints(),    LGRPoints(5))
+set_attribute(model, DOI.GeneralMethod(),    Collocation())
+```
+
+### Option 2: As keyword arguments to `optimize!`
+
+This is a convenience shorthand for setting options immediately before solving, without separate `set_attribute` calls.
+
+```julia
+JuDO.optimize!(model;
+    intervals = FixedIntervals(20),
+    points    = LGRPoints(5),
+    method    = Collocation(),
+)
+```
 
 ## Retrieving Results
 JuDO provides functions to get the continuous trajectories and the phase boundaries. Use `dyn_value(model, var)` to get the solution for one dynamic variable.

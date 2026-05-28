@@ -89,6 +89,11 @@ model = DynModel(Interesso.Optimizer)
 function DynModel(args...; kwargs...)
     model = JuMP.Model(args...; kwargs...)
 
+    # Register DOI bridges if an optimizer is already attached
+    if model.moi_backend.state != MOI.Utilities.NO_OPTIMIZER
+        DOI.Bridges.add_all_bridges(model.moi_backend.optimizer, Float64)
+    end
+
     model.ext[:Phasenum] = Dict(:phase=>0)
     model.ext[:Phases] = OrderedDict{Int,PhaseVar}()
     model.ext[:phase_name_to_idx] = Dict{Symbol, Int}()

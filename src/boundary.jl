@@ -119,11 +119,11 @@ function JuMP.build_constraint(error::Function, bc::BoundaryConditionExpr, set::
         local dyn_idx = DOI.DynamicVariableIndex(bc.lhs.Index, DOI.PhaseIndex(p))
         if bc.op == :initial
             local bound_obj = DOI.Initial(dyn_idx)
-            MOI.add_constraint(model.moi_backend.optimizer.model, bound_obj, set)
+            MOI.add_constraint(model.moi_backend.optimizer, bound_obj, set)
 
         elseif bc.op == :final
             local bound_obj = DOI.Final(dyn_idx)
-            MOI.add_constraint(model.moi_backend.optimizer.model, bound_obj, set)
+            MOI.add_constraint(model.moi_backend.optimizer, bound_obj, set)
   
         else
             error("Unknown boundary operator: $(bc.op)")
@@ -133,10 +133,10 @@ function JuMP.build_constraint(error::Function, bc::BoundaryConditionExpr, set::
         local phase_num = bc.lhs.Index  # phase number stored in Index.
         if bc.op == :initial
             local bound_obj = DOI.Initial(DOI.PhaseIndex(phase_num))
-            MOI.add_constraint(model.moi_backend.optimizer.model, bound_obj, set)
+            MOI.add_constraint(model.moi_backend.optimizer, bound_obj, set)
         elseif bc.op == :final
             local bound_obj = DOI.Final(DOI.PhaseIndex(phase_num))
-            MOI.add_constraint(model.moi_backend.optimizer.model, bound_obj, set)
+            MOI.add_constraint(model.moi_backend.optimizer, bound_obj, set)
         else
             error("Unknown boundary operator: $(bc.op)")
         end
@@ -161,7 +161,7 @@ function JuMP.build_constraint(error::Function, bc::BoundaryConditionExpr, set::
             error("Unsupported linkage boundary condition operators: $(bc.op), $(bc.rhs.op)")
         end
         local boundary_func = DOI.NonlinearBoundaryFunction(:-, [lhs_term, rhs_term])
-        MOI.add_constraint(model.moi_backend.optimizer.model, boundary_func, set)
+        MOI.add_constraint(model.moi_backend.optimizer, boundary_func, set)
 
     # -----------------------------------------------------------
     # CASE B: Linking two VARIABLES (e.g. final(q1) == initial(q2))
@@ -182,7 +182,7 @@ function JuMP.build_constraint(error::Function, bc::BoundaryConditionExpr, set::
 
         # Construct Linkage with VARIABLE indices
         local linkage = DOI.Linkage(idx1, idx2)
-        MOI.add_constraint(model.moi_backend.optimizer.model, linkage, set)
+        MOI.add_constraint(model.moi_backend.optimizer, linkage, set)
     # elseif bc.rhs isa BoundaryOperator
     #     # Linkage constraint: we assume the expression was rewritten as:
     #     #    final(t1) - initial(t2)

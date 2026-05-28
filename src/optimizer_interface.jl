@@ -127,7 +127,7 @@ function optimize!(m::JuMP.Model; kwargs...)
         m.moi_backend.optimizer.model.default_bounds = kwargs[:bounds]
     end
 
-    MOI.optimize!(m.moi_backend.optimizer.model)
+    MOI.optimize!(m.moi_backend.optimizer)
 
     return nothing
 end
