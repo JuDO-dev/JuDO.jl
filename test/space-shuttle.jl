@@ -1,6 +1,5 @@
 using Interesso, JuMP, JuDO, DynOptInterface
 using Plots
-dop = DynModel(Interesso.Optimizer)
  
 const m = 203000 / 32.174
 const ρ_0, h_r, R_e = 0.002378, 23800.0, 20902900.0
@@ -14,6 +13,8 @@ struct LinearInterpolant <: DynOptInterface.AbstractDynamicSolution
     y_b::Float64
 end
 (li::LinearInterpolant)(t::Real) = li.y_a + (t - 0) * (li.y_b - li.y_a) / (2500 - 0)
+
+dop = DynModel(Interesso.Optimizer)
 
 @phase(dop, t)
 @constraint(dop, initial(t) == 0)
@@ -65,7 +66,7 @@ JuDO.warmstart!(dop, LinearInterpolant(deg2rad(90),deg2rad(-20) ), ψ)
 
 @objective(dop, Max, final(θ))
 
-JuDO.optimize!(dop, intervals=FixedIntervals(20))
+JuDO.optimize!(dop, intervals=FixedIntervals(20), silent=true)
 
 h_sol = dyn_value(dop, scaled_h)
 θ_sol = dyn_value(dop, θ)
@@ -118,6 +119,13 @@ for (sol, title_text, ylab, scale_fn, fname) in plot_configs
     # Save the figure
     savefig(p, fname)
 end
+
+#print the final latitude and longitude
+final_latitude = rad2deg(θ_sol(tf))
+final_longitude = rad2deg(Φ_sol(tf))
+println("Final Latitude: $(round(final_latitude, digits=2)) degrees")
+println("Final Longitude: $(round(final_longitude, digits=2)) degrees")
+println("Final Time: $(round(tf, digits=2)) seconds")
 
 # using Test
 # @testset "Space Shuttle Final Time" begin

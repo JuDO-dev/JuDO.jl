@@ -101,17 +101,17 @@ function main()
     try
         write_header(io)
 
-        println(io)
-        println(io, "  -- Cart-pole  (FixedIntervals(), LGRPoints()) " * "-" ^ 19)
-        r = benchmark_example(CARTPOLE_PATH; n_runs = CARTPOLE_RUNS)
-        write_results(io, "Cart-pole", r)
-        flush(io)
-
         # println(io)
-        # println(io, "  -- Space shuttle  (FixedIntervals(), LGRPoints()) " * "-" ^ 15)
-        # r = benchmark_example(SHUTTLE_PATH; n_runs = SHUTTLE_RUNS)
-        # write_results(io, "Space shuttle", r)
+        # println(io, "  -- Cart-pole  (FixedIntervals(), LGRPoints()) " * "-" ^ 19)
+        # r = benchmark_example(CARTPOLE_PATH; n_runs = CARTPOLE_RUNS)
+        # write_results(io, "Cart-pole", r)
         # flush(io)
+
+        println(io)
+        println(io, "  -- Space shuttle  (FixedIntervals(), LGRPoints()) " * "-" ^ 15)
+        r = benchmark_example(SHUTTLE_PATH; n_runs = SHUTTLE_RUNS)
+        write_results(io, "Space shuttle", r)
+        flush(io)
 
         println(io)
         println(io, "=" ^ 78)

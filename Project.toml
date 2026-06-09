@@ -19,7 +19,7 @@ StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 Unicode = "4ec0a83e-493e-50e2-b9ac-8f72acf5a8f5"
 
 [sources]
-DynOptInterface = {rev = "dev", url = "https://github.com/shawn-tao01/DynOptInterface.jl"}
+DynOptInterface = {rev = "dev", url = "https://github.com/JuDO-dev/DynOptInterface.jl"}
 Interesso = {rev = "dev", url = "https://github.com/Kailai-Shi/Interesso.jl"}
 
 [compat]

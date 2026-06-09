@@ -55,7 +55,7 @@ JuDO.warmstart!(dop, LinearInterpolant(0.0, 1.0), r)
 JuDO.warmstart!(dop, LinearInterpolant(0.0, pi), θ)
 
 
-JuDO.optimize!(dop,intervals=FixedIntervals(20), points=LGRPoints(5))
+JuDO.optimize!(dop,intervals=FixedIntervals(20), points=LGRPoints(5), silent=true)
 
 rsol=dyn_value(dop, r)
 thetasol=dyn_value(dop, θ)

@@ -22,11 +22,11 @@ JuDO.jl and its dependencies are currently under active development and are not 
 using Pkg
 
 # Required dependencies
-Pkg.add(url="https://github.com/shawn-tao01/DynOptInterface.jl", rev="dev")
+Pkg.add(url="https://github.com/JuDO-dev/DynOptInterface.jl", rev="dev")
 Pkg.add(url="https://github.com/Kailai-Shi/Interesso.jl",        rev="dev")
 
 # JuDO itself
-Pkg.add(url="https://github.com/shawn-tao01/JuDO.jl", rev="dev")
+Pkg.add(url="https://github.com/JuDO-dev/JuDO.jl", rev="dev")
 ```
 
 Julia 1.12.2 or later is required.

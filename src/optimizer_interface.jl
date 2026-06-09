@@ -89,6 +89,22 @@ function JuMP.set_attribute(m::JuMP.Model, attr::DOI.GeneralBounds, value)
 end
 
 """
+    JuMP.set_attribute(m::JuMP.Model, ::MOI.Silent, value::Bool)
+
+Silence (or un-silence) the inner NLP solver. Routes to the inner optimizer
+rather than the Interesso layer, since `MOI.Silent` is an NLP-solver attribute.
+
+```julia
+set_attribute(model, MOI.Silent(), true)   # suppress Ipopt output
+set_attribute(model, MOI.Silent(), false)  # restore Ipopt output
+```
+"""
+function JuMP.set_attribute(m::JuMP.Model, attr::MOI.Silent, value::Bool)
+    MOI.set(m.moi_backend.optimizer.model.inner, attr, value)
+    return nothing
+end
+
+"""
     JuMP.set_attribute(m::JuMP.Model, attr::MOI.AbstractOptimizerAttribute, value)
 
 Generic fallback for any backend-specific `MOI.AbstractOptimizerAttribute` not covered
@@ -125,6 +141,9 @@ function optimize!(m::JuMP.Model; kwargs...)
     end
     if haskey(kwargs, :bounds)
         m.moi_backend.optimizer.model.default_bounds = kwargs[:bounds]
+    end
+    if haskey(kwargs, :silent)
+        MOI.set(m.moi_backend.optimizer.model.inner, MOI.Silent(), kwargs[:silent])
     end
 
     MOI.optimize!(m.moi_backend.optimizer)
