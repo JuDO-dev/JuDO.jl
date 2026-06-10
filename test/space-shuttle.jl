@@ -16,29 +16,29 @@ end
 
 dop = DynModel(Interesso.Optimizer)
 
-@phase(dop, t)
-@constraint(dop, initial(t) == 0)
-@constraint(dop,   final(t) ≤  2500)
+JuDO.@phase(dop, t)
+JuMP.@constraint(dop, initial(t) == 0)
+JuMP.@constraint(dop,   final(t) ≤  2500)
  
-@variable(dop,            0 ≤ scaled_h,               DefinedOn(t))
-@variable(dop, deg2rad(-89) ≤ θ ≤ deg2rad(89), DefinedOn(t))
-@variable(dop,             Φ,               DefinedOn(t))
-@variable(dop,            1e-4 ≤ scaled_v,               DefinedOn(t)) 
-@variable(dop, deg2rad(-89) ≤ γ ≤ deg2rad(89), DefinedOn(t))
-@variable(dop,                ψ,               DefinedOn(t))
+JuMP.@variable(dop,            0 ≤ scaled_h,               DefinedOn(t))
+JuMP.@variable(dop, deg2rad(-89) ≤ θ ≤ deg2rad(89), DefinedOn(t))
+JuMP.@variable(dop,             Φ,               DefinedOn(t))
+JuMP.@variable(dop,            1e-4 ≤ scaled_v,               DefinedOn(t)) 
+JuMP.@variable(dop, deg2rad(-89) ≤ γ ≤ deg2rad(89), DefinedOn(t))
+JuMP.@variable(dop,                ψ,               DefinedOn(t))
  
-@variable(dop, deg2rad(-90) ≤ α ≤ deg2rad(90), DefinedOn(t))
-@variable(dop, deg2rad(-90) ≤ β ≤ deg2rad(1),  DefinedOn(t))
+JuMP.@variable(dop, deg2rad(-90) ≤ α ≤ deg2rad(90), DefinedOn(t))
+JuMP.@variable(dop, deg2rad(-90) ≤ β ≤ deg2rad(1),  DefinedOn(t))
  
-@constraint(dop, initial(scaled_h) == 2.6) 
-@constraint(dop,   final(scaled_h) == 0.8) 
-@constraint(dop, initial(θ) == 0)
-@constraint(dop, initial(Φ) == 0)
-@constraint(dop, initial(scaled_v) == 2.56) 
-@constraint(dop,   final(scaled_v) == 0.25) 
-@constraint(dop, initial(γ) == deg2rad(-1)) 
-@constraint(dop,   final(γ) == deg2rad(-5))
-@constraint(dop, initial(ψ) == deg2rad(90))
+JuMP.@constraint(dop, initial(scaled_h) == 2.6) 
+JuMP.@constraint(dop,   final(scaled_h) == 0.8) 
+JuMP.@constraint(dop, initial(θ) == 0)
+JuMP.@constraint(dop, initial(Φ) == 0)
+JuMP.@constraint(dop, initial(scaled_v) == 2.56) 
+JuMP.@constraint(dop,   final(scaled_v) == 0.25) 
+JuMP.@constraint(dop, initial(γ) == deg2rad(-1)) 
+JuMP.@constraint(dop,   final(γ) == deg2rad(-5))
+JuMP.@constraint(dop, initial(ψ) == deg2rad(90))
  
 @expression(dop, h, scaled_h * 1e5)
 @expression(dop, v, scaled_v * 1e4)
@@ -50,12 +50,12 @@ dop = DynModel(Interesso.Optimizer)
 @expression(dop, L, 0.5 * S * ρ * v^2 * (a_0 + a_1 * α_deg))
 @expression(dop, D, 0.5 * S * ρ * v^2 * (b_0 + b_1 * α_deg + b_2 * α_deg^2))
  
-@constraint(dop, derivative(h) == v * sin(γ))
-@constraint(dop, derivative(θ) == v * cos(γ) * cos(ψ) / r)
-@constraint(dop, derivative(Φ) == v * cos(γ) * sin(ψ) / (r * cos(θ)))
-@constraint(dop, derivative(v) == -D / m - g * sin(γ))
-@constraint(dop, derivative(γ) == L * cos(β) / (m * v) + cos(γ) * (v / r - g / v))
-@constraint(dop, derivative(ψ) == L * sin(β) / (m * v * cos(γ)) + v * cos(γ) * sin(ψ) * sin(θ) / (r * cos(θ)))
+JuMP.@constraint(dop, derivative(h) == v * sin(γ))
+JuMP.@constraint(dop, derivative(θ) == v * cos(γ) * cos(ψ) / r)
+JuMP.@constraint(dop, derivative(Φ) == v * cos(γ) * sin(ψ) / (r * cos(θ)))
+JuMP.@constraint(dop, derivative(v) == -D / m - g * sin(γ))
+JuMP.@constraint(dop, derivative(γ) == L * cos(β) / (m * v) + cos(γ) * (v / r - g / v))
+JuMP.@constraint(dop, derivative(ψ) == L * sin(β) / (m * v * cos(γ)) + v * cos(γ) * sin(ψ) * sin(θ) / (r * cos(θ)))
  
 JuDO.warmstart!(dop, LinearInterpolant(2.6, 0.8), scaled_h)
 JuDO.warmstart!(dop, LinearInterpolant(0.0, deg2rad(45)), θ)
@@ -93,7 +93,7 @@ plot_configs = [
     (α_sol, "Angle of Attack", "Angle of Attack (deg)", y -> rad2deg(y), joinpath(_shuttle_outdir, "alpha.png")),
     (β_sol, "Bank Angle", "Bank Angle (deg)", y -> rad2deg(y), joinpath(_shuttle_outdir, "beta.png"))
 ]
-traj = plot(
+traj = Plots.plot(
     rad2deg.(Φ_sol.(ts)),
     rad2deg.(θ_sol.(ts)),
     h_sol.(ts)./1000;
@@ -107,8 +107,7 @@ traj = plot(
 
 savefig(traj, joinpath(_shuttle_outdir, "3-d-trajectory.png"))
 for (sol, title_text, ylab, scale_fn, fname) in plot_configs
-    # Create the plot
-    p = plot(ts, t -> scale_fn(sol(t)), 
+    p = Plots.plot(ts, t -> scale_fn(sol(t)), 
              legend = false,
              ylabel = ylab,
              xlabel = "Time (s)",
@@ -116,11 +115,9 @@ for (sol, title_text, ylab, scale_fn, fname) in plot_configs
              lc     = :black
     )
     
-    # Save the figure
     savefig(p, fname)
 end
 
-#print the final latitude and longitude
 final_latitude = rad2deg(θ_sol(tf))
 final_longitude = rad2deg(Φ_sol(tf))
 println("Final Latitude: $(round(final_latitude, digits=2)) degrees")

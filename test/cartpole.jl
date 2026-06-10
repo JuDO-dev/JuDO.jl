@@ -22,40 +22,40 @@ struct LinearInterpolant <: DynOptInterface.AbstractDynamicSolution
 end
 (li::LinearInterpolant)(t::Real) = li.y_a + (t - t_0) * (li.y_b - li.y_a) / (t_f - t_0)
 
-@phase(dop, t)
-@constraint(dop, initial(t) == 0)
-@constraint(dop, final(t) == 2)
+JuDO.@phase(dop, t)
+JuMP.@constraint(dop, initial(t) == 0)
+JuMP.@constraint(dop, final(t) == 2)
 
-@variable(dop, -u_max <= u <= u_max, DefinedOn(t))
-@variable(dop, 0 <= r <= r_max, DefinedOn(t))
+JuMP.@variable(dop, -u_max <= u <= u_max, DefinedOn(t))
+JuMP.@variable(dop, 0 <= r <= r_max, DefinedOn(t))
 
-@variable(dop, θ, DefinedOn(t))  
-@variable(dop, ν, DefinedOn(t))
-@variable(dop, ω, DefinedOn(t))
+JuMP.@variable(dop, θ, DefinedOn(t))  
+JuMP.@variable(dop, ν, DefinedOn(t))
+JuMP.@variable(dop, ω, DefinedOn(t))
 
-@constraint(dop, initial(r) == 0)
-@constraint(dop, initial(θ) == 0)
-@constraint(dop, initial(ν) == 0)
-@constraint(dop, initial(ω) == 0)
+JuMP.@constraint(dop, initial(r) == 0)
+JuMP.@constraint(dop, initial(θ) == 0)
+JuMP.@constraint(dop, initial(ν) == 0)
+JuMP.@constraint(dop, initial(ω) == 0)
 
-@constraint(dop, final(r) == 1)
-@constraint(dop, final(θ) == pi)
-@constraint(dop, final(ν) == 0)
-@constraint(dop, final(ω) == 0)
+JuMP.@constraint(dop, final(r) == 1)
+JuMP.@constraint(dop, final(θ) == pi)
+JuMP.@constraint(dop, final(ν) == 0)
+JuMP.@constraint(dop, final(ω) == 0)
 
-@constraint(dop, derivative(r) == ν)
-@constraint(dop, derivative(ν) == (l*m_2*sin(θ)*ω^2 + u + m_2*g*cos(θ)*sin(θ))/(m_1 + m_2*sin(θ)^2))
+JuMP.@constraint(dop, derivative(r) == ν)
+JuMP.@constraint(dop, derivative(ν) == (l*m_2*sin(θ)*ω^2 + u + m_2*g*cos(θ)*sin(θ))/(m_1 + m_2*sin(θ)^2))
 
-@constraint(dop, derivative(θ) == ω)
-@constraint(dop, derivative(ω) == (-l*m_2*cos(θ)*sin(θ)*ω^2 - u*cos(θ) - (m_1 + m_2)*g*sin(θ))/(l*(m_1 + m_2*sin(θ)^2)))
+JuMP.@constraint(dop, derivative(θ) == ω)
+JuMP.@constraint(dop, derivative(ω) == (-l*m_2*cos(θ)*sin(θ)*ω^2 - u*cos(θ) - (m_1 + m_2)*g*sin(θ))/(l*(m_1 + m_2*sin(θ)^2)))
 
-@objective(dop, Min, integral(u^2))
+JuMP.@objective(dop, Min, integral(u^2))
 
 JuDO.warmstart!(dop, LinearInterpolant(0.0, 1.0), r)
 JuDO.warmstart!(dop, LinearInterpolant(0.0, pi), θ)
 
 
-JuDO.optimize!(dop,intervals=FixedIntervals(20), points=LGRPoints(5), silent=true)
+JuDO.optimize!(dop,intervals=FixedIntervals(20), points=LGRPoints(5))
 
 rsol=dyn_value(dop, r)
 thetasol=dyn_value(dop, θ)
@@ -64,10 +64,10 @@ omegasol=dyn_value(dop, ω)
 usol=dyn_value(dop, u)
 
 time_points = collect(range(t_0, t_f, length=100))
-const _cartpole_outdir = joinpath(@__DIR__, "cartpole-test")
+const _cartpole_outdir = joinpath(@__DIR__)
 
 r_values = [rsol(t) for t in time_points]
-p = plot(time_points, r_values;
+p = Plots.plot(time_points, r_values;
     xlabel = "Time (s)",
     ylabel = "Angular Velocity (rad/s)",
     legend = false,
@@ -80,7 +80,7 @@ savefig(p, joinpath(_cartpole_outdir, "cartpole_r.png"))
 
 
 thetasol_values = [thetasol(t) for t in time_points]
-q = plot(time_points, thetasol_values;
+q = Plots.plot(time_points, thetasol_values;
     xlabel = "Time (s)",
     ylabel = "Theta (rad)",
     legend = false,
@@ -92,7 +92,7 @@ q = plot(time_points, thetasol_values;
 savefig(q, joinpath(_cartpole_outdir, "cartpole_theta.png"))
 
 u_values = [usol(t) for t in time_points]
-s = plot(time_points, u_values;
+s = Plots.plot(time_points, u_values;
     xlabel = "Time (s)",
     ylabel = "Control Force (N)",
     legend = false,
