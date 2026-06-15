@@ -191,9 +191,9 @@ macro phase(model, name, kwargs...)
                 DOI.add_phase($esc_model.moi_backend.optimizer.model)
                 
                 local init = DOI.Initial(DOI.PhaseIndex(i))
-                MOI.add_constraint($esc_model.moi_backend.optimizer.model, init, MOI.EqualTo(_start))
+                MOI.add_constraint($esc_model.moi_backend.optimizer.model, init, MOI.EqualTo(float(_start)))
                 local final = DOI.Final(DOI.PhaseIndex(i))
-                MOI.add_constraint($esc_model.moi_backend.optimizer.model, final, MOI.EqualTo(_stop))
+                MOI.add_constraint($esc_model.moi_backend.optimizer.model, final, MOI.EqualTo(float(_stop)))
 
                 local ref = PhaseVarRef($esc_model, i, $phase_sym)
                 $(name_assingment) = ref

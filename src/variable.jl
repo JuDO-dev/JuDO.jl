@@ -56,7 +56,7 @@ function JuMP.add_variable(
     index = DOI.add_dynamic_variable(model.moi_backend.optimizer.model,p_index)
 
     #call the add_constraint
-    MOI.add_constraint(model.moi_backend.optimizer.model, index, MOI.Interval(dv.Trajectory_bound[1],dv.Trajectory_bound[2]))
+    MOI.add_constraint(model.moi_backend.optimizer.model, index, MOI.Interval(float(dv.Trajectory_bound[1]),float(dv.Trajectory_bound[2])))
 
     local i = model.ext[:varnum][:var] + 1
     model.ext[:varnum][:var] = i

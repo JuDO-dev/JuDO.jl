@@ -19,8 +19,9 @@ JuDO solves the problem of solver fragmentation in optimal control. You can writ
 ## Installation
 ```julia
 using Pkg
-Pkg.add(url="https://github.com/shawn-tao01/DynOptInterface.jl")
+Pkg.add(url="https://github.com/JuDO-dev/DynOptInterface.jl")
 Pkg.add(url="https://github.com/Kailai-Shi/Interesso.jl")
+Pkg.add("JuMP") 
 Pkg.add(url="https://github.com/JuDO-dev/JuDO.jl")
 ```
 
