@@ -1,6 +1,6 @@
 using Test
 using JuMP
-using Interesso
+import Interesso
 using JuDO
 import DynOptInterface as DOI
 
@@ -19,5 +19,6 @@ end
 #choose one test at a time
 @testset "Examples" begin
     #include("cartpole.jl")
-    include("space-shuttle.jl")
+    example = cp(joinpath(@__DIR__, "space-shuttle.jl"), joinpath(mktempdir(), "space-shuttle.jl"))
+    include(example)
 end

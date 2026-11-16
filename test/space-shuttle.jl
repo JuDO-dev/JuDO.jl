@@ -66,7 +66,7 @@ JuDO.warmstart!(dop, LinearInterpolant(deg2rad(90),deg2rad(-20) ), ψ)
 
 @objective(dop, Max, final(θ))
 
-JuDO.optimize!(dop, intervals=FixedIntervals(20), silent=true)
+JuDO.optimize!(dop, intervals=FixedIntervals(20), points=LGRPoints(5), silent=true)
 
 h_sol = dyn_value(dop, scaled_h)
 θ_sol = dyn_value(dop, θ)
@@ -84,10 +84,10 @@ ts = collect(range(0, tf, length=500))
 const _shuttle_outdir = joinpath(@__DIR__, "betts-space-shuttle-config-test")
 mkpath(_shuttle_outdir)
 plot_configs = [
-    (h_sol, "Altitude", "Altitude (10^5m)", y -> y, joinpath(_shuttle_outdir, "altitude.png")),
+    (h_sol, "Altitude", "Altitude (10⁵ ft)", y -> y, joinpath(_shuttle_outdir, "altitude.png")),
     (θ_sol, "Latitude", "Latitude (deg)", y -> rad2deg(y), joinpath(_shuttle_outdir, "latitude.png")),
     (Φ_sol, "Longitude", "Longitude (deg)", y -> rad2deg(y), joinpath(_shuttle_outdir, "longitude.png")),
-    (v_sol, "Velocity", "Velocity (km/s)", y -> y, joinpath(_shuttle_outdir, "velocity.png")),
+    (v_sol, "Velocity", "Velocity (10⁴ ft/s)", y -> y, joinpath(_shuttle_outdir, "velocity.png")),
     (γ_sol, "Flight Path Angle", "Flight Path Angle (deg)", y -> rad2deg(y), joinpath(_shuttle_outdir, "flight_path.png")),
     (ψ_sol, "Azimuth", "Azimuth (deg)", y -> rad2deg(y), joinpath(_shuttle_outdir, "Azimuth.png")),
     (α_sol, "Angle of Attack", "Angle of Attack (deg)", y -> rad2deg(y), joinpath(_shuttle_outdir, "alpha.png")),
@@ -96,12 +96,12 @@ plot_configs = [
 traj = Plots.plot(
     rad2deg.(Φ_sol.(ts)),
     rad2deg.(θ_sol.(ts)),
-    h_sol.(ts)./1000;
+    h_sol.(ts);
     linewidth = 1,
     legend = nothing,
     xlabel = "Longitude (deg)",
     ylabel = "Latitude (deg)",
-    zlabel = "Altitude (km)",
+    zlabel = "Altitude (10⁵ ft)",
     lc = :black
 )
 

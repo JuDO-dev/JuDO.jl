@@ -158,7 +158,7 @@ macro phase(model, name, kwargs...)
             
             local ref = PhaseVarRef($esc_model, i, $phase_sym)
             $(name_assingment) = ref
-            return ref
+            ref
         end
         
         
@@ -176,29 +176,9 @@ macro phase(model, name, kwargs...)
             # If both are numeric, check start <= stop
             local _start = $esc_start
             local _stop  = $esc_stop
-            if _start isa Number && _stop isa Number
-                if _start > _stop
-                    throw(ArgumentError("Phase start cannot be greater than stop."))
-                end
-
-                i = $esc_model.ext[:Phasenum][:phase] + 1
-                $esc_model.ext[:Phasenum][:phase] = i
-
-                
-                $esc_model.ext[:phase_name_to_idx][$phase_sym] = i
-                $esc_model.ext[:Phases][i] = PhaseVar(_start, _stop)
-
-                DOI.add_phase($esc_model.moi_backend.optimizer.model)
-                
-                local init = DOI.Initial(DOI.PhaseIndex(i))
-                MOI.add_constraint($esc_model.moi_backend.optimizer.model, init, MOI.EqualTo(float(_start)))
-                local final = DOI.Final(DOI.PhaseIndex(i))
-                MOI.add_constraint($esc_model.moi_backend.optimizer.model, final, MOI.EqualTo(float(_stop)))
-
-                local ref = PhaseVarRef($esc_model, i, $phase_sym)
-                $(name_assingment) = ref
-                return ref
-
+            local _fixed = _start isa Number && _stop isa Number
+            if _fixed && _start > _stop
+                throw(ArgumentError("Phase start cannot be greater than stop."))
             end
             
             i = $esc_model.ext[:Phasenum][:phase] + 1
@@ -210,10 +190,17 @@ macro phase(model, name, kwargs...)
 
             DOI.add_phase($esc_model.moi_backend.optimizer.model)
 
+            if _fixed
+                local init = DOI.Initial(DOI.PhaseIndex(i))
+                MOI.add_constraint($esc_model.moi_backend.optimizer.model, init, MOI.EqualTo(float(_start)))
+                local final = DOI.Final(DOI.PhaseIndex(i))
+                MOI.add_constraint($esc_model.moi_backend.optimizer.model, final, MOI.EqualTo(float(_stop)))
+            end
+
             
             local ref = PhaseVarRef($esc_model, i, $phase_sym)
             $(name_assingment) = ref
-            return ref
+            ref
 
         end
     

@@ -47,3 +47,25 @@ User code (JuDO macros / extended JuMP macros and functions)
 ```
 
 Solvers implement the DOI interface by extending the MOI types and functions for the DOI attribute types (`DOI.DefaultIntervals`, etc.), an example DOI interface can be found in [the DOI folder in Interesso](https://github.com/Kailai-Shi/Interesso.jl/tree/dev/src/DOI). 
+
+---
+
+## Benchmarks
+
+The computation times reported in the JuDO paper are produced by two scripts in `benchmark/`. From the repository root, first install the package versions pinned in `Manifest.toml`:
+
+```
+julia --project=. -e "using Pkg; Pkg.instantiate()"
+```
+
+Then run each script in a fresh Julia process:
+
+```
+julia --project=. benchmark/benchmark_judo_examples.jl
+julia --project=. benchmark/computation-time-test-interesso/benchmark.jl
+```
+
+- `benchmark_judo_examples.jl` solves the cart-pole and space shuttle examples in `test/` through JuDO for every discretization in `CARTPOLE_CONFIGS` and `SHUTTLE_CONFIGS`, and writes the timings to `benchmark/benchmark_judo_examples_results.txt`.
+- `computation-time-test-interesso/benchmark.jl` solves the same problems directly with Interesso and writes the timings to `benchmark/computation-time-test-interesso/benchmark_results.txt`.
+
+Every run also saves the plots of the solution. Set the environment variable `GKSwstype=100` before running the scripts, so that the GR plotting backend writes the figures without opening a display (`export GKSwstype=100` in bash, `$env:GKSwstype = "100"` in PowerShell).

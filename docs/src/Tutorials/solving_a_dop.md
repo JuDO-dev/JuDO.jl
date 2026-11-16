@@ -81,11 +81,8 @@ The terminal condition ``\theta(t_f) = \pi`` corresponds to the pole pointing st
 ### JuDO Implementation
 
 ```julia
-using Interesso
-using JuMP
+using Interesso, JuMP, DynOptInterface, JuDO
 using Plots
-using JuDO  
-using DynOptInterface
 
 const g     = 9.81
 const l     = 0.5
@@ -106,70 +103,68 @@ end
 (li::LinearInterpolant)(t::Real) = li.y_a + (t - t_0) * (li.y_b - li.y_a) / (t_f - t_0)
 
 # Independent variable (time)
-@phase(dop, t)
-@constraint(dop, initial(t) == 0)
-@constraint(dop, final(t)   == 2)
+JuDO.@phase(dop, t)
+JuMP.@constraint(dop, initial(t) == 0)
+JuMP.@constraint(dop, final(t)   == 2)
 
 # Control
-@variable(dop, -u_max <= u <= u_max, DefinedOn(t))
+JuMP.@variable(dop, -u_max <= u <= u_max, DefinedOn(t))
 
 # States
-@variable(dop, 0 <= r <= r_max, DefinedOn(t))
-@variable(dop, θ, DefinedOn(t))  
-@variable(dop, ν, DefinedOn(t))
-@variable(dop, ω, DefinedOn(t))
+JuMP.@variable(dop, 0 <= r <= r_max, DefinedOn(t))
+JuMP.@variable(dop, θ, DefinedOn(t))
+JuMP.@variable(dop, ν, DefinedOn(t))
+JuMP.@variable(dop, ω, DefinedOn(t))
 
 # Boundary conditions
-@constraint(dop, initial(r) == 0)
-@constraint(dop, initial(θ) == 0)
-@constraint(dop, initial(ν) == 0)
-@constraint(dop, initial(ω) == 0)
+JuMP.@constraint(dop, initial(r) == 0)
+JuMP.@constraint(dop, initial(θ) == 0)
+JuMP.@constraint(dop, initial(ν) == 0)
+JuMP.@constraint(dop, initial(ω) == 0)
 
-@constraint(dop, final(r) == 1)
-@constraint(dop, final(θ) == pi)
-@constraint(dop, final(ν) == 0)
-@constraint(dop, final(ω) == 0)
+JuMP.@constraint(dop, final(r) == 1)
+JuMP.@constraint(dop, final(θ) == pi)
+JuMP.@constraint(dop, final(ν) == 0)
+JuMP.@constraint(dop, final(ω) == 0)
 
 # Equations of motion
-@constraint(dop, derivative(r) == ν)
-@constraint(dop, derivative(ν) == (l*m_2*sin(θ)*ω^2 + u + m_2*g*cos(θ)*sin(θ))/(m_1 + m_2*sin(θ)^2))
-@constraint(dop, derivative(θ) == ω)
-@constraint(dop, derivative(ω) == (-l*m_2*cos(θ)*sin(θ)*ω^2 - u*cos(θ) - (m_1 + m_2)*g*sin(θ))/(l*(m_1 + m_2*sin(θ)^2)))
+JuMP.@constraint(dop, derivative(r) == ν)
+JuMP.@constraint(dop, derivative(ν) == (l*m_2*sin(θ)*ω^2 + u + m_2*g*cos(θ)*sin(θ))/(m_1 + m_2*sin(θ)^2))
+JuMP.@constraint(dop, derivative(θ) == ω)
+JuMP.@constraint(dop, derivative(ω) == (-l*m_2*cos(θ)*sin(θ)*ω^2 - u*cos(θ) - (m_1 + m_2)*g*sin(θ))/(l*(m_1 + m_2*sin(θ)^2)))
 
 # Objective: minimise control effort
-@objective(dop, Min, integral(u^2))
+JuMP.@objective(dop, Min, integral(u^2))
 
 # Warm-start with linear guesses
 JuDO.warmstart!(dop, LinearInterpolant(0.0, 1.0), r)
 JuDO.warmstart!(dop, LinearInterpolant(0.0, pi),  θ)
 
-JuDO.optimize!(dop)
+JuDO.optimize!(dop, intervals=FixedIntervals(20), points=LGRPoints(5), silent=true)
 
 # Extract solutions
-rsol     = dyn_value(dop, r)
 thetasol = dyn_value(dop, θ)
-nusol    = dyn_value(dop, ν)
-omegasol = dyn_value(dop, ω)
+usol     = dyn_value(dop, u)
 
 time_points = collect(range(t_0, t_f, length=100))
 
-# Plot angular velocity
-p = plot(time_points, [omegasol(t) for t in time_points];
-    xlabel = "Time (s)",
-    ylabel = "Angular Velocity (rad/s)",
-    legend = false,
-    xlims  = (t_0, t_f),
-    lw = 1, grid = true, lc = :black)
-display(p)
-
 # Plot pole angle
-q = plot(time_points, [thetasol(t) for t in time_points];
+q = Plots.plot(time_points, [thetasol(t) for t in time_points];
     xlabel = "Time (s)",
     ylabel = "θ (rad)",
     legend = false,
     xlims  = (t_0, t_f),
     lw = 1, grid = true, lc = :black)
 display(q)
+
+# Plot control force
+s = Plots.plot(time_points, [usol(t) for t in time_points];
+    xlabel = "Time (s)",
+    ylabel = "Control Force (N)",
+    legend = false,
+    xlims  = (t_0, t_f),
+    lw = 1, grid = true, lc = :black)
+display(s)
 ```
 
 ---
@@ -282,6 +277,8 @@ The reference solution (Betts, 2010) achieves a maximum crossrange of approximat
 
 ### JuDO Implementation
 
+The implementation uses the scaled states `scaled_h` (altitude in units of ``10^5`` ft) and `scaled_v` (velocity in units of ``10^4`` ft/s). The physical altitude ``h`` and velocity ``v`` are defined as expressions and used in the equations of motion.
+
 ```julia
 using Interesso, JuMP, JuDO, DynOptInterface
 using Plots
@@ -304,34 +301,36 @@ end
 (li::LinearInterpolant)(t::Real) = li.y_a + t * (li.y_b - li.y_a) / 2500
 
 # Independent variable (time)
-@phase(dop, t)
-@constraint(dop, initial(t) == 0)
-@constraint(dop,   final(t) ≤ 2500)
+JuDO.@phase(dop, t)
+JuMP.@constraint(dop, initial(t) == 0)
+JuMP.@constraint(dop,   final(t) ≤ 2500)
 
-# States
-@variable(dop,            0 ≤ h,               DefinedOn(t))
-@variable(dop, deg2rad(-89) ≤ θ ≤ deg2rad(89), DefinedOn(t))
-@variable(dop,             Φ,                  DefinedOn(t))
-@variable(dop,          1e-4 ≤ v,              DefinedOn(t))
-@variable(dop, deg2rad(-89) ≤ γ ≤ deg2rad(89), DefinedOn(t))
-@variable(dop,             ψ,                  DefinedOn(t))
+# States (scaled_h in 10⁵ ft, scaled_v in 10⁴ ft/s)
+JuMP.@variable(dop,            0 ≤ scaled_h,        DefinedOn(t))
+JuMP.@variable(dop, deg2rad(-89) ≤ θ ≤ deg2rad(89), DefinedOn(t))
+JuMP.@variable(dop,             Φ,                  DefinedOn(t))
+JuMP.@variable(dop,         1e-4 ≤ scaled_v,        DefinedOn(t))
+JuMP.@variable(dop, deg2rad(-89) ≤ γ ≤ deg2rad(89), DefinedOn(t))
+JuMP.@variable(dop,             ψ,                  DefinedOn(t))
 
 # Controls
-@variable(dop, deg2rad(-90) ≤ α ≤ deg2rad(90), DefinedOn(t))
-@variable(dop, deg2rad(-90) ≤ β ≤ deg2rad(1),  DefinedOn(t))
+JuMP.@variable(dop, deg2rad(-90) ≤ α ≤ deg2rad(90), DefinedOn(t))
+JuMP.@variable(dop, deg2rad(-90) ≤ β ≤ deg2rad(1),  DefinedOn(t))
 
 # Boundary conditions
-@constraint(dop, initial(h) == 2.6e5)
-@constraint(dop,   final(h) == 0.8e5)
-@constraint(dop, initial(θ) == 0)
-@constraint(dop, initial(Φ) == 0)
-@constraint(dop, initial(v) == 25600)
-@constraint(dop,   final(v) == 2500)
-@constraint(dop, initial(γ) == deg2rad(-1))
-@constraint(dop,   final(γ) == deg2rad(-5))
-@constraint(dop, initial(ψ) == deg2rad(90))
+JuMP.@constraint(dop, initial(scaled_h) == 2.6)
+JuMP.@constraint(dop,   final(scaled_h) == 0.8)
+JuMP.@constraint(dop, initial(θ) == 0)
+JuMP.@constraint(dop, initial(Φ) == 0)
+JuMP.@constraint(dop, initial(scaled_v) == 2.56)
+JuMP.@constraint(dop,   final(scaled_v) == 0.25)
+JuMP.@constraint(dop, initial(γ) == deg2rad(-1))
+JuMP.@constraint(dop,   final(γ) == deg2rad(-5))
+JuMP.@constraint(dop, initial(ψ) == deg2rad(90))
 
 # Intermediate expressions
+@expression(dop, h,     scaled_h * 1e5)
+@expression(dop, v,     scaled_v * 1e4)
 @expression(dop, r,     R_e + h)
 @expression(dop, g,     μ / r^2)
 @expression(dop, ρ,     ρ_0 * exp(-h / h_r))
@@ -340,31 +339,31 @@ end
 @expression(dop, D,     0.5 * S * ρ * v^2 * (b_0 + b_1 * α_deg + b_2 * α_deg^2))
 
 # Equations of motion
-@constraint(dop, derivative(h) == v * sin(γ))
-@constraint(dop, derivative(θ) == v * cos(γ) * cos(ψ) / r)
-@constraint(dop, derivative(Φ) == v * cos(γ) * sin(ψ) / (r * cos(θ)))
-@constraint(dop, derivative(v) == -D / m - g * sin(γ))
-@constraint(dop, derivative(γ) == L * cos(β) / (m * v) + cos(γ) * (v / r - g / v))
-@constraint(dop, derivative(ψ) == L * sin(β) / (m * v * cos(γ)) + v * cos(γ) * sin(ψ) * sin(θ) / (r * cos(θ)))
+JuMP.@constraint(dop, derivative(h) == v * sin(γ))
+JuMP.@constraint(dop, derivative(θ) == v * cos(γ) * cos(ψ) / r)
+JuMP.@constraint(dop, derivative(Φ) == v * cos(γ) * sin(ψ) / (r * cos(θ)))
+JuMP.@constraint(dop, derivative(v) == -D / m - g * sin(γ))
+JuMP.@constraint(dop, derivative(γ) == L * cos(β) / (m * v) + cos(γ) * (v / r - g / v))
+JuMP.@constraint(dop, derivative(ψ) == L * sin(β) / (m * v * cos(γ)) + v * cos(γ) * sin(ψ) * sin(θ) / (r * cos(θ)))
 
 # Warm-start with linear guesses
-JuDO.warmstart!(dop, LinearInterpolant(2.6e5,      0.8e5),          h)
-JuDO.warmstart!(dop, LinearInterpolant(0.0,        deg2rad(45)),    θ)
-JuDO.warmstart!(dop, LinearInterpolant(0.0,        deg2rad(50)),    Φ)
-JuDO.warmstart!(dop, LinearInterpolant(25600.0,    2500.0),         v)
-JuDO.warmstart!(dop, LinearInterpolant(deg2rad(-1),deg2rad(-5)),    γ)
-JuDO.warmstart!(dop, LinearInterpolant(deg2rad(90),deg2rad(-20)),   ψ)
+JuDO.warmstart!(dop, LinearInterpolant(2.6,         0.8),          scaled_h)
+JuDO.warmstart!(dop, LinearInterpolant(0.0,         deg2rad(45)),  θ)
+JuDO.warmstart!(dop, LinearInterpolant(0.0,         deg2rad(50)),  Φ)
+JuDO.warmstart!(dop, LinearInterpolant(2.56,        0.25),         scaled_v)
+JuDO.warmstart!(dop, LinearInterpolant(deg2rad(-1), deg2rad(-5)),  γ)
+JuDO.warmstart!(dop, LinearInterpolant(deg2rad(90), deg2rad(-20)), ψ)
 
 # Objective: maximise crossrange (final latitude)
 @objective(dop, Max, final(θ))
 
-JuDO.optimize!(dop)
+JuDO.optimize!(dop, intervals=FixedIntervals(20), points=LGRPoints(5))
 
 # Extract solutions
-h_sol = dyn_value(dop, h)
+h_sol = dyn_value(dop, scaled_h)
 θ_sol = dyn_value(dop, θ)
 Φ_sol = dyn_value(dop, Φ)
-v_sol = dyn_value(dop, v)
+v_sol = dyn_value(dop, scaled_v)
 γ_sol = dyn_value(dop, γ)
 ψ_sol = dyn_value(dop, ψ)
 α_sol = dyn_value(dop, α)
@@ -372,27 +371,29 @@ v_sol = dyn_value(dop, v)
 
 tf = phase_final(t)
 ts = collect(range(0, tf, length=500))
+println("Final Time: $(round(tf, digits=2)) seconds")
+println("Final Latitude: $(round(rad2deg(θ_sol(tf)), digits=2)) degrees")
 
 # 3-D trajectory plot
-traj = plot(
+traj = Plots.plot(
     rad2deg.(Φ_sol.(ts)),
     rad2deg.(θ_sol.(ts)),
-    h_sol.(ts) ./ 1000;
+    h_sol.(ts);
     linewidth = 1,
     legend    = nothing,
     xlabel    = "Longitude (deg)",
     ylabel    = "Latitude (deg)",
-    zlabel    = "Altitude (km)",
+    zlabel    = "Altitude (10⁵ ft)",
     lc        = :black,
 )
 display(traj)
 
 # Individual state/control plots
 plot_configs = [
-    (h_sol, "Altitude (km)",            y -> y/1000),
+    (h_sol, "Altitude (10⁵ ft)",        y -> y),
     (θ_sol, "Latitude (deg)",           y -> rad2deg(y)),
     (Φ_sol, "Longitude (deg)",          y -> rad2deg(y)),
-    (v_sol, "Velocity (km/s)",          y -> y/1000),
+    (v_sol, "Velocity (10⁴ ft/s)",      y -> y),
     (γ_sol, "Flight Path Angle (deg)",  y -> rad2deg(y)),
     (ψ_sol, "Azimuth (deg)",            y -> rad2deg(y)),
     (α_sol, "Angle of Attack (deg)",    y -> rad2deg(y)),
@@ -400,7 +401,7 @@ plot_configs = [
 ]
 
 for (sol, ylab, scale_fn) in plot_configs
-    p = plot(ts, t -> scale_fn(sol(t));
+    p = Plots.plot(ts, t -> scale_fn(sol(t));
              legend = false, ylabel = ylab, xlabel = "Time (s)",
              lw = 1, lc = :black)
     display(p)

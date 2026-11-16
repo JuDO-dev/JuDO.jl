@@ -227,6 +227,14 @@ function Base.:^(a::DynamicQuadExpr, b::Number)
     return _build_nonlin_expr(:^, a, b)
 end
 
+# 8. Multiplication between a DynamicQuadExpr and a DynamicVarRef, DynamicAffExpr or DynamicQuadExpr (both orders).
+function Base.:*(a::DynamicQuadExpr, b::Union{DynamicVarRef, DynamicAffExpr, DynamicQuadExpr})
+    return _build_nonlin_expr(:*, a, b)
+end
+function Base.:*(a::Union{DynamicVarRef, DynamicAffExpr}, b::DynamicQuadExpr)
+    return _build_nonlin_expr(:*, a, b)
+end
+
 
 #### start with the derivative term
 function Base.:-(x::DerivativeTerm)

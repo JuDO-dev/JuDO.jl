@@ -10,46 +10,102 @@
 
   -- Cart-pole -------------------------------------------------------------------------
 
-  Cart-pole         intervals = 10   LGRPoints = 3  (total nodes = 30)
-    Total wall time                       first-run:   0.3341 s   mean:   0.1124 s   std:   0.0286 s
-      Ipopt reported time                 first-run:   0.0140 s   mean:   0.0139 s   std:   0.0020 s
-      Interesso overhead                  first-run:   0.3201 s   mean:   0.0985 s   std:   0.0303 s
-
   Cart-pole         intervals = 10   LGRPoints = 5  (total nodes = 50)
-    Total wall time                       first-run:   0.1343 s   mean:   0.1503 s   std:   0.0280 s
-      Ipopt reported time                 first-run:   0.0450 s   mean:   0.0493 s   std:   0.0067 s
-      Interesso overhead                  first-run:   0.0893 s   mean:   0.1010 s   std:   0.0312 s
+    Total wall time                       first-run:  14.8434 s   mean:   0.1518 s   std:   0.0195 s
+      Ipopt reported time                 first-run:   5.9290 s   mean:   0.0630 s   std:   0.0175 s
+      Interesso overhead                  first-run:   8.9144 s   mean:   0.0888 s   std:   0.0111 s
+      Ipopt iterations                    14
 
-  Cart-pole         intervals = 20   LGRPoints = 3  (total nodes = 60)
-    Total wall time                       first-run:   0.5870 s   mean:   0.1211 s   std:   0.0052 s
-      Ipopt reported time                 first-run:   0.0400 s   mean:   0.0217 s   std:   0.0071 s
-      Interesso overhead                  first-run:   0.5470 s   mean:   0.0994 s   std:   0.0106 s
+  Cart-pole         intervals = 10   LGRPoints = 7  (total nodes = 70)
+    Total wall time                       first-run:   0.2000 s   mean:   0.2185 s   std:   0.0175 s
+      Ipopt reported time                 first-run:   0.1070 s   mean:   0.1243 s   std:   0.0174 s
+      Interesso overhead                  first-run:   0.0930 s   mean:   0.0942 s   std:   0.0040 s
+      Ipopt iterations                    15
 
   Cart-pole         intervals = 20   LGRPoints = 5  (total nodes = 100)
-    Total wall time                       first-run:   0.2646 s   mean:   0.2056 s   std:   0.0147 s
-      Ipopt reported time                 first-run:   0.1520 s   mean:   0.1070 s   std:   0.0102 s
-      Interesso overhead                  first-run:   0.1126 s   mean:   0.0986 s   std:   0.0130 s
+    Total wall time                       first-run:   0.2082 s   mean:   0.2482 s   std:   0.0348 s
+      Ipopt reported time                 first-run:   0.1130 s   mean:   0.1450 s   std:   0.0318 s
+      Interesso overhead                  first-run:   0.0952 s   mean:   0.1032 s   std:   0.0055 s
+      Ipopt iterations                    16
+
+  Cart-pole         intervals = 20   LGRPoints = 7  (total nodes = 140)
+    Total wall time                       first-run:   0.3874 s   mean:   0.4671 s   std:   0.1083 s
+      Ipopt reported time                 first-run:   0.2720 s   mean:   0.3259 s   std:   0.0452 s
+      Interesso overhead                  first-run:   0.1154 s   mean:   0.1412 s   std:   0.1044 s
+      Ipopt iterations                    20
+
+  Cart-pole         intervals = 30   LGRPoints = 5  (total nodes = 150)
+    Total wall time                       first-run:   0.3058 s   mean:   0.2882 s   std:   0.0166 s
+      Ipopt reported time                 first-run:   0.2190 s   mean:   0.1939 s   std:   0.0141 s
+      Interesso overhead                  first-run:   0.0868 s   mean:   0.0943 s   std:   0.0131 s
+      Ipopt iterations                    18
+
+  Cart-pole         intervals = 30   LGRPoints = 7  (total nodes = 210)
+    Total wall time                       first-run:   0.4945 s   mean:   0.5271 s   std:   0.0142 s
+      Ipopt reported time                 first-run:   0.3950 s   mean:   0.4304 s   std:   0.0165 s
+      Interesso overhead                  first-run:   0.0995 s   mean:   0.0967 s   std:   0.0042 s
+      Ipopt iterations                    20
+
+  Cart-pole         intervals = 40   LGRPoints = 5  (total nodes = 200)
+    Total wall time                       first-run:   0.3861 s   mean:   0.4256 s   std:   0.1106 s
+      Ipopt reported time                 first-run:   0.2670 s   mean:   0.2851 s   std:   0.0352 s
+      Interesso overhead                  first-run:   0.1191 s   mean:   0.1405 s   std:   0.1131 s
+      Ipopt iterations                    19
+
+  Cart-pole         intervals = 40   LGRPoints = 7  (total nodes = 280)
+    Total wall time                       first-run:   0.6513 s   mean:   0.6045 s   std:   0.0101 s
+      Ipopt reported time                 first-run:   0.5040 s   mean:   0.5030 s   std:   0.0086 s
+      Interesso overhead                  first-run:   0.1473 s   mean:   0.1015 s   std:   0.0084 s
+      Ipopt iterations                    18
 
   -- Space shuttle ---------------------------------------------------------------------
 
-  Space shuttle     intervals = 10   LGRPoints = 3  (total nodes = 30)
-    Total wall time                       first-run:   1.5105 s   mean:   0.9686 s   std:   0.0547 s
-      Ipopt reported time                 first-run:   0.6080 s   mean:   0.6626 s   std:   0.0518 s
-      Interesso overhead                  first-run:   0.9025 s   mean:   0.3060 s   std:   0.0194 s
-
   Space shuttle     intervals = 10   LGRPoints = 5  (total nodes = 50)
-    Total wall time                       first-run:   2.9393 s   mean:   3.2283 s   std:   0.2427 s
-      Ipopt reported time                 first-run:   2.6520 s   mean:   2.9336 s   std:   0.2483 s
-      Interesso overhead                  first-run:   0.2873 s   mean:   0.2947 s   std:   0.0118 s
+    Total wall time                       first-run:   8.1159 s   mean:   5.9984 s   std:   0.2476 s
+      Ipopt reported time                 first-run:   5.2240 s   mean:   5.6816 s   std:   0.2450 s
+      Interesso overhead                  first-run:   2.8919 s   mean:   0.3169 s   std:   0.0102 s
+      Ipopt iterations                    228
 
-  Space shuttle     intervals = 20   LGRPoints = 3  (total nodes = 60)
-    Total wall time                       first-run:   3.4503 s   mean:   3.2667 s   std:   0.0586 s
-      Ipopt reported time                 first-run:   3.0430 s   mean:   2.9889 s   std:   0.0658 s
-      Interesso overhead                  first-run:   0.4073 s   mean:   0.2779 s   std:   0.0132 s
+  Space shuttle     intervals = 10   LGRPoints = 7  (total nodes = 70)
+    Total wall time                       first-run:  10.7935 s   mean:  13.7944 s   std:   3.4345 s
+      Ipopt reported time                 first-run:  10.4530 s   mean:  13.3804 s   std:   3.3336 s
+      Interesso overhead                  first-run:   0.3405 s   mean:   0.4140 s   std:   0.1191 s
+      Ipopt iterations                    183
 
   Space shuttle     intervals = 20   LGRPoints = 5  (total nodes = 100)
-    Total wall time                       first-run:  15.2643 s   mean:  14.9169 s   std:   0.7562 s
-      Ipopt reported time                 first-run:  14.9660 s   mean:  14.6133 s   std:   0.7582 s
-      Interesso overhead                  first-run:   0.2983 s   mean:   0.3036 s   std:   0.0221 s
+    Total wall time                       first-run:  17.6415 s   mean:  18.2247 s   std:   2.0780 s
+      Ipopt reported time                 first-run:  17.3030 s   mean:  17.8396 s   std:   2.0415 s
+      Interesso overhead                  first-run:   0.3385 s   mean:   0.3851 s   std:   0.0558 s
+      Ipopt iterations                    351
+
+  Space shuttle     intervals = 20   LGRPoints = 7  (total nodes = 140)
+    Total wall time                       first-run:  68.7399 s   mean:  67.2526 s   std:   8.3054 s
+      Ipopt reported time                 first-run:  68.3010 s   mean:  66.9104 s   std:   8.2679 s
+      Interesso overhead                  first-run:   0.4389 s   mean:   0.3422 s   std:   0.0493 s
+      Ipopt iterations                    592
+
+  Space shuttle     intervals = 30   LGRPoints = 5  (total nodes = 150)
+    Total wall time                       first-run:  28.7689 s   mean:  29.7121 s   std:   1.8613 s
+      Ipopt reported time                 first-run:  28.4790 s   mean:  29.3909 s   std:   1.8505 s
+      Interesso overhead                  first-run:   0.2899 s   mean:   0.3212 s   std:   0.0428 s
+      Ipopt iterations                    451
+
+  Space shuttle     intervals = 30   LGRPoints = 7  (total nodes = 210)
+    Total wall time                       first-run:  80.1910 s   mean:  87.0493 s   std:   7.4343 s
+      Ipopt reported time                 first-run:  79.5220 s   mean:  86.6513 s   std:   7.4511 s
+      Interesso overhead                  first-run:   0.6690 s   mean:   0.3981 s   std:   0.1008 s
+      Ipopt iterations                    515
+
+  Space shuttle     intervals = 40   LGRPoints = 5  (total nodes = 200)
+    Total wall time                       first-run:  65.7727 s   mean:  59.6323 s   std:   2.5780 s
+      Ipopt reported time                 first-run:  65.4330 s   mean:  59.2340 s   std:   2.5822 s
+      Interesso overhead                  first-run:   0.3397 s   mean:   0.3983 s   std:   0.0423 s
+      Ipopt iterations                    595
+
+  Space shuttle     intervals = 40   LGRPoints = 7  (total nodes = 280)
+    Total wall time                       first-run: 152.2156 s   mean: 157.4505 s   std:  45.5195 s
+      Ipopt reported time                 first-run: 151.7730 s   mean: 156.9511 s   std:  45.4300 s
+      Interesso overhead                  first-run:   0.4426 s   mean:   0.4994 s   std:   0.1729 s
+      Ipopt iterations                    617
 
 ================================================================================================

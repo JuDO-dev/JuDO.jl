@@ -26,13 +26,17 @@ end
 
 
 const CART_POLE_CONFIGS = [   
-    (10, 3), (10, 5),
-    (20, 3), (20, 5),
+    (10, 5), (10, 7),
+    (20, 5), (20, 7),
+    (30, 5), (30, 7),
+    (40, 5), (40, 7),
 ]
 
 const SHUTTLE_CONFIGS = [
-    (10, 3), (10, 5),
-    (20, 3), (20, 5),
+    (10, 5), (10, 7),
+    (20, 5), (20, 7),
+    (30, 5), (30, 7),
+    (40, 5), (40, 7),
 ]
 
 const CART_POLE_RUNS = 8  
@@ -64,7 +68,8 @@ function one_run(problem_fn, plot_fn, model::Interesso.Optimizer, outdir::String
     Base.invokelatest(plot_fn, model, vars, outdir)
     total_wall = (time_ns() - t0) * 1e-9
     ipopt_time = MOI.get(model.inner, MOI.SolveTimeSec())
-    return total_wall, ipopt_time
+    iterations = MOI.get(model.inner, MOI.BarrierIterations())
+    return total_wall, ipopt_time, iterations
 end
 
 
@@ -74,11 +79,13 @@ function benchmark_problem(problem_fn, plot_fn, outdir, n_intervals::Int, n_lgr:
 
     total_walls = Float64[]
     ipopt_times = Float64[]
+    iterations  = Int[]
 
     for _ in 1:n_runs
-        tw, ip = one_run(problem_fn, plot_fn, model, outdir)
+        tw, ip, it = one_run(problem_fn, plot_fn, model, outdir)
         push!(total_walls, tw)
         push!(ipopt_times, ip)
+        push!(iterations, it)
     end
 
     overheads = total_walls .- ipopt_times
@@ -88,6 +95,7 @@ function benchmark_problem(problem_fn, plot_fn, outdir, n_intervals::Int, n_lgr:
         total    = p(total_walls),
         ipopt    = p(ipopt_times),
         overhead = p(overheads),
+        iterations = iterations,
     )
 end
 
@@ -118,6 +126,7 @@ function write_config_results(io, problem_name, n_intervals, n_lgr, r)
     write_row(io, "Total wall time",        r.total)
     write_row(io, "  Ipopt reported time",  r.ipopt)
     write_row(io, "  Interesso overhead",   r.overhead)
+    @printf io "    %-36s  %s\n" "  Ipopt iterations" join(unique(r.iterations), ", ")
 end
 
 # ── main ──
