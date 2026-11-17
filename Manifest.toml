@@ -2,7 +2,7 @@
 
 julia_version = "1.12.2"
 manifest_format = "2.0"
-project_hash = "01cc322ae51911f4a863ac82e713c53f9b029ccd"
+project_hash = "16e22a948f4f231ebb4c09c5b192774ff9e267f0"
 
 [[deps.ASL_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -197,11 +197,11 @@ version = "1.7.0"
 
 [[deps.DynOptInterface]]
 deps = ["MathOptInterface"]
-git-tree-sha1 = "8bffbc3167f85d8ebb6df26560e2a0dd4771f48e"
-repo-rev = "dev"
+git-tree-sha1 = "ef1dd79d84184cd0180ace76b800679da5832ffb"
+repo-rev = "v0.3.2"
 repo-url = "https://github.com/JuDO-dev/DynOptInterface.jl"
 uuid = "6c38235a-427b-4736-80fa-cf75909744ec"
-version = "0.3.0"
+version = "0.3.2"
 
 [[deps.EpollShim_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -431,7 +431,7 @@ version = "3.1.3+0"
 deps = ["Debugger", "DynOptInterface", "Interesso", "Ipopt", "JuMP", "LinearAlgebra", "MathOptInterface", "MutableArithmetics", "OrderedCollections", "Plots", "Revise", "StaticArrays", "Unicode"]
 path = "."
 uuid = "3ecbce6f-598f-4154-83ab-9a3a807c6d0a"
-version = "0.1.0"
+version = "0.1.1"
 
 [[deps.JuMP]]
 deps = ["LinearAlgebra", "MacroTools", "MathOptInterface", "MutableArithmetics", "OrderedCollections", "PrecompileTools", "Printf", "SparseArrays"]

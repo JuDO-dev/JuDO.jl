@@ -1,6 +1,6 @@
 name = "JuDO"
 uuid = "3ecbce6f-598f-4154-83ab-9a3a807c6d0a"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Haochen Tao <54142141+shawn-tao01@users.noreply.github.com> and contributors"]
 
 [deps]
@@ -19,12 +19,12 @@ StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 Unicode = "4ec0a83e-493e-50e2-b9ac-8f72acf5a8f5"
 
 [sources]
-DynOptInterface = {rev = "dev", url = "https://github.com/JuDO-dev/DynOptInterface.jl"}
+DynOptInterface = {rev = "v0.3.2", url = "https://github.com/JuDO-dev/DynOptInterface.jl"}
 Interesso = {rev = "f1b0849ac2ae00b95a223c82fa1398b8163c5292", url = "https://github.com/Kailai-Shi/Interesso.jl"}
 
 [compat]
 Debugger = "0.7.11"
-DynOptInterface = "0.3.0"
+DynOptInterface = "0.3.2"
 Interesso = "0.1.0"
 Plots = "1.41.0"
 julia = "1.6"
